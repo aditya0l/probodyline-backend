@@ -8,5 +8,5 @@ echo "🔧 Generating Prisma Client with runtime DATABASE_URL..."
 npx prisma generate
 
 echo "🚀 Starting application..."
-exec node dist/main
+exec node dist/src/main
 

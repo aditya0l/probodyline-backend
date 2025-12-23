@@ -39,9 +39,10 @@ COPY --from=builder /app/dist ./dist
 # Verify dist folder was copied
 RUN ls -la /app/dist && echo "✅ dist folder copied successfully"
 
-# Copy startup script
+# Copy startup scripts
 COPY start.sh ./
-RUN chmod +x start.sh
+COPY migrate-and-start.sh ./
+RUN chmod +x start.sh migrate-and-start.sh
 
 # Create uploads directory
 RUN mkdir -p uploads
@@ -53,6 +54,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3001) + '/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start application with startup script that generates Prisma client first
-CMD ["./start.sh"]
+# Start application via migration + seed helper
+CMD ["./migrate-and-start.sh"]
 

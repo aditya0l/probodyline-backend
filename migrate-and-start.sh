@@ -8,5 +8,5 @@ echo "Seeding database..."
 npm run prisma:seed || echo "Seed failed or already seeded"
 
 echo "Starting application..."
-node dist/src/main
+node dist/main
 

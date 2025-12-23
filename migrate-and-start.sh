@@ -4,9 +4,13 @@
 echo "Running database migrations..."
 npx prisma migrate deploy
 
-echo "Seeding database..."
-npm run prisma:seed || echo "Seed failed or already seeded"
+echo "Seeding database (using built seed)..."
+if [ -f "dist/prisma/seed.js" ]; then
+  node dist/prisma/seed.js || echo "Seed failed or already seeded"
+else
+  echo "Seed script not found at dist/prisma/seed.js (skipping)"
+fi
 
 echo "Starting application..."
-node dist/main
+node dist/src/main.js
 

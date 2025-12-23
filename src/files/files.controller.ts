@@ -69,7 +69,7 @@ export class FilesController {
     };
   }
 
-  @Get(':path*')
+  @Get('*path')
   @ApiOperation({ summary: 'Get file by path' })
   @ApiParam({ name: 'path', description: 'File path' })
   @ApiResponse({ status: 200, description: 'File content' })
@@ -84,7 +84,7 @@ export class FilesController {
     return res.sendFile(path.resolve(fullPath));
   }
 
-  @Delete(':path*')
+  @Delete('*path')
   @ApiOperation({ summary: 'Delete file by path' })
   @ApiParam({ name: 'path', description: 'File path' })
   @ApiResponse({ status: 200, description: 'File successfully deleted' })

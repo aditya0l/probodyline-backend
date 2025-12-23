@@ -36,6 +36,9 @@ RUN npm ci --only=production
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
+# Verify dist folder was copied
+RUN ls -la /app/dist && echo "✅ dist folder copied successfully"
+
 # Copy startup script
 COPY start.sh ./
 RUN chmod +x start.sh

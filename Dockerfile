@@ -6,6 +6,7 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY public ./public/
 
 # Install dependencies
 RUN npm ci

@@ -1,0 +1,797 @@
+/* Premium Professional Quotation Styles - PRO BODYLINE FITNESS */
+/* A4 Page Setup */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+/* Landscape orientation for many columns (13+) */
+@page landscape {
+  size: A4 landscape;
+  margin: 0;
+}
+
+/* Premium Color Palette - Gold Accents */
+:root {
+  --gold-primary: #D4AF37;
+  --gold-light: #F4D03F;
+  --gold-dark: #B8860B;
+  --text-black: #000000;
+  --bg-white: #FFFFFF;
+  --gray-subtle: #F8F8F8;
+  --gray-border: #E0E0E0;
+  --gray-text: #666666;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 10pt;
+  line-height: 1.5;
+  color: var(--text-black);
+  background: var(--bg-white);
+  width: 210mm;
+  /* A4 portrait width */
+  min-height: 297mm;
+  /* A4 portrait height */
+  padding: 10mm 10mm 20mm 10mm; /* Optimized margins: top/left/right 10mm, bottom 20mm for page numbers */
+}
+
+/* Landscape layout for many columns */
+body.landscape {
+  width: 297mm; /* A4 landscape width */
+  min-height: 210mm; /* A4 landscape height */
+  padding: 10mm 13.5mm 20mm 13.5mm; /* Optimized margins for landscape */
+}
+
+.quotation-container {
+  width: 100%;
+  max-width: 190mm; /* Portrait max width - increased to reduce white space */
+  margin: 0 auto;
+}
+
+/* Landscape container width */
+body.landscape .quotation-container {
+  max-width: 270mm; /* Landscape max width - increased to reduce white space */
+}
+
+/* Header Section - Two Column Layout */
+.header-section {
+  display: table;
+  width: 100%;
+  margin-bottom: 10mm;
+  padding-bottom: 6mm;
+  border-bottom: 2px solid var(--gold-dark);
+  table-layout: fixed;
+}
+
+.header-left {
+  display: table-cell;
+  vertical-align: top;
+  width: 70mm;
+  padding-right: 15mm;
+}
+
+.company-logo {
+  max-width: 70mm;
+  max-height: 35mm;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+}
+
+.header-right {
+  display: table-cell;
+  vertical-align: top;
+  padding-left: 20mm; /* Increased from 15mm to move company details more inside */
+  padding-right: 5mm; /* Add right padding for better spacing */
+  width: auto;
+}
+
+.company-name {
+  font-size: 18pt;
+  font-weight: bold;
+  margin-bottom: 3mm;
+  color: var(--text-black);
+  text-transform: uppercase;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.company-gst {
+  font-size: 9pt;
+  margin-bottom: 2mm;
+  font-weight: 600;
+  color: var(--text-black);
+  line-height: 1.5;
+  text-align: left;
+}
+
+.company-address {
+  font-size: 9pt;
+  line-height: 1.6;
+  margin-bottom: 2mm;
+  white-space: pre-line;
+  color: var(--text-black);
+  text-align: left;
+}
+
+.company-contact {
+  font-size: 9pt;
+  margin-bottom: 1.5mm;
+  color: var(--text-black);
+  line-height: 1.5;
+  text-align: left;
+}
+
+/* Title Section - Centered with Underline */
+.title-section {
+  text-align: center;
+  margin-bottom: 6mm;
+  padding-bottom: 3mm;
+  border-bottom: 2px solid var(--gold-dark);
+}
+
+.quotation-title {
+  font-size: 20pt;
+  font-weight: bold;
+  color: var(--text-black);
+  text-transform: uppercase;
+  letter-spacing: 1pt;
+  margin: 0;
+  padding: 0;
+}
+
+/* Quotation Details Grid */
+.quotation-details-grid {
+  width: 100%;
+  border: 1.5px solid var(--text-black);
+  margin-bottom: 8mm;
+  display: table;
+  border-collapse: collapse;
+  table-layout: fixed;
+  box-sizing: border-box;
+}
+
+.detail-row {
+  display: table-row;
+  border-bottom: 1px solid var(--gray-border);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  display: table-cell;
+  padding: 4mm 3mm;
+  font-weight: bold;
+  font-size: 9pt;
+  width: 40%;
+  border-right: 1px solid var(--gray-border);
+  background: var(--gray-subtle);
+  vertical-align: middle;
+  text-align: left;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.detail-value {
+  display: table-cell;
+  padding: 4mm 3mm;
+  font-size: 9pt;
+  width: 60%;
+  vertical-align: middle;
+  text-align: left;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+/* Table Section */
+.table-section {
+  margin-top: 2mm;
+  margin-bottom: 8mm;
+  width: 100%;
+}
+
+.products-table {
+  width: 190mm; /* Use fixed width to ensure proper column distribution */
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin-bottom: 5mm;
+  table-layout: fixed;
+  /* Default: fixed layout for predefined templates */
+  max-width: 190mm; /* Ensure table uses available width */
+  margin-left: 0;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+/* Column width distribution for predefined templates */
+/* Use nth-child for column positioning in wholesale template */
+/* Wholesale template: 7 columns - S.NO, ITEMS, PICTURE, MODEL NO, QTY, RATE, AMOUNT */
+.products-table[data-template="wholesale"] th:nth-child(1),
+.products-table[data-template="wholesale"] td:nth-child(1) {
+  width: 7%; /* S.NO */
+  text-align: center;
+}
+
+.products-table[data-template="wholesale"] th:nth-child(2),
+.products-table[data-template="wholesale"] td:nth-child(2) {
+  width: 28%; /* ITEMS (product name) */
+}
+
+.products-table[data-template="wholesale"] th:nth-child(3),
+.products-table[data-template="wholesale"] td:nth-child(3) {
+  width: 15%; /* PICTURE */
+  text-align: center;
+}
+
+.products-table[data-template="wholesale"] th:nth-child(4),
+.products-table[data-template="wholesale"] td:nth-child(4) {
+  width: 15%; /* MODEL NO */
+  text-align: center;
+}
+
+.products-table[data-template="wholesale"] th:nth-child(5),
+.products-table[data-template="wholesale"] td:nth-child(5) {
+  width: 10%; /* QTY */
+  text-align: center;
+}
+
+.products-table[data-template="wholesale"] th:nth-child(6),
+.products-table[data-template="wholesale"] td:nth-child(6) {
+  width: 12%; /* RATE */
+  text-align: right;
+}
+
+.products-table[data-template="wholesale"] th:nth-child(7),
+.products-table[data-template="wholesale"] td:nth-child(7) {
+  width: 13%; /* AMOUNT */
+  text-align: right;
+}
+
+/* Retail template: S.NO, PICTURE, ITEMS/PRODUCT, MODEL NO, QTY */
+.products-table[data-template="retail"] th:nth-child(1),
+.products-table[data-template="retail"] td:nth-child(1) {
+  width: 8%; /* S.NO */
+}
+
+.products-table[data-template="retail"] th:nth-child(2),
+.products-table[data-template="retail"] td:nth-child(2) {
+  width: 15%; /* PICTURE */
+  text-align: center;
+}
+
+.products-table[data-template="retail"] th:nth-child(3),
+.products-table[data-template="retail"] td:nth-child(3) {
+  width: 40%; /* ITEMS/PRODUCT */
+}
+
+.products-table[data-template="retail"] th:nth-child(4),
+.products-table[data-template="retail"] td:nth-child(4) {
+  width: 22%; /* MODEL NO */
+}
+
+.products-table[data-template="retail"] th:nth-child(5),
+.products-table[data-template="retail"] td:nth-child(5) {
+  width: 15%; /* QTY */
+  text-align: center;
+}
+
+/* Loading template: S.NO, ITEMS, PICTURE, MODEL NO, QTY */
+.products-table[data-template="loading"] th:nth-child(1),
+.products-table[data-template="loading"] td:nth-child(1) {
+  width: 8%; /* S.NO */
+}
+
+.products-table[data-template="loading"] th:nth-child(2),
+.products-table[data-template="loading"] td:nth-child(2) {
+  width: 35%; /* ITEMS */
+}
+
+.products-table[data-template="loading"] th:nth-child(3),
+.products-table[data-template="loading"] td:nth-child(3) {
+  width: 20%; /* PICTURE */
+}
+
+.products-table[data-template="loading"] th:nth-child(4),
+.products-table[data-template="loading"] td:nth-child(4) {
+  width: 17%; /* MODEL NO */
+}
+
+.products-table[data-template="loading"] th:nth-child(5),
+.products-table[data-template="loading"] td:nth-child(5) {
+  width: 20%; /* QTY */
+}
+
+/* Price List template: S.NO, ITEMS, PICTURE, MODEL NO, RATE */
+.products-table[data-template="price list"] th:nth-child(1),
+.products-table[data-template="price list"] td:nth-child(1) {
+  width: 8%; /* S.NO */
+}
+
+.products-table[data-template="price list"] th:nth-child(2),
+.products-table[data-template="price list"] td:nth-child(2) {
+  width: 32%; /* ITEMS */
+}
+
+.products-table[data-template="price list"] th:nth-child(3),
+.products-table[data-template="price list"] td:nth-child(3) {
+  width: 20%; /* PICTURE */
+}
+
+.products-table[data-template="price list"] th:nth-child(4),
+.products-table[data-template="price list"] td:nth-child(4) {
+  width: 20%; /* MODEL NO */
+}
+
+.products-table[data-template="price list"] th:nth-child(5),
+.products-table[data-template="price list"] td:nth-child(5) {
+  width: 20%; /* RATE */
+}
+
+/* Landscape table width */
+body.landscape .products-table {
+  width: 270mm; /* Use fixed width for landscape */
+  max-width: 270mm; /* Match landscape container */
+}
+
+/* Dynamic column widths for default template */
+.products-table[data-template="default"] {
+  table-layout: fixed; /* Use fixed layout for consistent column widths */
+  width: 100%;
+  max-width: 190mm; /* Increased to match container width and reduce white space */
+}
+
+/* Landscape table width for default template */
+body.landscape .products-table[data-template="default"] {
+  max-width: 270mm; /* Match landscape container width */
+}
+
+/* For default template, columns use inline width styles calculated in TypeScript */
+/* CSS variable approach as fallback if inline styles are not applied */
+.products-table[data-template="default"] th,
+.products-table[data-template="default"] td {
+  /* Inline styles from template take precedence */
+  /* Fallback: use CSS calc if inline styles not present */
+  min-width: 8mm; /* Minimum readable width (reduced for many columns) */
+  max-width: 190mm; /* Increased to match container */
+}
+
+/* Landscape-specific max-width */
+body.landscape .products-table[data-template="default"] th,
+body.landscape .products-table[data-template="default"] td {
+  max-width: 270mm; /* Match landscape container */
+}
+
+/* When inline width is set, it overrides this */
+.products-table[data-template="default"] th[style*="width"],
+.products-table[data-template="default"] td[style*="width"] {
+  /* Inline style takes precedence - no additional CSS needed */
+}
+
+/* Text wrapping for default template cells - merged with row height rules above */
+.products-table[data-template="default"] td {
+  white-space: normal !important;
+  word-break: normal !important;
+  /* Don't break words - only break at spaces */
+  overflow-wrap: break-word;
+  /* Only break very long words that don't fit */
+  hyphens: none !important;
+  /* Prevent automatic hyphenation */
+  overflow: visible; /* Changed from hidden to allow content to expand */
+  vertical-align: top;
+  line-height: 1.6; /* Increased from 1.4 for better readability */
+  text-overflow: clip; /* Changed from ellipsis to allow wrapping */
+  /* Allow cells to expand vertically to fit all content */
+}
+
+/* Text wrapping for headers (if needed) */
+.products-table[data-template="default"] th {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Headers remain horizontal - no vertical rotation needed with landscape */
+
+.products-table thead {
+  display: table-header-group;
+}
+
+.products-table tbody {
+  display: table-row-group;
+}
+
+.products-table tr {
+  page-break-inside: avoid;
+  page-break-after: auto;
+  height: auto; /* Allow rows to expand vertically */
+  min-height: auto;
+}
+
+.products-table tbody tr:last-child {
+  page-break-after: avoid;
+}
+
+/* Adjust row height for default template to accommodate wrapped text */
+.products-table[data-template="default"] tr {
+  min-height: auto;
+  height: auto;
+  /* Allow rows to expand vertically to fit content */
+}
+
+.products-table[data-template="default"] td {
+  padding-top: 4mm; /* Increased from 2.5mm for better spacing */
+  padding-bottom: 4mm; /* Increased from 2.5mm for better spacing */
+  padding-left: 2.5mm;
+  padding-right: 2.5mm;
+  min-height: 8mm; /* Minimum row height to prevent cramping */
+  height: auto; /* Allow cells to expand vertically */
+}
+
+/* Increase row height further when there are many columns (13+) */
+.products-table[data-template="default"][data-column-count] td {
+  padding-top: 5mm; /* Even more padding for many columns */
+  padding-bottom: 5mm;
+  min-height: 10mm; /* Larger minimum height */
+  line-height: 1.6; /* Increased line height for readability */
+}
+
+.products-table th {
+  background: linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dark) 100%);
+  color: #000;
+  font-weight: 700;
+  padding: 4mm 3mm;
+  text-align: center;
+  border: 1px solid var(--gold-dark);
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
+  vertical-align: middle;
+  line-height: 1.5;
+  box-sizing: border-box;
+  white-space: nowrap;  /* Prevent text wrapping in headers */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.products-table td {
+  padding: 3.5mm 3mm;
+  border: 1px solid var(--gray-border);
+  vertical-align: middle;
+  background: var(--bg-white);
+  font-size: 9pt;
+  line-height: 1.5;
+  text-align: left;
+  box-sizing: border-box;
+  height: auto; /* Allow cells to expand vertically */
+  min-height: 6mm; /* Minimum height for readability */
+  word-break: normal; /* Ensure base style doesn't break words */
+  overflow-wrap: break-word; /* Only break very long words */
+}
+
+/* Ensure consistent borders */
+.products-table th,
+.products-table td {
+  border: 1px solid var(--gray-border);
+}
+
+.products-table th {
+  border: 1px solid var(--gold-dark);
+}
+
+/* Improve row spacing */
+.products-table tbody tr {
+  border-bottom: 1px solid var(--gray-border);
+}
+
+.products-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.products-table tbody tr:nth-child(even) {
+  background-color: var(--gray-subtle);
+}
+
+/* Column Alignment */
+/* Column alignment classes */
+.col-center {
+  text-align: center;
+}
+
+.col-right {
+  text-align: right;
+  padding-right: 4mm; /* Extra padding for right-aligned numbers */
+  font-weight: 500;
+}
+
+.col-left {
+  text-align: left;
+}
+
+/* Special handling for image cells - center align images */
+.products-table td.col-left img,
+.products-table td[class*="col"] img {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Product Image - Dynamic sizing based on cell width */
+.product-image {
+  max-width: 90%; /* Use 90% of cell width instead of fixed size */
+  max-height: 90%; /* Use 90% of cell height */
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid var(--gray-border);
+  border-radius: 2px;
+  padding: 1mm;
+  background: var(--bg-white);
+}
+
+/* Template-specific image sizing for predefined templates */
+/* Wholesale: image column is 14% width */
+.products-table[data-template="wholesale"] .product-image {
+  max-width: 22mm; /* Slightly larger for wholesale */
+  max-height: 22mm;
+}
+
+/* Retail: image column is 20% width */
+.products-table[data-template="retail"] .product-image {
+  max-width: 30mm;
+  max-height: 30mm;
+}
+
+/* Loading: image column is 20% width */
+.products-table[data-template="loading"] .product-image {
+  max-width: 30mm;
+  max-height: 30mm;
+}
+
+/* Price List: image column is 20% width */
+.products-table[data-template="price list"] .product-image {
+  max-width: 30mm;
+  max-height: 30mm;
+}
+
+/* Default template: use percentage-based sizing to adapt to column width */
+.products-table[data-template="default"] .product-image {
+  max-width: 85%; /* Adapt to available column width */
+  max-height: 85%;
+}
+
+/* Ensure image cells have proper padding and don't overlap */
+.products-table td.col-left:has(img),
+.products-table td[class*="col"]:has(img) {
+  padding: 2mm;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+}
+
+/* Ensure product name cells have proper spacing */
+.products-table td.col-left:not(:has(img)) {
+  padding-left: 3mm;
+  padding-right: 3mm;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.no-image {
+  color: var(--gray-text);
+  font-style: italic;
+  text-align: center;
+  display: block;
+}
+
+/* Disclaimer Section */
+.disclaimer-section {
+  text-align: center;
+  margin-top: 4mm;
+  margin-bottom: 6mm;
+  padding: 2mm 3mm;
+  font-size: 8.5pt;
+  font-weight: 600;
+  color: var(--gray-text);
+  border-top: 1px solid var(--gray-border);
+  border-bottom: 1px solid var(--gray-border);
+  background: var(--gray-subtle);
+}
+
+/* Totals Section */
+.totals-section {
+  margin-top: 6mm;
+  margin-bottom: 8mm;
+  page-break-inside: avoid;
+  page-break-before: avoid;
+}
+
+/* Wholesale totals table - 3 rows */
+.totals-table-wholesale {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 5mm;
+  margin-bottom: 5mm;
+  font-size: 10pt;
+}
+
+.totals-table-wholesale tr {
+  border: 1px solid var(--gray-border);
+}
+
+.totals-table-wholesale td {
+  padding: 3mm;
+  border: 1px solid var(--gray-border);
+  vertical-align: middle;
+}
+
+.totals-table-wholesale .disclaimer-cell {
+  width: 60%;
+  font-weight: 600;
+  text-align: left;
+}
+
+.totals-table-wholesale .total-including-gst {
+  width: 60%;
+  font-weight: 600;
+  text-align: left;
+}
+
+.totals-table-wholesale .amount-words-cell {
+  width: 60%;
+  font-weight: 600;
+  text-align: left;
+}
+
+.totals-table-wholesale .label-cell {
+  width: 20%;
+  font-weight: 700;
+  text-align: center;
+  background: var(--gray-subtle);
+}
+
+.totals-table-wholesale .value-cell {
+  width: 20%;
+  font-weight: 700;
+  text-align: right;
+}
+
+.totals-table-wholesale .gst-row-highlight {
+  background: #FFE5E5;
+}
+
+/* Retail totals - simple 2 lines */
+.totals-retail {
+  display: block;
+  width: 100%;
+  margin-top: 5mm;
+  margin-bottom: 5mm;
+  text-align: center;
+  clear: both;
+}
+
+.totals-retail .total-line {
+  display: block;
+  width: 100%;
+  font-size: 11pt;
+  font-weight: 700;
+  padding: 3mm;
+  background: #FFE5E5;
+  border: 1px solid var(--gray-border);
+  margin-bottom: 3mm;
+  box-sizing: border-box;
+}
+
+.totals-retail .amount-words-line {
+  display: block;
+  width: 100%;
+  font-size: 10pt;
+  font-weight: 600;
+  padding: 3mm;
+  border: 1px solid var(--gray-border);
+  box-sizing: border-box;
+}
+
+/* Bank Details Section */
+.bank-details-section {
+  margin-top: 8mm;
+  margin-bottom: 6mm;
+  padding: 5mm;
+  border: 1.5px solid var(--gold-dark);
+  border-radius: 2px;
+  background: var(--gray-subtle);
+  font-size: 9pt;
+  page-break-inside: avoid;
+  clear: both; /* Clear the float from totals section */
+}
+
+.bank-details-title {
+  margin-bottom: 3mm;
+  font-size: 10pt;
+  color: var(--gold-dark);
+  font-weight: 700;
+  border-bottom: 1px solid var(--gold-dark);
+  padding-bottom: 2mm;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+}
+
+.bank-details-content {
+  line-height: 2;
+  white-space: pre-line;
+  color: var(--text-black);
+  padding-left: 3mm;
+  padding-top: 2mm;
+  font-family: 'Courier New', monospace; /* Better for bank details */
+}
+
+/* Page Number */
+.page-number {
+  position: fixed;
+  bottom: 12mm;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8pt;
+  color: var(--gray-text);
+  text-align: center;
+  font-weight: 500;
+  z-index: 100;
+}
+
+.page-current {
+  color: var(--gold-dark);
+  font-weight: bold;
+}
+
+.page-total {
+  color: var(--gray-text);
+}
+
+/* Print Styles */
+@media print {
+  body {
+    margin: 0;
+    padding: 12mm 15mm 20mm 15mm;
+    /* Extra bottom padding for page numbers */
+  }
+
+  .quotation-container {
+    page-break-after: auto;
+  }
+
+  .products-table thead {
+    display: table-header-group;
+  }
+
+  .products-table tbody tr {
+    page-break-inside: avoid;
+  }
+
+  .products-table tbody tr:last-child {
+    page-break-after: avoid;
+  }
+
+  .totals-section {
+    page-break-inside: avoid;
+    page-break-before: avoid;
+  }
+
+  .bank-details-section {
+    page-break-inside: avoid;
+  }
+
+  .disclaimer-section {
+    page-break-inside: avoid;
+  }
+}

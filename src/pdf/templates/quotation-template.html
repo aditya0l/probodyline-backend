@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quotation</title>
+  <style>
+    /* CSS_CONTENT */
+  </style>
+</head>
+<body{{#if useLandscape}} class="landscape" {{/if}}>
+  <div class="quotation-container">
+    <!-- Header Section - Two Column Layout (only for wholesale/retail) -->
+    {{#if showHeader}}
+    <div class="header-section">
+      <div class="header-left">
+        {{#if companyLogo}}
+        <img src="{{{companyLogo}}}" alt="Company Logo" class="company-logo">
+        {{/if}}
+      </div>
+      <div class="header-right">
+        <h1 class="company-name">{{companyName}}</h1>
+        {{#if companyGST}}
+        <div class="company-gst">GST No.: {{companyGST}}</div>
+        {{/if}}
+        {{#if companyAddress}}
+        <div class="company-address">{{{companyAddress}}}</div>
+        {{/if}}
+        {{#if companyPhone}}
+        <div class="company-contact">P: {{companyPhone}}</div>
+        {{/if}}
+        {{#if companyEmail}}
+        <div class="company-contact">E-Mail: {{companyEmail}}</div>
+        {{/if}}
+        {{#if companyWebsite}}
+        <div class="company-contact">www.{{companyWebsite}}</div>
+        {{/if}}
+        {{#if companyContactPerson}}
+        <div class="company-contact">{{companyContactPerson}}</div>
+        {{/if}}
+      </div>
+    </div>
+
+    <!-- Title Section - Centered with Underline -->
+    <div class="title-section">
+      <h2 class="quotation-title">{{titleText}}</h2>
+    </div>
+    {{/if}}
+
+    <!-- Quotation Details Grid -->
+    <div class="quotation-details-grid">
+      <div class="detail-row">
+        <div class="detail-label">PI NUMBER:</div>
+        <div class="detail-value">{{quoteNumber}}</div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">DATE:</div>
+        <div class="detail-value">{{quoteDate}}</div>
+      </div>
+      {{#if showClientInfo}}
+      <div class="detail-row">
+        <div class="detail-label">CLIENT'S NAME:</div>
+        <div class="detail-value">{{#if clientName}}{{clientName}}{{else}}&nbsp;{{/if}}</div>
+      </div>
+      {{#if showGymName}}
+      <div class="detail-row">
+        <div class="detail-label">GYM NAME:</div>
+        <div class="detail-value">{{#if gymName}}{{gymName}}{{else}}&nbsp;{{/if}}</div>
+      </div>
+      {{/if}}
+      {{#if clientGST}}
+      <div class="detail-row">
+        <div class="detail-label">CLIENT GST:</div>
+        <div class="detail-value">{{clientGST}}</div>
+      </div>
+      {{/if}}
+      {{#if showDeliveryDate}}
+      <div class="detail-row">
+        <div class="detail-label">DELIVERY DATE:</div>
+        <div class="detail-value">{{#if deliveryDate}}{{deliveryDate}}{{else}}&nbsp;{{/if}}</div>
+      </div>
+      {{/if}}
+      {{/if}}
+      {{#if gymArea}}
+      <div class="detail-row">
+        <div class="detail-label">GYM AREA:</div>
+        <div class="detail-value">{{gymArea}}</div>
+      </div>
+      {{/if}}
+    </div>
+
+    <!-- Products Table -->
+    <div class="table-section">
+      <table class="products-table" data-template="{{templateType}}" {{#if isDefaultTemplate}}
+        data-column-count="{{columnCount}}"
+        {{#if tableStyle}}style="{{tableStyle}}"{{/if}}{{/if}}>
+        <thead>
+          <tr>
+            {{#each tableHeaders}}
+            <th class="{{this.className}}">{{this.label}}</th>
+            {{/each}}
+          </tr>
+        </thead>
+        <tbody>
+          {{#each products}}
+          <tr>
+            {{#each this.cells}}
+            <td class="{{this.className}}">
+              {{#if this.isImage}}
+              {{#if this.value}}
+              <img src="{{{this.value}}}" alt="Product" class="product-image">
+              {{else}}
+              <span class="no-image">—</span>
+              {{/if}}
+              {{else}}
+              {{{this.value}}}
+              {{/if}}
+            </td>
+            {{/each}}
+          </tr>
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Disclaimer -->
+    {{#if showDisclaimer}}
+    <div class="disclaimer-section">
+      <strong>NO GUARANTEE OR WARRANTY ON ABOVE MENTIONED ITEMS</strong>
+      <br>
+      <strong>GST {{gstRate}}% APPLICABLE ON ABOVE MENTIONED ON PRICE</strong>
+    </div>
+    {{/if}}
+
+    <!-- Totals Section (template-specific formats) -->
+    {{#if showTotals}}
+    <div class="totals-section">
+      {{#if showGSTBreakdown}}
+      <!-- Wholesale format: 3-row table -->
+      <table class="totals-table-wholesale">
+        <tr>
+          <td class="disclaimer-cell">NO GUARANTEE OR WARRANTY ON ABOVE MENTIONED ITEMS</td>
+          <td class="label-cell">TOTAL</td>
+          <td class="value-cell">{{subtotal}}</td>
+        </tr>
+        <tr class="gst-row-highlight">
+          <td class="total-including-gst">TOTAL INCLUDING {{gstRate}}% GST INR {{grandTotal}}/-</td>
+          <td class="label-cell">GST {{gstRate}}%</td>
+          <td class="value-cell">{{gstAmount}}</td>
+        </tr>
+        <tr>
+          <td class="amount-words-cell">{{amountInWords}}</td>
+          <td class="label-cell">G. TOTAL</td>
+          <td class="value-cell">{{grandTotal}}</td>
+        </tr>
+      </table>
+      {{else}}
+      <!-- Retail format: 2 simple lines -->
+      <div class="totals-retail">
+        <div class="total-line">TOTAL INCLUDING {{gstRate}}% GST INR {{grandTotal}}/-</div>
+        <div class="amount-words-line">{{amountInWords}}</div>
+      </div>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    <!-- Bank Details Section (only for wholesale/retail) -->
+    {{#if showBankDetails}}
+    {{#if bankDetails}}
+    <div class="bank-details-section">
+      <div class="bank-details-title"><strong>Details Of Bank A/C:</strong></div>
+      <div class="bank-details-content">{{{bankDetails}}}</div>
+    </div>
+    {{/if}}
+    {{/if}}
+
+    <!-- Page Number -->
+    <div class="page-number">
+      Page <span class="page-current">{{pageNumber}}</span> of <span class="page-total">{{totalPages}}</span>
+    </div>
+  </div>
+  </body>
+
+</html>
+

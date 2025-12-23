@@ -37,6 +37,8 @@ COPY prisma ./prisma/
 
 # Install production dependencies only
 RUN npm ci --only=production
+# Install ts-node for runtime seed if dist seed is absent
+RUN npm install ts-node
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist

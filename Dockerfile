@@ -38,12 +38,12 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 # Create uploads directory
 RUN mkdir -p uploads
 
-# Expose port
+# Expose port (Railway will override this with $PORT)
 EXPOSE 3001
 
-# Health check
+# Health check - uses PORT environment variable for Railway compatibility
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3001) + '/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start application
 CMD ["node", "dist/main"]

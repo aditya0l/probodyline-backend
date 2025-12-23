@@ -33,9 +33,11 @@ COPY prisma ./prisma/
 # Install production dependencies only
 RUN npm ci --only=production
 
+# Generate Prisma Client in production (will use runtime DATABASE_URL)
+RUN npx prisma generate
+
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create uploads directory
 RUN mkdir -p uploads

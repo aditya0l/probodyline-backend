@@ -69,12 +69,12 @@ export class FilesController {
     };
   }
 
-  @Get('*')
+  @Get(':path(*)')
   @ApiOperation({ summary: 'Get file by path' })
-  @ApiParam({ name: '0', description: 'File path' })
+  @ApiParam({ name: 'path', description: 'File path' })
   @ApiResponse({ status: 200, description: 'File content' })
   @ApiResponse({ status: 404, description: 'File not found' })
-  async getFile(@Param('0') filepath: string, @Res() res: Response) {
+  async getFile(@Param('path') filepath: string, @Res() res: Response) {
     const fullPath = this.filesService.getFilePath(filepath);
     
     if (!fs.existsSync(fullPath)) {
@@ -84,12 +84,12 @@ export class FilesController {
     return res.sendFile(path.resolve(fullPath));
   }
 
-  @Delete('*')
+  @Delete(':path(*)')
   @ApiOperation({ summary: 'Delete file by path' })
-  @ApiParam({ name: '0', description: 'File path' })
+  @ApiParam({ name: 'path', description: 'File path' })
   @ApiResponse({ status: 200, description: 'File successfully deleted' })
   @ApiResponse({ status: 404, description: 'File not found' })
-  async deleteFile(@Param('0') filepath: string) {
+  async deleteFile(@Param('path') filepath: string) {
     await this.filesService.deleteFile(filepath);
     return { message: 'File deleted successfully' };
   }

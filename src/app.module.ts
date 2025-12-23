@@ -25,10 +25,10 @@ import { configValidationSchema } from './config/config.schema';
 
 @Module({
   imports: [
-    // Serve assets from /public (e.g., logo.png) at the root path
+    // Serve assets from /public (e.g., logo.png) at the root path; exclude API routes
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
-      exclude: ['/api*'],
+      exclude: ['/api/(.*)'],
     }),
     ConfigModule.forRoot({
       isGlobal: true,

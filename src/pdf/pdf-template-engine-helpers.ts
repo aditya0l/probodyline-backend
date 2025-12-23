@@ -155,8 +155,10 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     // Handle absolute and relative paths
     let fullPath = imagePath;
     
-    // Handle paths starting with /public/ (local assets)
-    if (imagePath.startsWith('/public/')) {
+    // Handle paths starting with /app/public (container absolute) or /public (repo root)
+    if (imagePath.startsWith('/app/public/')) {
+      fullPath = imagePath;
+    } else if (imagePath.startsWith('/public/')) {
       fullPath = path.join(process.cwd(), imagePath.replace(/^\//, ''));
     } else if (!path.isAbsolute(imagePath)) {
       // Try relative to uploads directory

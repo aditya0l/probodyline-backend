@@ -52,7 +52,7 @@ async function main() {
   const org = await prisma.organization.upsert({
     where: { id: '00000000-0000-0000-0000-000000000001' },
     update: {
-      logo: '/app/public/logo.png',
+      logo: '/public/logo.png',
       bankDetails: `Bank Name - Axis Bank,
 A/C Name - Creative Enterprises,
 A/C No. - 916030039099739,
@@ -69,7 +69,7 @@ Branch - Sitapura, Jaipur`,
       email: '1293creative@gmail.com',
       website: 'www.probodyline.com',
       contactPerson: 'Mr. TARUN (7240412345)',
-      logo: '/app/public/logo.png',
+      logo: '/public/logo.png',
       defaultGstRate: 18,
       bankDetails: `Bank Name - Axis Bank,
 A/C Name - Creative Enterprises,

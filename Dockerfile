@@ -14,7 +14,7 @@ RUN npm ci
 COPY . .
 
 # Generate Prisma Client with a dummy DATABASE_URL for build time
-# The real DATABASE_URL will be used at runtime
+# This is only needed for TypeScript compilation
 ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public"
 RUN npm run prisma:generate
 

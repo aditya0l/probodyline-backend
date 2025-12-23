@@ -13,7 +13,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client with a dummy DATABASE_URL for build time
+# The real DATABASE_URL will be used at runtime
+ENV DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public"
 RUN npm run prisma:generate
 
 # Build application

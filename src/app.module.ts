@@ -1,4 +1,6 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -23,6 +25,11 @@ import { configValidationSchema } from './config/config.schema';
 
 @Module({
   imports: [
+    // Serve assets from /public (e.g., logo.png) at the root path
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      exclude: ['/api*'],
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],

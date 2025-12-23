@@ -42,6 +42,8 @@ RUN npm install ts-node
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
+# Copy public assets (e.g., logo.png) from builder
+COPY --from=builder /app/public ./public
 
 # Verify dist folder was copied
 RUN ls -la /app/dist && echo "✅ dist folder copied successfully"

@@ -33,11 +33,12 @@ COPY prisma ./prisma/
 # Install production dependencies only
 RUN npm ci --only=production
 
-# Generate Prisma Client in production (will use runtime DATABASE_URL)
-RUN npx prisma generate
-
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
+
+# Copy startup script
+COPY start.sh ./
+RUN chmod +x start.sh
 
 # Create uploads directory
 RUN mkdir -p uploads
@@ -49,6 +50,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3001) + '/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start application
-CMD ["node", "dist/main"]
+# Start application with startup script that generates Prisma client first
+CMD ["./start.sh"]
 

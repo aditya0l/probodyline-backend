@@ -28,8 +28,9 @@ import { configValidationSchema } from './config/config.schema';
     // Serve assets from /public (e.g., logo.png) at the root path; exclude API routes
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
-      renderPath: '/:path(.*)', // path-to-regexp v8 compatible catch-all
-      exclude: ['/api/:path(.*)'], // keep API routes out of static handling
+      // Use regex to bypass path-to-regexp string parsing and avoid wildcard errors
+      renderPath: /^(?!\/api\/).*/ as unknown as string, // serve everything except /api/**
+      exclude: [/^\/api\/.*/] as unknown as string[], // keep API routes out of static handling
     }),
     ConfigModule.forRoot({
       isGlobal: true,

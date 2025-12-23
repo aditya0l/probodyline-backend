@@ -1,4 +1,6 @@
 import { PrismaClient } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const prisma = new PrismaClient();
 
@@ -48,11 +50,22 @@ function generatePlaceholderImage(
 async function main() {
   console.log('🌱 Starting seed...');
 
+  // Load logo as base64 so PDFs don't depend on filesystem at runtime
+  let logoDataUri: string | null = null;
+  const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+  if (fs.existsSync(logoPath)) {
+    const img = fs.readFileSync(logoPath);
+    const base64 = img.toString('base64');
+    logoDataUri = `data:image/png;base64,${base64}`;
+  } else {
+    console.warn(`⚠️ Logo file not found at ${logoPath}, falling back to path string`);
+  }
+
   // Create default organization
   const org = await prisma.organization.upsert({
     where: { id: '00000000-0000-0000-0000-000000000001' },
     update: {
-      logo: '/public/logo.png',
+      logo: logoDataUri || '/public/logo.png',
       bankDetails: `Bank Name - Axis Bank,
 A/C Name - Creative Enterprises,
 A/C No. - 916030039099739,
@@ -69,7 +82,7 @@ Branch - Sitapura, Jaipur`,
       email: '1293creative@gmail.com',
       website: 'www.probodyline.com',
       contactPerson: 'Mr. TARUN (7240412345)',
-      logo: '/public/logo.png',
+      logo: logoDataUri || '/public/logo.png',
       defaultGstRate: 18,
       bankDetails: `Bank Name - Axis Bank,
 A/C Name - Creative Enterprises,

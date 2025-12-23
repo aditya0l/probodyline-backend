@@ -45,8 +45,10 @@ export class PdfService {
     const html = await this.generateQuotationHTML(fullQuotation, template);
 
     // Launch Puppeteer with optimized settings for faster PDF generation
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     const browser = await puppeteer.launch({
       headless: true,
+      executablePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',

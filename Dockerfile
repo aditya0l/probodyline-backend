@@ -26,6 +26,10 @@ FROM node:18-alpine AS production
 
 WORKDIR /app
 
+# Install system Chromium for Puppeteer
+RUN apk add --no-cache chromium nss freetype ttf-freefont
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/

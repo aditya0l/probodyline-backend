@@ -2,6 +2,12 @@
 # Migration and startup script for Railway
 
 echo "Running database migrations..."
+# Ensure Prisma Client is generated with the runtime DATABASE_URL
+if [ -z "$DATABASE_URL" ]; then
+  echo "DATABASE_URL not set; using dummy connection for prisma generate"
+  export DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public"
+fi
+npx prisma generate
 npx prisma migrate deploy
 
 echo "Seeding database (using built seed)..."

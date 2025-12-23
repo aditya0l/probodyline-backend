@@ -9,4 +9,3 @@ npx prisma generate
 
 echo "🚀 Starting application..."
 exec node dist/src/main
-

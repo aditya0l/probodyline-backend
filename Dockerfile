@@ -9,6 +9,7 @@ COPY prisma ./prisma/
 COPY public ./public/
 
 # Install dependencies
+ENV npm_config_legacy_peer_deps=true
 RUN npm ci
 
 # Copy source code
@@ -36,6 +37,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install production dependencies only
+ENV npm_config_legacy_peer_deps=true
 RUN npm ci --only=production
 # Install ts-node for runtime seed if dist seed is absent
 RUN npm install ts-node

@@ -10,6 +10,9 @@ dist/
 
 # Prisma
 /generated/prisma
+prisma.config.js
+prisma.config.js.map
+prisma.config.d.ts
 
 # IDE
 .vscode/

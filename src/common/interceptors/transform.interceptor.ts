@@ -23,6 +23,50 @@ export interface Response<T> {
 export class TransformInterceptor<T>
   implements NestInterceptor<T, Response<T>>
 {
+  /**
+   * Recursively converts Prisma Decimal objects to plain numbers.
+   * Handles nested objects, arrays, and preserves null/undefined values.
+   */
+  private serializeDecimals(value: any): any {
+    // Handle null or undefined
+    if (value === null || value === undefined) {
+      return value;
+    }
+
+    // Check if value is a Prisma Decimal object (has toNumber method)
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      typeof value.toNumber === 'function'
+    ) {
+      return value.toNumber();
+    }
+
+    // Handle arrays
+    if (Array.isArray(value)) {
+      return value.map((item) => this.serializeDecimals(item));
+    }
+
+    // Handle Date objects (convert to ISO string)
+    if (value instanceof Date) {
+      return value.toISOString();
+    }
+
+    // Handle plain objects
+    if (typeof value === 'object' && value !== null) {
+      const serialized: any = {};
+      for (const key in value) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+          serialized[key] = this.serializeDecimals(value[key]);
+        }
+      }
+      return serialized;
+    }
+
+    // Return primitive values as-is
+    return value;
+  }
+
   intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -42,7 +86,7 @@ export class TransformInterceptor<T>
 
           return {
             success: true,
-            data: data.data,
+            data: this.serializeDecimals(data.data),
             meta: {
               page,
               limit,
@@ -55,7 +99,7 @@ export class TransformInterceptor<T>
         // Simple response
         return {
           success: true,
-          data,
+          data: this.serializeDecimals(data),
         };
       }),
     );

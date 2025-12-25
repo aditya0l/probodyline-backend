@@ -152,11 +152,6 @@ export function getCellValue(item: QuotationItem, colId: QuotationColumnId): str
 
 export async function imageToDataURL(imagePath: string): Promise<string> {
   try {
-    if (imagePath.startsWith('data:')) {
-      // Already a data URI
-      return imagePath;
-    }
-
     // Handle absolute and relative paths
     let fullPath = imagePath;
     

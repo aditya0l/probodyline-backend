@@ -25,6 +25,11 @@ export class CreateProductDto {
   @IsString()
   modelNumber?: string;
 
+  @ApiPropertyOptional({ description: 'QR code image (base64 or URL)', example: 'https://example.com/qr-code.png' })
+  @IsOptional()
+  @IsString()
+  qrCode?: string;
+
   @ApiPropertyOptional({ description: 'Main product image (base64 or URL)', example: 'https://example.com/image.jpg' })
   @IsOptional()
   @IsString()

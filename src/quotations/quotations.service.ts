@@ -181,7 +181,7 @@ export class QuotationsService {
         data: {
           quoteNumber,
           customerId: data.customerId,
-          status: 'draft',
+          status: 'DRAFT',
           // Company info (denormalized)
           companyName: org.name,
           companyAddress: org.address,
@@ -512,7 +512,7 @@ export class QuotationsService {
     // Update quotation status (no stock transactions here - only in confirmPI)
     return this.prisma.quotation.update({
       where: { id },
-      data: { status },
+      data: { status: status as any },
     });
   }
 

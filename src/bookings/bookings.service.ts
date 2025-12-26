@@ -53,8 +53,7 @@ export class BookingsService {
             quoteNumber: true,
             clientName: true,
             gymName: true,
-            stateCode: true,
-            city: true,
+            clientCity: true,
           },
         },
       },
@@ -117,8 +116,7 @@ export class BookingsService {
             quoteNumber: true,
             clientName: true,
             gymName: true,
-            stateCode: true,
-            city: true,
+            clientCity: true,
           },
         },
       },
@@ -234,7 +232,7 @@ export class BookingsService {
         bookedOn: new Date(), // Current timestamp for priority
         customerName: customerName || quotation.clientName || null,
         gymName: gymName || quotation.gymName || null,
-        stateCode: stateCode || quotation.city ? null : null, // Extract from quotation if needed
+        stateCode: stateCode || null,
         city: city || quotation.clientCity || null,
         requiredQuantity: quantity,
         status: BookingStatus.WAITING_LIST, // Will be computed by allocation logic

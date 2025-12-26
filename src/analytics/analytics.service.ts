@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, QuotationStatus } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
@@ -11,17 +11,17 @@ export class AnalyticsService {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
-    // Total sales (approved/converted quotations)
+    // Total sales (confirmed/converted quotations)
     const salesSummary = await this.prisma.quotation.aggregate({
       where: {
         deletedAt: null,
-        status: { in: ['approved', 'converted'] },
+        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
       },
       _sum: {
         grandTotal: true,
       },
       _count: {
-        id: true,
+        _all: true,
       },
     });
 
@@ -29,14 +29,14 @@ export class AnalyticsService {
     const monthlySales = await this.prisma.quotation.aggregate({
       where: {
         deletedAt: null,
-        status: { in: ['approved', 'converted'] },
+        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
         createdAt: { gte: startOfMonth },
       },
       _sum: {
         grandTotal: true,
       },
       _count: {
-        id: true,
+        _all: true,
       },
     });
 
@@ -47,11 +47,11 @@ export class AnalyticsService {
       },
     });
 
-    // Pending quotations
+    // Pending quotations (DRAFT status)
     const pendingQuotations = await this.prisma.quotation.count({
       where: {
         deletedAt: null,
-        status: { in: ['draft', 'sent'] },
+        status: QuotationStatus.DRAFT,
       },
     });
 
@@ -83,10 +83,10 @@ export class AnalyticsService {
     if (products.length === 0) {
       return {
         sales: {
-          total: salesSummary._sum.grandTotal?.toNumber() || 0,
-          totalTransactions: salesSummary._count.id,
-          monthly: monthlySales._sum.grandTotal?.toNumber() || 0,
-          monthlyTransactions: monthlySales._count.id,
+          total: salesSummary._sum?.grandTotal?.toNumber() || 0,
+          totalTransactions: salesSummary._count?._all || 0,
+          monthly: monthlySales._sum?.grandTotal?.toNumber() || 0,
+          monthlyTransactions: monthlySales._count?._all || 0,
         },
         quotations: {
           total: totalQuotations,
@@ -140,10 +140,10 @@ export class AnalyticsService {
 
     return {
       sales: {
-        total: salesSummary._sum.grandTotal?.toNumber() || 0,
-        totalTransactions: salesSummary._count.id,
-        monthly: monthlySales._sum.grandTotal?.toNumber() || 0,
-        monthlyTransactions: monthlySales._count.id,
+        total: salesSummary._sum?.grandTotal?.toNumber() || 0,
+        totalTransactions: salesSummary._count?._all || 0,
+        monthly: monthlySales._sum?.grandTotal?.toNumber() || 0,
+        monthlyTransactions: monthlySales._count?._all || 0,
       },
       quotations: {
         total: totalQuotations,
@@ -179,7 +179,7 @@ export class AnalyticsService {
     const quotations = await this.prisma.quotation.findMany({
       where: {
         deletedAt: null,
-        status: { in: ['approved', 'converted'] },
+        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
         createdAt: {
           gte: start,
           lte: end,
@@ -227,7 +227,7 @@ export class AnalyticsService {
     const where: Prisma.QuotationItemWhereInput = {
       quotation: {
         deletedAt: null,
-        status: { in: ['approved', 'converted'] },
+        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
         ...(startDate &&
           endDate && {
             createdAt: {
@@ -285,7 +285,7 @@ export class AnalyticsService {
   ) {
     const where: Prisma.QuotationWhereInput = {
       deletedAt: null,
-      status: { in: ['approved', 'converted'] },
+      status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
       customerId: { not: null },
       ...(startDate &&
         endDate && {

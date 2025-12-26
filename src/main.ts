@@ -45,8 +45,14 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // Allow query parameters without explicit DTO validation
       transform: true,
+      transformOptions: {
+        enableImplicitConversion: true, // Convert query params to numbers automatically
+      },
+      skipMissingProperties: false,
+      skipNullProperties: false,
+      skipUndefinedProperties: false,
     }),
   );
 

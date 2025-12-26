@@ -85,15 +85,24 @@ export class StockService {
       limit?: number;
     },
   ): Promise<{ data: StockTransaction[]; total: number }> {
+    // Build date filter - handle cases where only startDate or only endDate is provided
+    const dateFilter: { gte?: Date; lte?: Date } = {};
+    if (filters?.startDate) {
+      dateFilter.gte = new Date(filters.startDate);
+    }
+    if (filters?.endDate) {
+      // If date is in YYYY-MM-DD format, append time to get end of day
+      const endDateStr = filters.endDate.includes('T') 
+        ? filters.endDate 
+        : `${filters.endDate}T23:59:59.999Z`;
+      dateFilter.lte = new Date(endDateStr);
+    }
+
     const where: Prisma.StockTransactionWhereInput = {
       ...(productId && { productId }),
-      ...(filters?.startDate &&
-        filters?.endDate && {
-          date: {
-            gte: new Date(filters.startDate),
-            lte: new Date(filters.endDate),
-          },
-        }),
+      ...((filters?.startDate || filters?.endDate) && {
+        date: dateFilter,
+      }),
       ...(filters?.transactionType && {
         transactionType: filters.transactionType as any,
       }),

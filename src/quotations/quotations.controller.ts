@@ -138,5 +138,25 @@ export class QuotationsController {
   restore(@Param('id') id: string) {
     return this.quotationsService.restore(id);
   }
+
+  @Post(':id/convert-to-pi')
+  @ApiOperation({ summary: 'Convert quotation to PI (Proforma Invoice)' })
+  @ApiParam({ name: 'id', description: 'Quotation UUID' })
+  @ApiResponse({ status: 200, description: 'Quotation successfully converted to PI' })
+  @ApiResponse({ status: 404, description: 'Quotation not found' })
+  @ApiResponse({ status: 400, description: 'Quotation is already converted' })
+  convertToPI(@Param('id') id: string) {
+    return this.quotationsService.convertToPI(id);
+  }
+
+  @Post(':id/confirm')
+  @ApiOperation({ summary: 'Confirm PI and create bookings/stock events' })
+  @ApiParam({ name: 'id', description: 'PI UUID' })
+  @ApiResponse({ status: 200, description: 'PI successfully confirmed' })
+  @ApiResponse({ status: 404, description: 'PI not found' })
+  @ApiResponse({ status: 400, description: 'PI cannot be confirmed' })
+  confirmPI(@Param('id') id: string) {
+    return this.quotationsService.confirmPI(id);
+  }
 }
 

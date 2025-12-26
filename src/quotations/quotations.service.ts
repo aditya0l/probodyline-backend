@@ -4,7 +4,7 @@ import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { CreateQuotationItemDto } from './dto/create-quotation-item.dto';
 import { UpdateQuotationItemDto } from './dto/update-quotation-item.dto';
-import { Quotation, Prisma } from '@prisma/client';
+import { Quotation, Prisma, StockTransactionType } from '@prisma/client';
 
 @Injectable()
 export class QuotationsService {
@@ -501,6 +501,56 @@ export class QuotationsService {
   }
 
   async updateStatus(id: string, status: string): Promise<Quotation> {
+    const quotation = await this.prisma.quotation.findUnique({
+      where: { id },
+    });
+
+    if (!quotation) {
+      throw new NotFoundException('Quotation not found');
+    }
+
+    // Update quotation status (no stock transactions here - only in confirmPI)
+    return this.prisma.quotation.update({
+      where: { id },
+      data: { status },
+    });
+  }
+
+  /**
+   * Convert quotation to PI (Proforma Invoice)
+   * Sets status to DRAFT (PI status) and marks original as CONVERTED
+   */
+  async convertToPI(id: string): Promise<Quotation> {
+    return this.prisma.$transaction(async (tx) => {
+      const quotation = await tx.quotation.findUnique({
+        where: { id },
+      });
+
+      if (!quotation) {
+        throw new NotFoundException('Quotation not found');
+      }
+
+      if (quotation.status === 'CONVERTED') {
+        throw new BadRequestException('Quotation is already converted to PI');
+      }
+
+      // Update quotation status to DRAFT (PI status)
+      // Also set quotationNumber as alias for quoteNumber
+      return tx.quotation.update({
+        where: { id },
+        data: {
+          status: 'DRAFT', // PI starts as DRAFT
+          quotationNumber: quotation.quoteNumber, // Alias
+        },
+      });
+    });
+  }
+
+  /**
+   * Confirm PI and create bookings/stock events
+   * Sets PI status to CONFIRMED and creates booking records and stock OUT transactions
+   */
+  async confirmPI(id: string): Promise<Quotation> {
     return this.prisma.$transaction(async (tx) => {
       const quotation = await tx.quotation.findUnique({
         where: { id },
@@ -508,81 +558,74 @@ export class QuotationsService {
       });
 
       if (!quotation) {
-        throw new NotFoundException('Quotation not found');
+        throw new NotFoundException('Quotation/PI not found');
       }
 
-      // If status is changing to 'approved' or 'converted', create stock transactions
-      if ((status === 'approved' || status === 'converted') && 
-          quotation.status !== 'approved' && 
-          quotation.status !== 'converted') {
+      if (quotation.status === 'CONFIRMED') {
+        throw new BadRequestException('PI is already confirmed');
+      }
+
+      if (quotation.status !== 'DRAFT') {
+        throw new BadRequestException('Only DRAFT PI can be confirmed');
+      }
+
+      // Get all items with products
+      const itemsWithProducts = quotation.items.filter((item) => item.productId);
+
+      if (itemsWithProducts.length === 0) {
+        throw new BadRequestException('PI has no items to confirm');
+      }
+
+      // Create stock OUT transactions and bookings for each item
+      const dispatchDatePromises = itemsWithProducts.map(async (item) => {
+        const dispatchDate = item.expectedDispatchDate || new Date();
         
-        // Get all productIds that need stock checks
-        const itemsWithProducts = quotation.items.filter((item) => item.productId);
-        const productIds = itemsWithProducts.map((item) => item.productId!);
+        // Create stock OUT transaction (event-based)
+        await tx.stockTransaction.create({
+          data: {
+            productId: item.productId!,
+            transactionType: 'PI_BOOKING',
+            quantity: -item.quantity, // Negative for OUT
+            referenceType: 'PI_BOOKING',
+            referenceId: quotation.id,
+            date: dispatchDate,
+            notes: `Stock OUT for PI ${quotation.quoteNumber} - Item ${item.productName}`,
+          },
+        });
 
-        if (productIds.length > 0) {
-          // Batch check stock availability for all products at once
-          const stockAggregations = await tx.stockTransaction.groupBy({
-            by: ['productId'],
-            where: {
-              productId: { in: productIds },
-            },
-            _sum: {
-              quantity: true,
-            },
-          });
+        // Create booking record (using service method after transaction commits)
+        // Note: We create it directly here since we're in a transaction
+        await tx.booking.create({
+          data: {
+            quotationId: quotation.id,
+            quotationItemId: item.id,
+            productId: item.productId!,
+            quoteNumber: quotation.quoteNumber,
+            dispatchDate: dispatchDate,
+            bookedOn: new Date(), // Current timestamp for priority
+            customerName: quotation.clientName,
+            gymName: quotation.gymName,
+            stateCode: null, // Extract from quotation if needed
+            city: quotation.clientCity || null,
+            requiredQuantity: item.quantity,
+            status: 'WAITING_LIST', // Will be computed by allocation logic
+            waitingQuantity: item.quantity, // Initial value
+          },
+        });
+      });
 
-          // Create a map of productId -> currentStock
-          const stockMap = new Map<string, number>();
-          stockAggregations.forEach((agg) => {
-            stockMap.set(agg.productId, agg._sum.quantity || 0);
-          });
+      await Promise.all(dispatchDatePromises);
 
-          // Also get stock from product.todaysStock for products not in transactions
-          const products = await tx.product.findMany({
-            where: { id: { in: productIds } },
-            select: { id: true, todaysStock: true },
-          });
-
-          products.forEach((product) => {
-            if (!stockMap.has(product.id) && product.todaysStock !== null) {
-              stockMap.set(product.id, product.todaysStock);
-            }
-          });
-
-          // Validate stock availability for all items
-          for (const item of itemsWithProducts) {
-            const currentStock = stockMap.get(item.productId!) || 0;
-            if (currentStock < item.quantity) {
-              throw new BadRequestException(
-                `Insufficient stock for product ${item.productName}. Current: ${currentStock}, Required: ${item.quantity}`
-              );
-            }
-          }
-
-          // Create stock OUT transactions for all items in parallel
-          await Promise.all(
-            itemsWithProducts.map((item) =>
-              tx.stockTransaction.create({
-                data: {
-                  productId: item.productId!,
-                  transactionType: 'OUT',
-                  quantity: -item.quantity, // Negative for OUT
-                  referenceType: 'quotation',
-                  referenceId: quotation.id,
-                  date: new Date(),
-                  notes: `Stock deducted for quotation ${quotation.quoteNumber}`,
-                },
-              }),
-            ),
-          );
-        }
-      }
-
-      // Update quotation status
+      // Update PI status to CONFIRMED
       return tx.quotation.update({
         where: { id },
-        data: { status },
+        data: {
+          status: 'CONFIRMED',
+        },
+        include: {
+          items: true,
+          customer: true,
+        },
       });
     });
   }

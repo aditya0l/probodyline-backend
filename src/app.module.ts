@@ -19,6 +19,10 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ReportsModule } from './reports/reports.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
+import { ClientsModule } from './clients/clients.module';
+import { GymsModule } from './gyms/gyms.module';
+import { LeadsModule } from './leads/leads.module';
+import { BookingsModule } from './bookings/bookings.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
@@ -58,6 +62,10 @@ import { configValidationSchema } from './config/config.schema';
     ReportsModule,
     AnalyticsModule,
     AuthModule,
+    ClientsModule,
+    GymsModule,
+    LeadsModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [

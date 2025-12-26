@@ -153,6 +153,28 @@ export class StockService {
     return currentStock;
   }
 
+  /**
+   * Calculate stock level for a specific date based on transactions
+   * This is used for event-based stock calculation - stock = SUM(IN) - SUM(OUT)
+   */
+  async getStockOnDate(productId: string, date: string): Promise<number> {
+    // Get all transactions up to and including the specified date
+    const endDate = new Date(date);
+    endDate.setHours(23, 59, 59, 999); // End of day
+
+    const result = await this.prisma.stockTransaction.aggregate({
+      where: {
+        productId,
+        date: {
+          lte: endDate,
+        },
+      },
+      _sum: { quantity: true },
+    });
+
+    return result._sum.quantity || 0;
+  }
+
   async getStockHistory(
     productId: string,
     startDate?: string,

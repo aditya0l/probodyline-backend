@@ -19,11 +19,10 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ReportsModule } from './reports/reports.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
-// Temporarily disabled - these modules reference Prisma models not in schema
-// import { ClientsModule } from './clients/clients.module';
-// import { GymsModule } from './gyms/gyms.module';
-// import { LeadsModule } from './leads/leads.module';
-// import { BookingsModule } from './bookings/bookings.module';
+import { ClientsModule } from './clients/clients.module';
+import { GymsModule } from './gyms/gyms.module';
+import { LeadsModule } from './leads/leads.module';
+import { BookingsModule } from './bookings/bookings.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
@@ -63,11 +62,12 @@ import { configValidationSchema } from './config/config.schema';
     ReportsModule,
     AnalyticsModule,
     AuthModule,
-    // Temporarily disabled - these modules reference Prisma models not in schema
-    // ClientsModule,
-    // GymsModule,
-    // LeadsModule,
-    // BookingsModule,
+    // IMPORTANT: GymsModule and ClientsModule must be imported AFTER CommonModule
+    // since they depend on PrismaService from CommonModule
+    GymsModule,
+    ClientsModule,
+    LeadsModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [
@@ -83,4 +83,3 @@ export class AppModule implements NestModule {
     consumer.apply(LoggerMiddleware).forRoutes('*');
   }
 }
-// Trigger redeploy - ensure modules are enabled

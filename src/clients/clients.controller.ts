@@ -16,7 +16,9 @@ import { UpdateClientDto } from './dto/update-client.dto';
 @ApiTags('clients')
 @Controller('clients')
 export class ClientsController {
-  constructor(private readonly clientsService: ClientsService) {}
+  constructor(private readonly clientsService: ClientsService) {
+    console.log('✅ ClientsController instantiated');
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new client' })
@@ -28,7 +30,14 @@ export class ClientsController {
     return this.clientsService.create(createClientDto);
   }
 
-  @Get()
+  @Get('test')
+  @ApiOperation({ summary: 'Test endpoint to verify controller is accessible' })
+  @ApiResponse({ status: 200, description: 'Controller is working' })
+  test() {
+    return { message: 'ClientsController is working', timestamp: new Date().toISOString() };
+  }
+
+  @Get('')
   @ApiOperation({ summary: 'Get all clients with filtering and pagination' })
   @ApiQuery({ name: 'search', required: false, description: 'Search term for client name, city, code, state, or sales person' })
   @ApiQuery({ name: 'stateCode', required: false, description: 'Filter by state code' })
@@ -45,6 +54,7 @@ export class ClientsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
+    console.log('📞 ClientsController.findAll called with:', { search, stateCode, city, salesPerson, page, limit });
     return this.clientsService.findAll({
       search,
       stateCode,

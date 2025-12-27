@@ -20,7 +20,9 @@ import { CreateInaugurationCommitmentDto } from './dto/create-inauguration-commi
 @ApiTags('gyms')
 @Controller('gyms')
 export class GymsController {
-  constructor(private readonly gymsService: GymsService) {}
+  constructor(private readonly gymsService: GymsService) {
+    console.log('✅ GymsController instantiated');
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new gym' })
@@ -32,7 +34,7 @@ export class GymsController {
     return this.gymsService.create(createGymDto);
   }
 
-  @Get()
+  @Get('')
   @ApiOperation({ summary: 'Get all gyms with filtering and pagination' })
   @ApiQuery({ name: 'search', required: false, description: 'Search term for gym name, city, code, or state' })
   @ApiQuery({ name: 'stateCode', required: false, description: 'Filter by state code' })

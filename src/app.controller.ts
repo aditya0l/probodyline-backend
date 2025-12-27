@@ -12,6 +12,26 @@ export class AppController {
     private readonly prismaHealth: PrismaHealthService,
   ) {}
 
+  @Get('routes')
+  @ApiOperation({ summary: 'List all registered API routes (debug endpoint)' })
+  @ApiResponse({ status: 200, description: 'List of registered routes' })
+  getRoutes() {
+    // This is a simple endpoint to verify routes are accessible
+    // In production, you might want to use NestJS's RouterExplorer
+    return {
+      message: 'Routes endpoint is accessible',
+      keyRoutes: {
+        '/api/health': 'Health check',
+        '/api/gyms': 'Get all gyms',
+        '/api/gyms/test': 'Test gyms controller',
+        '/api/clients': 'Get all clients',
+        '/api/clients/test': 'Test clients controller',
+        '/api/routes': 'This endpoint',
+      },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get('health')
   @ApiOperation({ summary: 'Health check endpoint' })
   @ApiResponse({ status: 200, description: 'Service is healthy' })

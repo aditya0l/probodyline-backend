@@ -37,7 +37,7 @@ export class ClientsController {
     return { message: 'ClientsController is working', timestamp: new Date().toISOString() };
   }
 
-  @Get('')
+  @Get()
   @ApiOperation({ summary: 'Get all clients with filtering and pagination' })
   @ApiQuery({ name: 'search', required: false, description: 'Search term for client name, city, code, state, or sales person' })
   @ApiQuery({ name: 'stateCode', required: false, description: 'Filter by state code' })

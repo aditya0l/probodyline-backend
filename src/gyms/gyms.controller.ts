@@ -41,7 +41,7 @@ export class GymsController {
     return { message: 'GymsController is working', timestamp: new Date().toISOString() };
   }
 
-  @Get('')
+  @Get()
   @ApiOperation({ summary: 'Get all gyms with filtering and pagination' })
   @ApiQuery({ name: 'search', required: false, description: 'Search term for gym name, city, code, or state' })
   @ApiQuery({ name: 'stateCode', required: false, description: 'Filter by state code' })

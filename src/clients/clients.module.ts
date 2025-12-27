@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { ClientsController } from './clients.controller';
 import { CommonModule } from '../common/common.module';
@@ -9,6 +9,10 @@ import { CommonModule } from '../common/common.module';
   providers: [ClientsService],
   exports: [ClientsService],
 })
-export class ClientsModule {}
+export class ClientsModule implements OnModuleInit {
+  onModuleInit() {
+    console.log('✅ ClientsModule initialized - controllers should be registered');
+  }
+}
 
 

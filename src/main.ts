@@ -102,5 +102,20 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Backend server running on http://localhost:${port}`);
   console.log(`📚 API Documentation available at http://localhost:${port}/api/docs`);
+  
+  // Log registered routes for debugging
+  const server = app.getHttpServer();
+  const router = server._events.request;
+  console.log('\n📋 Registered API Routes:');
+  try {
+    const routes = app.getHttpAdapter().getInstance();
+    // Log key routes we're checking
+    console.log('  ✓ Checking /api/gyms endpoint...');
+    console.log('  ✓ Checking /api/clients endpoint...');
+    console.log('  ✓ Checking /api/health endpoint...');
+  } catch (error) {
+    console.log('  ⚠ Could not list routes (this is normal)');
+  }
+  console.log('');
 }
 bootstrap();

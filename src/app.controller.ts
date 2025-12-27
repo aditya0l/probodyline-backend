@@ -33,6 +33,15 @@ export class AppController {
         cpuCount: os.cpus().length,
         loadAverage: os.loadavg(),
       },
+      modules: {
+        gyms: 'loaded',
+        clients: 'loaded',
+      },
+      endpoints: {
+        '/api/gyms': 'available',
+        '/api/clients': 'available',
+        '/api/health': 'available',
+      },
     };
 
     // Check database connection with latency

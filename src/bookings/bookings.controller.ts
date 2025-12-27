@@ -13,7 +13,7 @@ export class BookingsController {
   @Get()
   @ApiOperation({ summary: 'Get all bookings with optional filters' })
   @ApiQuery({ name: 'search', required: false })
-  @ApiQuery({ name: 'status', required: false, enum: BookingStatus })
+  @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'dispatchDateFrom', required: false })
   @ApiQuery({ name: 'dispatchDateTo', required: false })
   @ApiQuery({ name: 'productModel', required: false })

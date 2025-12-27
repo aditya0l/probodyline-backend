@@ -83,3 +83,4 @@ export class AppModule implements NestModule {
     consumer.apply(LoggerMiddleware).forRoutes('*');
   }
 }
+// Trigger redeploy - ensure modules are enabled

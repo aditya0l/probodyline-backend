@@ -57,6 +57,9 @@ export class ClientsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'clients.controller.ts:60',message:'ClientsController.findAll method called',data:{search,stateCode,city,salesPerson,page,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
     console.log('📞 ClientsController.findAll called with:', { search, stateCode, city, salesPerson, page, limit });
     return this.clientsService.findAll({
       search,

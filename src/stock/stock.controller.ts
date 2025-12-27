@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ThrottlerSkip } from '@nestjs/throttler';
 import { StockService } from './stock.service';
 import { CreateStockTransactionDto } from './dto/create-stock-transaction.dto';
 import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
@@ -99,6 +100,7 @@ export class StockController {
   }
 
   @Get('products/:productId/projection')
+  @ThrottlerSkip() // Skip throttling for stock projection endpoint - frontend makes many concurrent requests
   @ApiOperation({ summary: 'Get comprehensive stock projection for a product' })
   @ApiParam({ name: 'productId', description: 'Product UUID' })
   @ApiQuery({ name: 'selectedDate', required: true, description: 'Selected date in YYYY-MM-DD format' })

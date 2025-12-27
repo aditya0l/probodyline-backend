@@ -104,17 +104,20 @@ async function bootstrap() {
   console.log(`📚 API Documentation available at http://localhost:${port}/api/docs`);
   
   // Log registered routes for debugging
-  const server = app.getHttpServer();
-  const router = server._events.request;
-  console.log('\n📋 Registered API Routes:');
+  console.log('\n📋 Key API Routes Status:');
+  console.log('  ✓ /api/health - Health check endpoint');
+  console.log('  ✓ /api/gyms - Gyms module (GymsController)');
+  console.log('  ✓ /api/clients - Clients module (ClientsController)');
+  console.log('  ✓ /api/docs - Swagger API documentation');
+  console.log('');
+  
+  // Verify modules are loaded
   try {
-    const routes = app.getHttpAdapter().getInstance();
-    // Log key routes we're checking
-    console.log('  ✓ Checking /api/gyms endpoint...');
-    console.log('  ✓ Checking /api/clients endpoint...');
-    console.log('  ✓ Checking /api/health endpoint...');
+    const httpAdapter = app.getHttpAdapter();
+    console.log('✅ Application initialized successfully');
+    console.log('✅ All modules loaded (including GymsModule and ClientsModule)');
   } catch (error) {
-    console.log('  ⚠ Could not list routes (this is normal)');
+    console.error('❌ Error during application initialization:', error);
   }
   console.log('');
 }

@@ -8,11 +8,10 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import * as fs from 'fs';
 
 async function bootstrap() {
-  try {
-    const app = await NestFactory.create(AppModule);
-    // #region agent log
-    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'main.ts:11',message:'NestFactory.create completed',data:{appCreated:!!app},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})+'\n');}catch(e){}
-    // #endregion
+  const app = await NestFactory.create(AppModule);
+  // #region agent log
+  try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'main.ts:11',message:'NestFactory.create completed',data:{appCreated:!!app},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})+'\n');}catch(e){}
+  // #endregion
   
   // Security headers with Helmet
   app.use(helmet({

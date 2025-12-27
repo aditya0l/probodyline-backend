@@ -16,13 +16,14 @@ import { GymsService } from './gyms.service';
 import { CreateGymDto } from './dto/create-gym.dto';
 import { UpdateGymDto } from './dto/update-gym.dto';
 import { CreateInaugurationCommitmentDto } from './dto/create-inauguration-commitment.dto';
+import * as fs from 'fs';
 
 @ApiTags('gyms')
 @Controller('gyms')
 export class GymsController {
   constructor(private readonly gymsService: GymsService) {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'gyms.controller.ts:23',message:'GymsController constructor called',data:{controller:'GymsController'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'gyms.controller.ts:25',message:'GymsController constructor called',data:{controller:'GymsController'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})+'\n');}catch(e){}
     // #endregion
     console.log('✅ GymsController instantiated');
   }
@@ -60,7 +61,7 @@ export class GymsController {
     @Query('limit') limit?: string,
   ) {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'gyms.controller.ts:57',message:'GymsController.findAll method called',data:{search,stateCode,city,page,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'gyms.controller.ts:59',message:'GymsController.findAll method called',data:{search,stateCode,city,page,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})+'\n');}catch(e){}
     // #endregion
     console.log('📞 GymsController.findAll called with:', { search, stateCode, city, page, limit });
     return this.gymsService.findAll({

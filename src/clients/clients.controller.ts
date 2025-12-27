@@ -12,13 +12,14 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from 
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import * as fs from 'fs';
 
 @ApiTags('clients')
 @Controller('clients')
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'clients.controller.ts:19',message:'ClientsController constructor called',data:{controller:'ClientsController'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'clients.controller.ts:21',message:'ClientsController constructor called',data:{controller:'ClientsController'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})+'\n');}catch(e){}
     // #endregion
     console.log('✅ ClientsController instantiated');
   }
@@ -58,7 +59,7 @@ export class ClientsController {
     @Query('limit') limit?: string,
   ) {
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'clients.controller.ts:60',message:'ClientsController.findAll method called',data:{search,stateCode,city,salesPerson,page,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'clients.controller.ts:62',message:'ClientsController.findAll method called',data:{search,stateCode,city,salesPerson,page,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})+'\n');}catch(e){}
     // #endregion
     console.log('📞 ClientsController.findAll called with:', { search, stateCode, city, salesPerson, page, limit });
     return this.clientsService.findAll({

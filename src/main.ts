@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -115,7 +116,7 @@ async function bootstrap() {
   try {
     const httpAdapter = app.getHttpAdapter();
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.ts:108',message:'App initialization complete, checking route registration',data:{hasHttpAdapter:!!httpAdapter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'main.ts:120',message:'App initialization complete, checking route registration',data:{hasHttpAdapter:!!httpAdapter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})+'\n');}catch(e){}
     // #endregion
     console.log('✅ Application initialized successfully');
     console.log('✅ All modules loaded (including GymsModule and ClientsModule)');

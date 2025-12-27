@@ -79,6 +79,12 @@ import { configValidationSchema } from './config/config.schema';
   ],
 })
 export class AppModule implements NestModule {
+  constructor() {
+    console.log('🔵 AppModule constructor called');
+    console.log('🔵 Checking GymsModule:', typeof GymsModule, GymsModule.name);
+    console.log('🔵 Checking ClientsModule:', typeof ClientsModule, ClientsModule.name);
+  }
+  
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(LoggerMiddleware).forRoutes('*');
   }

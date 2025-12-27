@@ -340,37 +340,35 @@ export class StockService {
     // Get base stock on date
     const baseStock = await this.getStockOnDate(productId, date);
 
-    // Get all bookings for this product on or before the date, ordered by dispatchDate and bookedOn
-    const bookings = await this.prisma.booking.findMany({
-      where: {
-        productId,
-        dispatchDate: {
-          lte: new Date(date),
-        },
-      },
-      orderBy: [
-        { dispatchDate: 'asc' },
-        { bookedOn: 'asc' },
-      ],
-    });
+    // TODO: Get bookings when Booking model is added to schema
+    // For now, return base stock without booking allocation
+    // const bookings = await this.prisma.booking.findMany({
+    //   where: {
+    //     productId,
+    //     dispatchDate: {
+    //       lte: new Date(date),
+    //     },
+    //   },
+    //   orderBy: [
+    //     { dispatchDate: 'asc' },
+    //     { bookedOn: 'asc' },
+    //   ],
+    // });
 
     // Simulate allocation: subtract confirmed booking quantities from stock
-    let availableStock = baseStock;
-    for (const booking of bookings) {
-      if (availableStock >= booking.requiredQuantity) {
-        // Fully confirmed - subtract the full quantity
-        availableStock -= booking.requiredQuantity;
-      } else if (availableStock > 0) {
-        // Partially confirmed - subtract what's available
-        availableStock = 0;
-        break; // No more stock available
-      } else {
-        // Fully waiting - nothing to subtract
-        break;
-      }
-    }
+    // let availableStock = baseStock;
+    // for (const booking of bookings) {
+    //   if (availableStock >= booking.requiredQuantity) {
+    //     availableStock -= booking.requiredQuantity;
+    //   } else if (availableStock > 0) {
+    //     availableStock = 0;
+    //     break;
+    //   } else {
+    //     break;
+    //   }
+    // }
 
-    return availableStock;
+    return baseStock;
   }
 
   /**
@@ -399,52 +397,48 @@ export class StockService {
       },
     });
 
-    // Find next booking that would add stock (if bookings represent incoming stock)
-    // Note: Bookings typically represent outgoing stock, so we might not find any
-    // But we check for completeness
-    const nextBooking = await this.prisma.booking.findFirst({
-      where: {
-        productId,
-        dispatchDate: {
-          gt: today,
-        },
-      },
-      orderBy: [
-        { dispatchDate: 'asc' },
-        { bookedOn: 'asc' },
-      ],
-    });
+    // TODO: Find next booking when Booking model is added to schema
+    // const nextBooking = await this.prisma.booking.findFirst({
+    //   where: {
+    //     productId,
+    //     dispatchDate: {
+    //       gt: today,
+    //     },
+    //   },
+    //   orderBy: [
+    //     { dispatchDate: 'asc' },
+    //     { bookedOn: 'asc' },
+    //   ],
+    // });
 
     // Compare and return the earliest date
-    if (nextTransaction && nextBooking) {
-      const transactionDate = new Date(nextTransaction.date);
-      const bookingDate = new Date(nextBooking.dispatchDate);
-      if (transactionDate <= bookingDate) {
-        return {
-          date: transactionDate.toISOString().split('T')[0],
-          quantity: nextTransaction.quantity,
-        };
-      } else {
-        // Note: Bookings are typically outgoing, but if we treat them as incoming,
-        // we'd use requiredQuantity. However, for now we'll only use transactions for IN
-        return {
-          date: transactionDate.toISOString().split('T')[0],
-          quantity: nextTransaction.quantity,
-        };
-      }
-    } else if (nextTransaction) {
+    // if (nextTransaction && nextBooking) {
+    //   const transactionDate = new Date(nextTransaction.date);
+    //   const bookingDate = new Date(nextBooking.dispatchDate);
+    //   if (transactionDate <= bookingDate) {
+    //     return {
+    //       date: transactionDate.toISOString().split('T')[0],
+    //       quantity: nextTransaction.quantity,
+    //     };
+    //   } else {
+    //     return {
+    //       date: transactionDate.toISOString().split('T')[0],
+    //       quantity: nextTransaction.quantity,
+    //     };
+    //   }
+    // } else 
+    if (nextTransaction) {
       return {
         date: new Date(nextTransaction.date).toISOString().split('T')[0],
         quantity: nextTransaction.quantity,
       };
-    } else if (nextBooking) {
-      // Bookings typically represent outgoing stock, so we return null for bookings
-      // If in the future bookings represent incoming stock, use: quantity: nextBooking.requiredQuantity
-      return {
-        date: null,
-        quantity: null,
-      };
     }
+    // else if (nextBooking) {
+    //   return {
+    //     date: null,
+    //     quantity: null,
+    //   };
+    // }
 
     return {
       date: null,

@@ -1,6 +1,14 @@
 import { IsString, IsEmail, IsOptional, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { LeadStatus } from '@prisma/client';
+
+// TODO: Define LeadStatus enum when Lead model is added to Prisma schema
+export enum LeadStatus {
+  NEW = 'NEW',
+  CONTACTED = 'CONTACTED',
+  QUALIFIED = 'QUALIFIED',
+  CONVERTED = 'CONVERTED',
+  LOST = 'LOST',
+}
 
 export class CreateLeadDto {
   @ApiProperty({ description: 'Lead name', example: 'John Doe' })
@@ -52,4 +60,5 @@ export class CreateLeadDto {
   @IsOptional()
   notes?: string;
 }
+
 

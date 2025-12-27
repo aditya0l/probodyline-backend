@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import { Prisma, QuotationStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ReportsService {
@@ -25,7 +25,7 @@ export class ReportsService {
           },
         }),
       ...(filters?.customerId && { customerId: filters.customerId }),
-      ...(filters?.status && { status: { in: filters.status as QuotationStatus[] } }),
+      ...(filters?.status && { status: { in: filters.status as string[] } }),
       ...(filters?.productId && {
         items: {
           some: {
@@ -212,7 +212,7 @@ export class ReportsService {
     const convertedQuotations = await this.prisma.quotation.count({
       where: {
         ...where,
-        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
+        status: { in: ['approved', 'converted'] },
       },
     });
 
@@ -241,7 +241,7 @@ export class ReportsService {
   ) {
     const where: Prisma.QuotationWhereInput = {
       deletedAt: null,
-      status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] }, // Only count confirmed/converted
+      status: { in: ['approved', 'converted'] }, // Only count confirmed/converted
       ...(filters?.startDate &&
         filters?.endDate && {
           createdAt: {

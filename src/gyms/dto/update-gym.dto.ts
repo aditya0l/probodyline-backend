@@ -54,3 +54,4 @@ export class UpdateGymDto extends PartialType(CreateGymDto) {
   locationLink?: string;
 }
 
+

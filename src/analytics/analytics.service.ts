@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import { Prisma, QuotationStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AnalyticsService {
@@ -15,7 +15,7 @@ export class AnalyticsService {
     const salesSummary = await this.prisma.quotation.aggregate({
       where: {
         deletedAt: null,
-        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
+        status: { in: ['approved', 'converted'] },
       },
       _sum: {
         grandTotal: true,
@@ -29,7 +29,7 @@ export class AnalyticsService {
     const monthlySales = await this.prisma.quotation.aggregate({
       where: {
         deletedAt: null,
-        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
+        status: { in: ['approved', 'converted'] },
         createdAt: { gte: startOfMonth },
       },
       _sum: {
@@ -51,7 +51,7 @@ export class AnalyticsService {
     const pendingQuotations = await this.prisma.quotation.count({
       where: {
         deletedAt: null,
-        status: QuotationStatus.DRAFT,
+        status: 'draft',
       },
     });
 
@@ -179,7 +179,7 @@ export class AnalyticsService {
     const quotations = await this.prisma.quotation.findMany({
       where: {
         deletedAt: null,
-        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
+        status: { in: ['approved', 'converted'] },
         createdAt: {
           gte: start,
           lte: end,
@@ -227,7 +227,7 @@ export class AnalyticsService {
     const where: Prisma.QuotationItemWhereInput = {
       quotation: {
         deletedAt: null,
-        status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
+        status: { in: ['approved', 'converted'] },
         ...(startDate &&
           endDate && {
             createdAt: {
@@ -285,7 +285,7 @@ export class AnalyticsService {
   ) {
     const where: Prisma.QuotationWhereInput = {
       deletedAt: null,
-      status: { in: [QuotationStatus.CONFIRMED, QuotationStatus.CONVERTED] },
+      status: { in: ['approved', 'converted'] },
       customerId: { not: null },
       ...(startDate &&
         endDate && {

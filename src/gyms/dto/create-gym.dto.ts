@@ -52,3 +52,4 @@ export class CreateGymDto {
   locationLink?: string;
 }
 
+

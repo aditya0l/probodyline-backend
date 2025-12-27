@@ -589,15 +589,15 @@ export class QuotationsService {
         throw new BadRequestException('PI has no items to confirm');
       }
 
-      // Create stock OUT transactions and bookings for each item
+      // Create stock OUT transactions for each item
       const dispatchDatePromises = itemsWithProducts.map(async (item) => {
-        const dispatchDate = item.expectedDispatchDate || new Date();
+        const dispatchDate = quotation.dispatchDate || new Date();
         
         // Create stock OUT transaction (event-based)
         await tx.stockTransaction.create({
           data: {
             productId: item.productId!,
-            transactionType: 'PI_BOOKING',
+            transactionType: 'OUT',
             quantity: -item.quantity, // Negative for OUT
             referenceType: 'PI_BOOKING',
             referenceId: quotation.id,
@@ -606,25 +606,8 @@ export class QuotationsService {
           },
         });
 
-        // Create booking record (using service method after transaction commits)
-        // Note: We create it directly here since we're in a transaction
-        await tx.booking.create({
-          data: {
-            quotationId: quotation.id,
-            quotationItemId: item.id,
-            productId: item.productId!,
-            quoteNumber: quotation.quoteNumber,
-            dispatchDate: dispatchDate,
-            bookedOn: new Date(), // Current timestamp for priority
-            customerName: quotation.clientName,
-            gymName: quotation.gymName,
-            stateCode: null, // Extract from quotation if needed
-            city: quotation.clientCity || null,
-            requiredQuantity: item.quantity,
-            status: 'WAITING_LIST', // Will be computed by allocation logic
-            waitingQuantity: item.quantity, // Initial value
-          },
-        });
+        // Note: Booking model doesn't exist in schema yet
+        // TODO: Implement booking creation when Booking model is added to schema
       });
 
       await Promise.all(dispatchDatePromises);

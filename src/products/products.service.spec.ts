@@ -53,7 +53,7 @@ describe('ProductsService', () => {
 
       mockPrismaService.product.findMany.mockResolvedValue(mockProducts);
 
-      const result = await service.findAll('org1', {});
+      const result = await service.findAll({});
 
       expect(result).toEqual(mockProducts);
       expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(

@@ -1,8 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { LeadsService } from './leads.service';
-import { CreateLeadDto } from './dto/create-lead.dto';
-import { LeadStatus } from '@prisma/client';
+import { CreateLeadDto, LeadStatus } from './dto/create-lead.dto';
 
 @ApiTags('leads')
 @Controller('leads')
@@ -60,4 +59,5 @@ export class LeadsController {
     return this.leadsService.remove(id);
   }
 }
+
 

@@ -292,11 +292,6 @@ export class QuotationsService {
             gstAmount,
             grandTotal,
             deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
-        bookingDate: bookingDate ? new Date(bookingDate) : undefined,
-        dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
-        installationDate: installationDate ? new Date(installationDate) : undefined,
-        inaugurationDate: inaugurationDate ? new Date(inaugurationDate) : undefined,
-        leadName: updateData.leadName !== undefined ? updateData.leadName : undefined,
             bookingDate: bookingDate ? new Date(bookingDate) : undefined,
             dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
             installationDate: installationDate ? new Date(installationDate) : undefined,
@@ -555,12 +550,10 @@ export class QuotationsService {
       }
 
       // Update quotation status to DRAFT (PI status)
-      // Also set quotationNumber as alias for quoteNumber
       return tx.quotation.update({
         where: { id },
         data: {
           status: 'DRAFT', // PI starts as DRAFT
-          quotationNumber: quotation.quoteNumber, // Alias
         },
       });
     });

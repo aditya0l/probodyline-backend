@@ -42,6 +42,10 @@ export interface PDFTemplateData {
   quoteNumber: string;
   quoteDate: string;
   deliveryDate?: string;
+  bookingDate?: string;
+  dispatchDate?: string;
+  installationDate?: string;
+  inaugurationDate?: string;
   templateType: string;
   isDefaultTemplate: boolean;
   titleText: string;
@@ -53,6 +57,7 @@ export interface PDFTemplateData {
   gymName?: string;
   gymArea?: string;
   clientGST?: string;
+  leadName?: string;
 
   // Totals
   subtotal: string;

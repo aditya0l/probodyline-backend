@@ -59,6 +59,30 @@
         <div class="detail-value">{{quoteDate}}</div>
       </div>
       {{#if showClientInfo}}
+      {{#if bookingDate}}
+      <div class="detail-row">
+        <div class="detail-label">BOOKING DATE:</div>
+        <div class="detail-value">{{bookingDate}}</div>
+      </div>
+      {{/if}}
+      {{#if dispatchDate}}
+      <div class="detail-row">
+        <div class="detail-label">DISPATCH DATE:</div>
+        <div class="detail-value">{{dispatchDate}}</div>
+      </div>
+      {{/if}}
+      {{#if installationDate}}
+      <div class="detail-row">
+        <div class="detail-label">INSTALLATION DATE:</div>
+        <div class="detail-value">{{installationDate}}</div>
+      </div>
+      {{/if}}
+      {{#if inaugurationDate}}
+      <div class="detail-row">
+        <div class="detail-label">INAUGURATION DATE:</div>
+        <div class="detail-value">{{inaugurationDate}}</div>
+      </div>
+      {{/if}}
       <div class="detail-row">
         <div class="detail-label">CLIENT'S NAME:</div>
         <div class="detail-value">{{#if clientName}}{{clientName}}{{else}}&nbsp;{{/if}}</div>
@@ -67,6 +91,12 @@
       <div class="detail-row">
         <div class="detail-label">GYM NAME:</div>
         <div class="detail-value">{{#if gymName}}{{gymName}}{{else}}&nbsp;{{/if}}</div>
+      </div>
+      {{/if}}
+      {{#if leadName}}
+      <div class="detail-row">
+        <div class="detail-label">LEAD NAME:</div>
+        <div class="detail-value">{{leadName}}</div>
       </div>
       {{/if}}
       {{#if clientGST}}

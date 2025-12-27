@@ -199,6 +199,11 @@ export class QuotationsService {
           gymArea: data.gymArea,
           clientGST: data.clientGST,
           deliveryDate: data.deliveryDate ? new Date(data.deliveryDate) : null,
+          leadName: data.leadName || null,
+          bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
+          dispatchDate: data.dispatchDate ? new Date(data.dispatchDate) : null,
+          installationDate: data.installationDate ? new Date(data.installationDate) : null,
+          inaugurationDate: data.inaugurationDate ? new Date(data.inaugurationDate) : null,
           // Financial
           subtotal,
           gstRate,
@@ -268,7 +273,7 @@ export class QuotationsService {
         });
 
         // Extract items and other fields
-        const { items, deliveryDate, ...updateData } = data;
+        const { items, deliveryDate, bookingDate, dispatchDate, installationDate, inaugurationDate, ...updateData } = data;
         const itemsToCreate = items!; // Non-null assertion since we checked above
 
         // Calculate new totals
@@ -287,6 +292,16 @@ export class QuotationsService {
             gstAmount,
             grandTotal,
             deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
+        bookingDate: bookingDate ? new Date(bookingDate) : undefined,
+        dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
+        installationDate: installationDate ? new Date(installationDate) : undefined,
+        inaugurationDate: inaugurationDate ? new Date(inaugurationDate) : undefined,
+        leadName: updateData.leadName !== undefined ? updateData.leadName : undefined,
+            bookingDate: bookingDate ? new Date(bookingDate) : undefined,
+            dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
+            installationDate: installationDate ? new Date(installationDate) : undefined,
+            inaugurationDate: inaugurationDate ? new Date(inaugurationDate) : undefined,
+            leadName: updateData.leadName !== undefined ? updateData.leadName : undefined,
             items: {
               create: itemsToCreate.map((item, index) => ({
                 srNo: index + 1,
@@ -323,12 +338,17 @@ export class QuotationsService {
     }
 
     // Simple update without items
-    const { items, deliveryDate, ...updateData } = data;
+    const { items, deliveryDate, bookingDate, dispatchDate, installationDate, inaugurationDate, ...updateData } = data;
     return this.prisma.quotation.update({
       where: { id },
       data: {
         ...updateData,
         deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
+        bookingDate: bookingDate ? new Date(bookingDate) : undefined,
+        dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
+        installationDate: installationDate ? new Date(installationDate) : undefined,
+        inaugurationDate: inaugurationDate ? new Date(inaugurationDate) : undefined,
+        leadName: updateData.leadName !== undefined ? updateData.leadName : undefined,
       },
     });
   }

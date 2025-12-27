@@ -55,6 +55,31 @@ export class CreateQuotationDto {
   @IsDateString()
   deliveryDate?: string;
 
+  @ApiPropertyOptional({ description: 'Lead name', example: 'John Doe Lead' })
+  @IsOptional()
+  @IsString()
+  leadName?: string;
+
+  @ApiPropertyOptional({ description: 'Booking date (ISO string with time)', example: '2024-12-24T15:08:00.000Z' })
+  @IsOptional()
+  @IsDateString()
+  bookingDate?: string;
+
+  @ApiPropertyOptional({ description: 'Dispatch date (ISO string)', example: '2024-12-31T00:00:00.000Z' })
+  @IsOptional()
+  @IsDateString()
+  dispatchDate?: string;
+
+  @ApiPropertyOptional({ description: 'Installation date (ISO string)', example: '2025-01-15T00:00:00.000Z' })
+  @IsOptional()
+  @IsDateString()
+  installationDate?: string;
+
+  @ApiPropertyOptional({ description: 'Inauguration date (ISO string)', example: '2025-01-20T00:00:00.000Z' })
+  @IsOptional()
+  @IsDateString()
+  inaugurationDate?: string;
+
   @ApiProperty({ description: 'Quotation items array', type: [CreateQuotationItemDto] })
   @IsArray()
   @ArrayMinSize(1)

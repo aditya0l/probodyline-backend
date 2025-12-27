@@ -263,9 +263,21 @@ export class PdfService {
 
       // Quotation Info
       quoteNumber: quotation.quoteNumber,
-      quoteDate: new Date(quotation.createdAt).toLocaleDateString('en-IN'),
+      quoteDate: this.formatDateWithTime(quotation.createdAt),
       deliveryDate: quotation.deliveryDate
         ? new Date(quotation.deliveryDate).toLocaleDateString('en-IN')
+        : undefined,
+      bookingDate: quotation.bookingDate
+        ? this.formatDateWithTime(quotation.bookingDate)
+        : undefined,
+      dispatchDate: quotation.dispatchDate
+        ? this.formatDateOnly(quotation.dispatchDate)
+        : undefined,
+      installationDate: quotation.installationDate
+        ? this.formatDateOnly(quotation.installationDate)
+        : undefined,
+      inaugurationDate: quotation.inaugurationDate
+        ? this.formatDateOnly(quotation.inaugurationDate)
         : undefined,
       templateType: templateType,
       isDefaultTemplate: templateType === 'default',
@@ -278,6 +290,7 @@ export class PdfService {
       gymName: customer?.gymName || quotation.gymName || undefined,
       gymArea: customer?.area || quotation.gymArea || undefined,
       clientGST: customer?.gst || quotation.clientGST || undefined,
+      leadName: quotation.leadName || undefined,
 
       // Totals
       subtotal: toNumber(quotation.subtotal).toLocaleString('en-IN'),
@@ -330,6 +343,30 @@ export class PdfService {
     data.CSS_CONTENT = styles; // Also set in data for reference
 
     return renderTemplate(htmlTemplate, data);
+  }
+
+  /**
+   * Format date with time as yyyy-mm-dd/hh:mm
+   */
+  private formatDateWithTime(date: Date | string): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}/${hours}:${minutes}`;
+  }
+
+  /**
+   * Format date only as yyyy-mm-dd
+   */
+  private formatDateOnly(date: Date | string): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 }
 

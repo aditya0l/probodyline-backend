@@ -33,4 +33,30 @@ export class BookingsService {
     // Stub implementation
     throw new BadRequestException('Booking model not implemented yet. Please add Booking model to Prisma schema.');
   }
+
+  async getBookingAllocation(productId: string, selectedDate: string): Promise<any> {
+    // Stub implementation
+    throw new BadRequestException('Booking model not implemented yet. Please add Booking model to Prisma schema.');
+  }
+
+  async createBookingFromPI(
+    quotationId: string,
+    quotationItemId: string,
+    productId: string,
+    quoteNumber: string,
+    dispatchDate: string,
+    quantity: number,
+    customerName?: string | null,
+    gymName?: string | null,
+    stateCode?: string | null,
+    city?: string | null,
+  ): Promise<any> {
+    // Stub implementation
+    throw new BadRequestException('Booking model not implemented yet. Please add Booking model to Prisma schema.');
+  }
+
+  async getFilterOptions(): Promise<any> {
+    // Stub implementation
+    return { statuses: [], models: [] };
+  }
 }

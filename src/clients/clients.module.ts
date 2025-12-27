@@ -1,11 +1,9 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { ClientsController } from './clients.controller';
-import { CommonModule } from '../common/common.module';
 import * as fs from 'fs';
 
 @Module({
-  imports: [CommonModule],
   controllers: [ClientsController],
   providers: [ClientsService],
   exports: [ClientsService],

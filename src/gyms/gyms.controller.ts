@@ -34,6 +34,13 @@ export class GymsController {
     return this.gymsService.create(createGymDto);
   }
 
+  @Get('test')
+  @ApiOperation({ summary: 'Test endpoint to verify controller is accessible' })
+  @ApiResponse({ status: 200, description: 'Controller is working' })
+  test() {
+    return { message: 'GymsController is working', timestamp: new Date().toISOString() };
+  }
+
   @Get('')
   @ApiOperation({ summary: 'Get all gyms with filtering and pagination' })
   @ApiQuery({ name: 'search', required: false, description: 'Search term for gym name, city, code, or state' })
@@ -49,6 +56,7 @@ export class GymsController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
+    console.log('📞 GymsController.findAll called with:', { search, stateCode, city, page, limit });
     return this.gymsService.findAll({
       search,
       stateCode,

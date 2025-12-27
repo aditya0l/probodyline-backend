@@ -17,6 +17,9 @@ import { UpdateClientDto } from './dto/update-client.dto';
 @Controller('clients')
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'clients.controller.ts:19',message:'ClientsController constructor called',data:{controller:'ClientsController'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     console.log('✅ ClientsController instantiated');
   }
 

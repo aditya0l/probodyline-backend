@@ -114,6 +114,9 @@ async function bootstrap() {
   // Verify modules are loaded
   try {
     const httpAdapter = app.getHttpAdapter();
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/63c50650-6718-48ed-986d-f3ab98accce6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.ts:108',message:'App initialization complete, checking route registration',data:{hasHttpAdapter:!!httpAdapter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
     console.log('✅ Application initialized successfully');
     console.log('✅ All modules loaded (including GymsModule and ClientsModule)');
   } catch (error) {

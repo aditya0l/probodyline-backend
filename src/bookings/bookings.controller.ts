@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
-import { BookingStatus } from '@prisma/client';
+
+// TODO: Define BookingStatus enum when Booking model is added to Prisma schema
+type BookingStatus = string;
 
 @ApiTags('bookings')
 @Controller('bookings')

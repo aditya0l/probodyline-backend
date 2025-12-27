@@ -328,5 +328,226 @@ export class StockService {
     // Filter low stock products
     return productsWithStock.filter((p) => p.currentStock <= threshold);
   }
+
+  /**
+   * Calculate stock after orders (bookings) on a specific date
+   * This subtracts confirmed booking allocations from base stock
+   */
+  async getStockAfterOrderOnDate(
+    productId: string,
+    date: string,
+  ): Promise<number> {
+    // Get base stock on date
+    const baseStock = await this.getStockOnDate(productId, date);
+
+    // Get all bookings for this product on or before the date, ordered by dispatchDate and bookedOn
+    const bookings = await this.prisma.booking.findMany({
+      where: {
+        productId,
+        dispatchDate: {
+          lte: new Date(date),
+        },
+      },
+      orderBy: [
+        { dispatchDate: 'asc' },
+        { bookedOn: 'asc' },
+      ],
+    });
+
+    // Simulate allocation: subtract confirmed booking quantities from stock
+    let availableStock = baseStock;
+    for (const booking of bookings) {
+      if (availableStock >= booking.requiredQuantity) {
+        // Fully confirmed - subtract the full quantity
+        availableStock -= booking.requiredQuantity;
+      } else if (availableStock > 0) {
+        // Partially confirmed - subtract what's available
+        availableStock = 0;
+        break; // No more stock available
+      } else {
+        // Fully waiting - nothing to subtract
+        break;
+      }
+    }
+
+    return availableStock;
+  }
+
+  /**
+   * Get next incoming stock information (from transactions or bookings)
+   * Returns the earliest incoming stock date and quantity
+   */
+  async getNextInInfo(
+    productId: string,
+  ): Promise<{ date: string | null; quantity: number | null }> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Find next IN or PURCHASE transaction
+    const nextTransaction = await this.prisma.stockTransaction.findFirst({
+      where: {
+        productId,
+        transactionType: {
+          in: ['IN', 'PURCHASE'],
+        },
+        date: {
+          gt: today,
+        },
+      },
+      orderBy: {
+        date: 'asc',
+      },
+    });
+
+    // Find next booking that would add stock (if bookings represent incoming stock)
+    // Note: Bookings typically represent outgoing stock, so we might not find any
+    // But we check for completeness
+    const nextBooking = await this.prisma.booking.findFirst({
+      where: {
+        productId,
+        dispatchDate: {
+          gt: today,
+        },
+      },
+      orderBy: [
+        { dispatchDate: 'asc' },
+        { bookedOn: 'asc' },
+      ],
+    });
+
+    // Compare and return the earliest date
+    if (nextTransaction && nextBooking) {
+      const transactionDate = new Date(nextTransaction.date);
+      const bookingDate = new Date(nextBooking.dispatchDate);
+      if (transactionDate <= bookingDate) {
+        return {
+          date: transactionDate.toISOString().split('T')[0],
+          quantity: nextTransaction.quantity,
+        };
+      } else {
+        // Note: Bookings are typically outgoing, but if we treat them as incoming,
+        // we'd use requiredQuantity. However, for now we'll only use transactions for IN
+        return {
+          date: transactionDate.toISOString().split('T')[0],
+          quantity: nextTransaction.quantity,
+        };
+      }
+    } else if (nextTransaction) {
+      return {
+        date: new Date(nextTransaction.date).toISOString().split('T')[0],
+        quantity: nextTransaction.quantity,
+      };
+    } else if (nextBooking) {
+      // Bookings typically represent outgoing stock, so we return null for bookings
+      // If in the future bookings represent incoming stock, use: quantity: nextBooking.requiredQuantity
+      return {
+        date: null,
+        quantity: null,
+      };
+    }
+
+    return {
+      date: null,
+      quantity: null,
+    };
+  }
+
+  /**
+   * Get comprehensive stock projection data for a product
+   * Includes base stock, after-order stock, next IN info, and product relationships
+   */
+  async getStockProjection(
+    productId: string,
+    selectedDate: string,
+  ): Promise<any> {
+    // Get product
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: {
+        id: true,
+        name: true,
+        todaysStock: true,
+        cousinMachine: true,
+        orderTogether: true,
+        swapMachine: true,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    // Calculate base stock values
+    const stockOnDate = await this.getStockOnDate(productId, selectedDate);
+    
+    // Calculate future dates
+    const selectedDateObj = new Date(selectedDate);
+    const plus15Date = new Date(selectedDateObj);
+    plus15Date.setDate(plus15Date.getDate() + 15);
+    const plus30Date = new Date(selectedDateObj);
+    plus30Date.setDate(plus30Date.getDate() + 30);
+
+    const plus15DateStr = plus15Date.toISOString().split('T')[0];
+    const plus30DateStr = plus30Date.toISOString().split('T')[0];
+
+    // Calculate stock after orders
+    const [
+      stockAfterOrderOnDate,
+      stockAfterOrderPlus15Days,
+      stockAfterOrderPlus30Days,
+      stockPlus30Days,
+      nextInInfo,
+    ] = await Promise.all([
+      this.getStockAfterOrderOnDate(productId, selectedDate),
+      this.getStockAfterOrderOnDate(productId, plus15DateStr),
+      this.getStockAfterOrderOnDate(productId, plus30DateStr),
+      this.getStockOnDate(productId, plus30DateStr),
+      this.getNextInInfo(productId),
+    ]);
+
+    // Determine status
+    let status: 'SAFE' | 'AT RISK' | 'WAITING LIST' = 'SAFE';
+    const todaysStock = product.todaysStock || 0;
+    if (todaysStock < 0) {
+      status = 'WAITING LIST';
+    } else if (stockPlus30Days < 0) {
+      status = 'AT RISK';
+    }
+
+    // Resolve product relationships (model numbers to product names)
+    const resolveProductName = async (modelNumber: string | null): Promise<string | null> => {
+      if (!modelNumber) return null;
+      const relatedProduct = await this.prisma.product.findFirst({
+        where: {
+          modelNumber,
+          deletedAt: null,
+        },
+        select: {
+          name: true,
+        },
+      });
+      return relatedProduct?.name || null;
+    };
+
+    const [cousinMachineName, orderTogetherName, swapMachineName] = await Promise.all([
+      resolveProductName(product.cousinMachine),
+      resolveProductName(product.orderTogether),
+      resolveProductName(product.swapMachine),
+    ]);
+
+    return {
+      stockOnDate,
+      stockPlus30Days,
+      status,
+      stockAfterOrderOnDate,
+      stockAfterOrderPlus15Days,
+      stockAfterOrderPlus30Days,
+      nextInDate: nextInInfo.date,
+      nextInQuantity: nextInInfo.quantity,
+      cousinMachineName,
+      orderTogetherName,
+      swapMachineName,
+    };
+  }
 }
 

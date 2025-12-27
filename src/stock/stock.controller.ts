@@ -98,6 +98,19 @@ export class StockController {
     );
   }
 
+  @Get('products/:productId/projection')
+  @ApiOperation({ summary: 'Get comprehensive stock projection for a product' })
+  @ApiParam({ name: 'productId', description: 'Product UUID' })
+  @ApiQuery({ name: 'selectedDate', required: true, description: 'Selected date in YYYY-MM-DD format' })
+  @ApiResponse({ status: 200, description: 'Stock projection data including after-order stock and next IN info' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  getStockProjection(
+    @Param('productId') productId: string,
+    @Query('selectedDate') selectedDate: string,
+  ) {
+    return this.stockService.getStockProjection(productId, selectedDate);
+  }
+
   @Patch('transactions/:id')
   @ApiOperation({ summary: 'Update stock transaction' })
   @ApiParam({ name: 'id', description: 'Stock transaction UUID' })

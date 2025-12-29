@@ -8,7 +8,7 @@ import { Quotation, Prisma, StockTransactionType } from '@prisma/client';
 
 @Injectable()
 export class QuotationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async generateQuoteNumber(): Promise<string> {
     const date = new Date();
@@ -589,10 +589,10 @@ export class QuotationsService {
         throw new BadRequestException('PI has no items to confirm');
       }
 
-      // Create stock OUT transactions for each item
+      // Create stock OUT transactions and bookings for each item
       const dispatchDatePromises = itemsWithProducts.map(async (item) => {
         const dispatchDate = quotation.dispatchDate || new Date();
-        
+
         // Create stock OUT transaction (event-based)
         await tx.stockTransaction.create({
           data: {
@@ -606,8 +606,73 @@ export class QuotationsService {
           },
         });
 
-        // Note: Booking model doesn't exist in schema yet
-        // TODO: Implement booking creation when Booking model is added to schema
+        // Get product details for booking
+        const product = await tx.product.findUnique({
+          where: { id: item.productId! },
+        });
+
+        if (!product) {
+          throw new NotFoundException(`Product ${item.productId} not found`);
+        }
+
+        // Calculate stock on dispatch date
+        const dateKey = dispatchDate.toISOString().split('T')[0];
+        let baseStock = product.todaysStock || 0;
+
+        // If stockByDate exists and has this date, use it
+        if (product.stockByDate && typeof product.stockByDate === 'object') {
+          const stockByDate = product.stockByDate as Record<string, number>;
+          if (stockByDate[dateKey] !== undefined) {
+            baseStock = stockByDate[dateKey];
+          }
+        }
+
+        // Get existing confirmed bookings for this product/date
+        const existingBookings = await tx.booking.findMany({
+          where: {
+            productId: item.productId!,
+            dispatchDate,
+            status: 'CONFIRM',
+          },
+        });
+
+        const allocatedStock = existingBookings.reduce(
+          (sum, b) => sum + b.requiredQuantity,
+          0
+        );
+
+        const availableStock = Math.max(0, baseStock - allocatedStock);
+
+        // Determine booking status
+        let bookingStatus: 'CONFIRM' | 'WAITING_LIST' = 'CONFIRM';
+        let waitingQuantity = 0;
+
+        if (availableStock < item.quantity) {
+          bookingStatus = 'WAITING_LIST';
+          waitingQuantity = item.quantity - Math.max(0, availableStock);
+        }
+
+        // Create booking record
+        await tx.booking.create({
+          data: {
+            quotationId: quotation.id,
+            quotationItemId: item.id,
+            quoteNumber: quotation.quoteNumber,
+            productId: item.productId!,
+            productName: item.productName,
+            productThumbnail: item.productImage,
+            modelNumber: item.modelNumber,
+            dispatchDate,
+            bookedOn: new Date(),
+            customerName: quotation.clientName,
+            gymName: quotation.gymName,
+            requiredQuantity: item.quantity,
+            status: bookingStatus,
+            waitingQuantity,
+            stateCode: null, // Can be added if available in quotation
+            city: quotation.clientCity,
+          },
+        });
       });
 
       await Promise.all(dispatchDatePromises);

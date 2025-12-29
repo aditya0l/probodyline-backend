@@ -92,6 +92,7 @@ model Product {
   category               Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   quotationItems         QuotationItem[]
   stockTransactions      StockTransaction[]
+  bookings               Booking[]
 
   @@index([name])
   @@index([modelNumber])
@@ -271,6 +272,223 @@ model StockTransaction {
   @@index([productId, date])
   @@index([date])
   @@map("stock_transactions")
+}
+
+// Client Management Models
+model Client {
+  id            String   @id @default(uuid())
+  clientCode    String   @unique // Auto-generated, immutable
+  tokenDate     DateTime // Business token/contract date, immutable
+  stateCode     String
+  city          String
+  clientName    String
+  salesPerson   String
+  salesInitial  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  gyms          ClientGym[]
+  leads         ClientLead[]
+  partners      ClientPartner[]
+  
+  @@index([clientCode])
+  @@index([stateCode, city])
+  @@index([salesInitial])
+  @@map("clients")
+}
+
+model ClientGym {
+  id         String   @id @default(uuid())
+  clientId   String
+  gymId      String
+  linkedOn   DateTime @default(now())
+  
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  gym        Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  
+  @@unique([clientId, gymId])
+  @@map("client_gyms")
+}
+
+model ClientLead {
+  id         String   @id @default(uuid())
+  clientId   String
+  leadId     String
+  linkedOn   DateTime @default(now())
+  
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  @@unique([clientId, leadId])
+  @@map("client_leads")
+}
+
+model ClientPartner {
+  id            String   @id @default(uuid())
+  clientId      String
+  partnerType   String   // 'CLIENT' | 'LEAD'
+  partnerRefId  String
+  linkedOn      DateTime @default(now())
+  
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  @@map("client_partners")
+}
+
+// Gym Management Models
+model Gym {
+  id                String   @id @default(uuid())
+  gymCode           String   @unique // Auto-generated, immutable
+  installationDate  DateTime
+  stateCode         String
+  city              String
+  gymName           String
+  branchCode        Float
+  branchTitle       String
+  salesInitial      String
+  instagramLink     String?
+  locationLink      String?
+  locationQR        String? // Auto-generated from locationLink
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  clients           ClientGym[]
+  technicians       GymTechnician[]
+  media             GymMedia[]
+  inaugurations     InaugurationCommitment[]
+  
+  @@index([gymCode])
+  @@index([stateCode, city])
+  @@index([salesInitial])
+  @@map("gyms")
+}
+
+model InaugurationCommitment {
+  id            String   @id @default(uuid())
+  gymId         String
+  committedOn   DateTime @default(now())
+  committedFor  DateTime
+  source        String   // 'SYSTEM' | 'USER'
+  note          String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  
+  @@map("inauguration_commitments")
+}
+
+model GymTechnician {
+  id            String   @id @default(uuid())
+  gymId         String
+  technicianId  String
+  linkedOn      DateTime @default(now())
+  
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  
+  @@unique([gymId, technicianId])
+  @@map("gym_technicians")
+}
+
+model GymMedia {
+  id          String   @id @default(uuid())
+  gymId       String
+  mediaType   String   // 'IMAGE' | 'VIDEO'
+  url         String
+  uploadedBy  String?
+  uploadedAt  DateTime @default(now())
+  
+  gym         Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  
+  @@map("gym_media")
+}
+
+// Lead Management Models
+model Lead {
+  id            String   @id @default(uuid())
+  leadNumber    String   @unique
+  name          String
+  phone         String?
+  email         String?
+  source        String?
+  status        String   @default("NEW")
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+  
+  // Relations
+  clients       ClientLead[]
+  statusHistory LeadStatusHistory[]
+  
+  @@index([leadNumber])
+  @@index([status])
+  @@map("leads")
+}
+
+model LeadStatusHistory {
+  id          String   @id @default(uuid())
+  leadId      String
+  status      String
+  changedAt   DateTime @default(now())
+  changedBy   String?
+  note        String?  @db.Text
+  
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  @@map("lead_status_history")
+}
+
+// Booking Management Models
+enum BookingStatus {
+  CONFIRM
+  WAITING_LIST
+}
+
+model Booking {
+  id                  String        @id @default(uuid())
+  quotationId         String
+  quotationItemId     String
+  quoteNumber         String
+  productId           String
+  productName         String
+  productThumbnail    String?
+  modelNumber         String?
+  dispatchDate        DateTime
+  bookedOn            DateTime
+  customerName        String?
+  gymName             String?
+  requiredQuantity    Int
+  status              BookingStatus @default(CONFIRM)
+  waitingQuantity     Int           @default(0)
+  stateCode           String?
+  city                String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  
+  product             Product       @relation(fields: [productId], references: [id])
+  
+  @@index([productId, dispatchDate])
+  @@index([quotationId])
+  @@index([dispatchDate])
+  @@map("bookings")
+}
+
+// Audit Trail
+model AuditLog {
+  id          String   @id @default(uuid())
+  entityType  String   // 'Client', 'Gym', 'Product', etc.
+  entityId    String
+  action      String   // 'CREATE', 'UPDATE', 'DELETE'
+  changes     Json?    // Old and new values
+  userId      String?
+  timestamp   DateTime @default(now())
+  
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
 }
 
 // Authentication Models

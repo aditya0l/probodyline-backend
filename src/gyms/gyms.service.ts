@@ -7,10 +7,7 @@ import { generateGymCode } from '../common/utils/gym-code.util';
 
 @Injectable()
 export class GymsService {
-  constructor(private prisma: PrismaService) {}
-
-  // TODO: Gym model doesn't exist in Prisma schema yet
-  // This service is stubbed until the Gym model is added to the schema
+  constructor(private prisma: PrismaService) { }
 
   private async generateLocationQR(locationLink: string): Promise<string> {
     try {
@@ -29,71 +26,379 @@ export class GymsService {
     page?: number;
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
-    // Stub implementation - return empty until Gym model is added
-    return { data: [], total: 0 };
+    const page = filters?.page ?? 0;
+    const limit = filters?.limit ?? 50;
+    const skip = page * limit;
+
+    // Build where clause
+    const where: any = {};
+
+    if (filters?.search) {
+      where.OR = [
+        { gymCode: { contains: filters.search, mode: 'insensitive' } },
+        { gymName: { contains: filters.search, mode: 'insensitive' } },
+        { city: { contains: filters.search, mode: 'insensitive' } },
+        { branchTitle: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (filters?.stateCode) {
+      where.stateCode = filters.stateCode;
+    }
+
+    if (filters?.city) {
+      where.city = { contains: filters.city, mode: 'insensitive' };
+    }
+
+    // Execute query
+    const [gyms, total] = await Promise.all([
+      this.prisma.gym.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.gym.count({ where }),
+    ]);
+
+    return { data: gyms, total };
   }
 
   async findOne(id: string): Promise<any> {
-    // Stub implementation
-    throw new NotFoundException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    const gym = await this.prisma.gym.findUnique({
+      where: { id },
+      include: {
+        clients: {
+          include: {
+            client: true,
+          },
+        },
+        technicians: true,
+        media: true,
+        inaugurations: {
+          orderBy: { committedOn: 'desc' },
+        },
+      },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${id} not found`);
+    }
+
+    return gym;
   }
 
   async create(data: CreateGymDto): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Generate gym code
+    const gymCode = generateGymCode({
+      installationDate: data.installationDate,
+      stateCode: data.stateCode,
+      city: data.city,
+      gymName: data.gymName,
+      branchCode: data.branchCode,
+      branchTitle: data.branchTitle,
+      salesInitial: data.salesInitial,
+    });
+
+    // Check if gym code already exists
+    const existing = await this.prisma.gym.findUnique({
+      where: { gymCode },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Gym with code ${gymCode} already exists`);
+    }
+
+    // Generate location QR if location link provided
+    let locationQR: string | undefined;
+    if (data.locationLink) {
+      locationQR = await this.generateLocationQR(data.locationLink);
+    }
+
+    // Create gym
+    const gym = await this.prisma.gym.create({
+      data: {
+        gymCode,
+        installationDate: new Date(data.installationDate),
+        stateCode: data.stateCode,
+        city: data.city,
+        gymName: data.gymName,
+        branchCode: data.branchCode,
+        branchTitle: data.branchTitle,
+        salesInitial: data.salesInitial,
+        instagramLink: data.instagramLink,
+        locationLink: data.locationLink,
+        locationQR,
+      },
+    });
+
+    return gym;
   }
 
   async update(id: string, data: UpdateGymDto): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify gym exists
+    const gym = await this.prisma.gym.findUnique({
+      where: { id },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${id} not found`);
+    }
+
+    // Generate new location QR if location link changed
+    let locationQR: string | undefined;
+    if (data.locationLink && data.locationLink !== gym.locationLink) {
+      locationQR = await this.generateLocationQR(data.locationLink);
+    }
+
+    // Update gym
+    const updated = await this.prisma.gym.update({
+      where: { id },
+      data: {
+        installationDate: data.installationDate ? new Date(data.installationDate) : undefined,
+        stateCode: data.stateCode,
+        city: data.city,
+        gymName: data.gymName,
+        branchCode: data.branchCode,
+        branchTitle: data.branchTitle,
+        salesInitial: data.salesInitial,
+        instagramLink: data.instagramLink,
+        locationLink: data.locationLink,
+        locationQR: locationQR !== undefined ? locationQR : undefined,
+      },
+    });
+
+    return updated;
   }
 
   async remove(id: string): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify gym exists
+    const gym = await this.prisma.gym.findUnique({
+      where: { id },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${id} not found`);
+    }
+
+    // Delete gym (cascade will handle relationships)
+    await this.prisma.gym.delete({
+      where: { id },
+    });
+
+    return { message: 'Gym deleted successfully' };
   }
 
   async getInaugurationHistory(gymId: string): Promise<any[]> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+      include: {
+        inaugurations: {
+          orderBy: { committedOn: 'desc' },
+        },
+      },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    return gym.inaugurations;
   }
 
   async addInaugurationCommitment(
     gymId: string,
     data: CreateInaugurationCommitmentDto & { source?: 'SYSTEM' | 'USER'; createdBy?: string },
   ): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify gym exists
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    // Create inauguration commitment
+    const commitment = await this.prisma.inaugurationCommitment.create({
+      data: {
+        gymId,
+        committedFor: new Date(data.committedFor),
+        source: data.source || 'USER',
+        note: data.note,
+        createdBy: data.createdBy,
+      },
+    });
+
+    return commitment;
   }
 
   async linkClient(gymId: string, clientId: string): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify gym exists
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    // Verify client exists
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+    });
+
+    if (!client) {
+      throw new NotFoundException(`Client with ID ${clientId} not found`);
+    }
+
+    // Check if already linked
+    const existing = await this.prisma.clientGym.findUnique({
+      where: {
+        clientId_gymId: {
+          clientId,
+          gymId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('Gym and Client are already linked');
+    }
+
+    // Create link
+    const link = await this.prisma.clientGym.create({
+      data: {
+        clientId,
+        gymId,
+      },
+      include: {
+        client: true,
+      },
+    });
+
+    return link;
   }
 
   async unlinkClient(gymId: string, clientId: string): Promise<void> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify link exists
+    const link = await this.prisma.clientGym.findUnique({
+      where: {
+        clientId_gymId: {
+          clientId,
+          gymId,
+        },
+      },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Gym-Client link not found');
+    }
+
+    // Delete link
+    await this.prisma.clientGym.delete({
+      where: {
+        clientId_gymId: {
+          clientId,
+          gymId,
+        },
+      },
+    });
   }
 
   async getGymClients(gymId: string): Promise<any[]> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+      include: {
+        clients: {
+          include: {
+            client: true,
+          },
+        },
+      },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    return gym.clients;
   }
 
   async linkTechnician(gymId: string, technicianId: string): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify gym exists
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    // Check if already linked
+    const existing = await this.prisma.gymTechnician.findUnique({
+      where: {
+        gymId_technicianId: {
+          gymId,
+          technicianId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('Gym and Technician are already linked');
+    }
+
+    // Create link
+    const link = await this.prisma.gymTechnician.create({
+      data: {
+        gymId,
+        technicianId,
+      },
+    });
+
+    return link;
   }
 
   async unlinkTechnician(gymId: string, technicianId: string): Promise<void> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify link exists
+    const link = await this.prisma.gymTechnician.findUnique({
+      where: {
+        gymId_technicianId: {
+          gymId,
+          technicianId,
+        },
+      },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Gym-Technician link not found');
+    }
+
+    // Delete link
+    await this.prisma.gymTechnician.delete({
+      where: {
+        gymId_technicianId: {
+          gymId,
+          technicianId,
+        },
+      },
+    });
   }
 
   async getGymTechnicians(gymId: string): Promise<any[]> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+      include: {
+        technicians: true,
+      },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    return gym.technicians;
   }
 
   async uploadGymMedia(
@@ -101,22 +406,90 @@ export class GymsService {
     file: Express.Multer.File,
     mediaType: 'IMAGE' | 'VIDEO',
   ): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify gym exists
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    // TODO: Implement actual file upload logic
+    // For now, just store the filename
+    const url = `/uploads/gyms/${gymId}/${file.filename}`;
+
+    // Create media record
+    const media = await this.prisma.gymMedia.create({
+      data: {
+        gymId,
+        mediaType,
+        url,
+        uploadedBy: undefined, // TODO: Get from auth context
+      },
+    });
+
+    return media;
   }
 
   async deleteGymMedia(gymId: string, mediaId: string): Promise<void> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    // Verify media exists and belongs to gym
+    const media = await this.prisma.gymMedia.findUnique({
+      where: { id: mediaId },
+    });
+
+    if (!media || media.gymId !== gymId) {
+      throw new NotFoundException('Gym media not found');
+    }
+
+    // Delete media record
+    await this.prisma.gymMedia.delete({
+      where: { id: mediaId },
+    });
+
+    // TODO: Delete actual file from storage
   }
 
   async getGymMedia(gymId: string): Promise<any[]> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+      include: {
+        media: {
+          orderBy: { uploadedAt: 'desc' },
+        },
+      },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    return gym.media;
   }
 
   async getGymSummary(gymId: string): Promise<any> {
-    // Stub implementation
-    throw new BadRequestException('Gym model not implemented yet. Please add Gym model to Prisma schema.');
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+      include: {
+        clients: true,
+        technicians: true,
+        media: true,
+        inaugurations: true,
+      },
+    });
+
+    if (!gym) {
+      throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    }
+
+    // TODO: Add quotations and orders count when those relationships are added
+    return {
+      hasClient: gym.clients.length > 0,
+      technicianCount: gym.technicians.length,
+      mediaCount: gym.media.length,
+      inaugurationCount: gym.inaugurations.length,
+      quoteCount: 0, // TODO: Implement
+      orderCount: 0, // TODO: Implement
+    };
   }
 }

@@ -60,6 +60,7 @@ model Product {
   priority               Int      @default(1)
   name                   String
   modelNumber            String?
+  qrCode                 String?  // Auto-generated QR code path
   image                  String?  // URL/path
   images                 String[] // Array of URLs (max 5)
   price                  Decimal? @db.Decimal(12, 2)

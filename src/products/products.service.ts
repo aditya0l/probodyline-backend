@@ -3,10 +3,14 @@ import { PrismaService } from '../common/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product, Prisma } from '@prisma/client';
+import { QRCodeService } from './qr-code.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private qrCodeService: QRCodeService,
+  ) { }
 
   async findAll(
     filters?: {
@@ -43,6 +47,7 @@ export class ProductsService {
           priority: true,
           name: true,
           modelNumber: true,
+          qrCode: true,
           image: true,
           images: true,
           price: true,
@@ -156,6 +161,25 @@ export class ProductsService {
       product: createdProduct,
     });
 
+    // Generate QR code if model number exists
+    if (createdProduct.modelNumber) {
+      try {
+        const qrCodePath = await this.qrCodeService.generateProductQRCode(
+          createdProduct.id,
+          createdProduct.modelNumber,
+        );
+
+        // Update product with QR code path
+        return this.prisma.product.update({
+          where: { id: createdProduct.id },
+          data: { qrCode: qrCodePath },
+        });
+      } catch (error) {
+        console.error('[ProductsService.create] Failed to generate QR code:', error);
+        // Return product without QR code if generation fails
+      }
+    }
+
     return createdProduct;
   }
 
@@ -196,6 +220,20 @@ export class ProductsService {
 
       if (existingProduct) {
         throw new ConflictException('Product with this name already exists');
+      }
+    }
+
+    // If model number changed, regenerate QR code
+    if (data.modelNumber && data.modelNumber !== product.modelNumber) {
+      try {
+        const qrCodePath = await this.qrCodeService.updateProductQRCode(
+          id,
+          data.modelNumber,
+        );
+        data.qrCode = qrCodePath;
+      } catch (error) {
+        console.error('[ProductsService.update] Failed to update QR code:', error);
+        // Continue with update even if QR code generation fails
       }
     }
 

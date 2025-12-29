@@ -2,13 +2,28 @@
 # Migration and startup script for Railway
 
 echo "Running database migrations..."
-# Ensure Prisma Client is generated with the runtime DATABASE_URL
+
+# Ensure DATABASE_URL is set
 if [ -z "$DATABASE_URL" ]; then
-  echo "DATABASE_URL not set; using dummy connection for prisma generate"
-  export DATABASE_URL="postgresql://dummy:dummy@dummy:5432/dummy?schema=public"
+  echo "ERROR: DATABASE_URL not set!"
+  exit 1
 fi
+
+echo "DATABASE_URL is set, proceeding with migration..."
+
+# Generate Prisma Client
 npx prisma generate
+
+# Run migrations
+echo "Applying database migrations..."
 npx prisma migrate deploy
+
+# Check if migration was successful
+if [ $? -eq 0 ]; then
+  echo "✅ Migrations applied successfully"
+else
+  echo "❌ Migration failed, but continuing to start application..."
+fi
 
 echo "Seeding database (using built seed)..."
 if [ -f "dist/prisma/seed.js" ]; then
@@ -21,4 +36,3 @@ fi
 
 echo "Starting application..."
 node dist/src/main.js
-

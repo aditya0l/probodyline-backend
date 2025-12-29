@@ -30,16 +30,12 @@ CREATE TABLE "bookings" (
 CREATE TABLE "clients" (
     "id" TEXT NOT NULL,
     "clientCode" TEXT NOT NULL,
+    "tokenDate" TIMESTAMP(3) NOT NULL,
+    "stateCode" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
     "clientName" TEXT NOT NULL,
-    "address" TEXT,
-    "city" TEXT,
-    "stateCode" TEXT,
-    "pincode" TEXT,
-    "gstNumber" TEXT,
-    "contactPerson" TEXT,
-    "phone" TEXT,
-    "email" TEXT,
-    "salesPerson" TEXT,
+    "salesPerson" TEXT NOT NULL,
+    "salesInitial" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -50,15 +46,15 @@ CREATE TABLE "clients" (
 CREATE TABLE "gyms" (
     "id" TEXT NOT NULL,
     "gymCode" TEXT NOT NULL,
+    "installationDate" TIMESTAMP(3) NOT NULL,
+    "stateCode" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
     "gymName" TEXT NOT NULL,
-    "address" TEXT,
-    "city" TEXT,
-    "stateCode" TEXT,
-    "pincode" TEXT,
-    "contactPerson" TEXT,
-    "phone" TEXT,
-    "email" TEXT,
-    "area" DOUBLE PRECISION,
+    "branchCode" DOUBLE PRECISION NOT NULL,
+    "branchTitle" TEXT NOT NULL,
+    "salesInitial" TEXT NOT NULL,
+    "instagramLink" TEXT,
+    "locationLink" TEXT,
     "locationQR" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -71,7 +67,7 @@ CREATE TABLE "client_gyms" (
     "id" TEXT NOT NULL,
     "clientId" TEXT NOT NULL,
     "gymId" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "linkedOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "client_gyms_pkey" PRIMARY KEY ("id")
 );
@@ -98,7 +94,7 @@ CREATE TABLE "client_leads" (
     "id" TEXT NOT NULL,
     "clientId" TEXT NOT NULL,
     "leadId" TEXT NOT NULL,
-    "convertedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "linkedOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "client_leads_pkey" PRIMARY KEY ("id")
 );
@@ -107,11 +103,9 @@ CREATE TABLE "client_leads" (
 CREATE TABLE "client_partners" (
     "id" TEXT NOT NULL,
     "clientId" TEXT NOT NULL,
-    "partnerName" TEXT NOT NULL,
-    "phone" TEXT,
-    "email" TEXT,
-    "share" DOUBLE PRECISION,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "partnerType" TEXT NOT NULL,
+    "partnerRefId" TEXT NOT NULL,
+    "linkedOn" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "client_partners_pkey" PRIMARY KEY ("id")
 );
@@ -182,6 +176,9 @@ CREATE TABLE "audit_logs" (
 CREATE UNIQUE INDEX "clients_clientCode_key" ON "clients"("clientCode");
 
 -- CreateIndex
+CREATE INDEX "clients_clientCode_idx" ON "clients"("clientCode");
+
+-- CreateIndex
 CREATE INDEX "clients_city_idx" ON "clients"("city");
 
 -- CreateIndex
@@ -192,6 +189,9 @@ CREATE INDEX "clients_salesPerson_idx" ON "clients"("salesPerson");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "gyms_gymCode_key" ON "gyms"("gymCode");
+
+-- CreateIndex
+CREATE INDEX "gyms_gymCode_idx" ON "gyms"("gymCode");
 
 -- CreateIndex
 CREATE INDEX "gyms_city_idx" ON "gyms"("city");

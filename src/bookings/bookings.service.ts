@@ -123,7 +123,71 @@ export class BookingsService {
       this.prisma.booking.count({ where }),
     ]);
 
-    return { data: bookings, total };
+    // Calculate status dynamically for each booking using FIFO priority
+    const bookingsWithStatus = await this.calculateDynamicStatus(bookings);
+
+    return { data: bookingsWithStatus, total };
+  }
+
+  /**
+   * Calculate dynamic status for bookings using FIFO priority
+   * Groups bookings by product+date and applies priority logic
+   */
+  private async calculateDynamicStatus(bookings: any[]): Promise<any[]> {
+    // Group bookings by productId + dispatchDate
+    const grouped = bookings.reduce((acc, booking) => {
+      const key = `${booking.productId}|${booking.dispatchDate.toISOString().split('T')[0]}`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(booking);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    // Calculate status for each group
+    const results: any[] = [];
+
+    for (const [key, groupBookings] of Object.entries(grouped)) {
+      const [productId, dateStr] = key.split('|');
+
+      // Get base stock for this product/date
+      const baseStock = await this.getStockOnDate(productId, new Date(dateStr));
+
+      // Sort by bookedOn (FIFO)
+      const sorted = (groupBookings as any[]).sort((a: any, b: any) =>
+        a.bookedOn.getTime() - b.bookedOn.getTime()
+      );
+
+      // Calculate status with running stock
+      let runningStock = baseStock;
+
+      for (const booking of sorted) {
+        if (runningStock >= booking.requiredQuantity) {
+          // CONFIRM
+          booking.calculatedStatus = BookingStatus.CONFIRM;
+          booking.calculatedWaitingQuantity = 0;
+          runningStock -= booking.requiredQuantity;
+        } else {
+          // WAITING_LIST
+          booking.calculatedStatus = BookingStatus.WAITING_LIST;
+          booking.calculatedWaitingQuantity = booking.requiredQuantity - Math.max(0, runningStock);
+          runningStock = 0;
+        }
+
+        results.push({
+          ...booking,
+          status: booking.calculatedStatus, // Override with calculated status
+          waitingQuantity: booking.calculatedWaitingQuantity,
+        });
+      }
+    }
+
+    // Return in original order
+    return results.sort((a, b) => {
+      const dateCompare = a.dispatchDate.getTime() - b.dispatchDate.getTime();
+      if (dateCompare !== 0) return dateCompare;
+      return a.bookedOn.getTime() - b.bookedOn.getTime();
+    });
   }
 
   /**
@@ -250,6 +314,8 @@ export class BookingsService {
 
   /**
    * Get booking allocation details for a specific product and date
+   * Uses FIFO (First In, First Out) priority based on bookedOn timestamp
+   * Status is calculated dynamically based on stock availability
    */
   async getBookingAllocation(productId: string, selectedDate: string): Promise<any> {
     // Verify product exists
@@ -261,44 +327,61 @@ export class BookingsService {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
 
-    // Get stock on selected date
-    const stockOnDate = await this.getStockOnDate(productId, new Date(selectedDate));
+    // Get base stock on selected date
+    const baseStock = await this.getStockOnDate(productId, new Date(selectedDate));
 
-    // Get all bookings for this product on this date
+    // Get all bookings for this product on this date (ordered by bookedOn for FIFO priority)
     const bookings = await this.prisma.booking.findMany({
       where: {
         productId,
         dispatchDate: new Date(selectedDate),
       },
       orderBy: [
-        { bookedOn: 'asc' }, // Priority order
+        { bookedOn: 'asc' }, // FIFO: Earlier bookings get priority
       ],
     });
 
-    // Calculate totals
-    const totalConfirmedQuantity = bookings
-      .filter(b => b.status === BookingStatus.CONFIRM)
-      .reduce((sum, b) => sum + b.requiredQuantity, 0);
+    // Calculate status dynamically using FIFO priority
+    let runningStock = baseStock;
+    let totalConfirmedQuantity = 0;
+    let totalWaitingQuantity = 0;
 
-    const totalWaitingQuantity = bookings
-      .filter(b => b.status === BookingStatus.WAITING_LIST)
-      .reduce((sum, b) => sum + b.waitingQuantity, 0);
+    const allocations = bookings.map((booking, index) => {
+      let calculatedStatus: 'CONFIRM' | 'WAITING LIST';
+      let calculatedWaitingQuantity = 0;
+      const availableStockAtBooking = runningStock;
 
-    // Transform bookings to allocation rows
-    const allocations = bookings.map(booking => ({
-      dispatchDate: booking.dispatchDate.toISOString().split('T')[0],
-      quotationId: booking.quotationId,
-      quoteNumber: booking.quoteNumber,
-      bookedOn: booking.bookedOn.toISOString(),
-      customerName: booking.customerName,
-      gymName: booking.gymName,
-      stateCode: booking.stateCode,
-      city: booking.city,
-      requiredQuantity: booking.requiredQuantity,
-      availableStockAtBooking: stockOnDate, // Simplified - should calculate at booking time
-      status: booking.status === BookingStatus.CONFIRM ? 'CONFIRM' : 'WAITING LIST',
-      waitingQuantity: booking.waitingQuantity,
-    }));
+      // FIFO Logic: Check if enough stock for this booking
+      if (runningStock >= booking.requiredQuantity) {
+        // Stock available - CONFIRM
+        calculatedStatus = 'CONFIRM';
+        calculatedWaitingQuantity = 0;
+        runningStock -= booking.requiredQuantity;
+        totalConfirmedQuantity += booking.requiredQuantity;
+      } else {
+        // Insufficient stock - WAITING_LIST
+        calculatedStatus = 'WAITING LIST';
+        calculatedWaitingQuantity = booking.requiredQuantity - Math.max(0, runningStock);
+        totalWaitingQuantity += calculatedWaitingQuantity;
+        runningStock = 0; // All stock consumed
+      }
+
+      return {
+        dispatchDate: booking.dispatchDate.toISOString().split('T')[0],
+        quotationId: booking.quotationId,
+        quoteNumber: booking.quoteNumber,
+        bookedOn: booking.bookedOn.toISOString(),
+        customerName: booking.customerName,
+        gymName: booking.gymName,
+        stateCode: booking.stateCode,
+        city: booking.city,
+        requiredQuantity: booking.requiredQuantity,
+        availableStockAtBooking, // Stock available when this booking was processed
+        status: calculatedStatus, // Dynamically calculated based on FIFO
+        waitingQuantity: calculatedWaitingQuantity, // Dynamically calculated
+        priority: index + 1, // Booking priority order (1 = first, 2 = second, etc.)
+      };
+    });
 
     return {
       productId,
@@ -306,7 +389,7 @@ export class BookingsService {
       productThumbnail: product.thumbnail,
       modelNumber: product.modelNumber,
       selectedDate,
-      stockOnSelectedDate: stockOnDate,
+      stockOnSelectedDate: baseStock,
       totalConfirmedQuantity,
       totalWaitingQuantity,
       allocations,

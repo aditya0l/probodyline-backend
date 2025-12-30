@@ -10,20 +10,31 @@ import {
   IsPositive,
   Length,
   ArrayMaxSize,
+  IsNotEmpty,
+  Matches,
+  IsBoolean,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductDto {
-  @ApiProperty({ description: 'Product name', example: 'Treadmill Pro 5000' })
-  @IsString()
-  @Length(1, 255)
-  name: string;
-
-  @ApiPropertyOptional({ description: 'Model number', example: 'TM-PRO-5000' })
+  @ApiPropertyOptional({ description: 'Product name', example: 'Treadmill Pro 5000' })
   @IsOptional()
   @IsString()
-  modelNumber?: string;
+  @Length(1, 255)
+  name?: string;
+
+  @ApiProperty({ description: 'Model number (required, unique, uppercase, spaces converted to underscores)', example: 'TM_PRO_5000' })
+  @IsNotEmpty({ message: 'Model number is required' })
+  @IsString()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.toUpperCase().replace(/\s+/g, '_');
+    }
+    return value;
+  })
+  @Matches(/^[A-Z0-9_]+$/, { message: 'Model number must contain only uppercase letters, numbers, and underscores' })
+  modelNumber: string;
 
   @ApiPropertyOptional({ description: 'QR code image (base64 or URL)', example: 'https://example.com/qr-code.png' })
   @IsOptional()
@@ -158,5 +169,10 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Dormant status (hidden from quote application)', example: false })
+  @IsOptional()
+  @IsBoolean()
+  isDormant?: boolean;
 }
 

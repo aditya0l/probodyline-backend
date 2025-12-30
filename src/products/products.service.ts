@@ -75,6 +75,7 @@ export class ProductsService {
           createdAt: true,
           updatedAt: true,
           deletedAt: true,
+          isDormant: true,
           category: {
             select: { id: true, name: true },
           },
@@ -111,16 +112,16 @@ export class ProductsService {
       throw new BadRequestException('Maximum 5 images allowed');
     }
 
-    // Validate product name uniqueness
+    // Validate model number uniqueness (required field)
     const existingProduct = await this.prisma.product.findFirst({
       where: {
-        name: data.name,
+        modelNumber: data.modelNumber,
         deletedAt: null,
       },
     });
 
     if (existingProduct) {
-      throw new ConflictException('Product with this name already exists');
+      throw new ConflictException('Product with this model number already exists');
     }
 
     // Get next srNo globally
@@ -137,6 +138,7 @@ export class ProductsService {
     };
 
     console.log('[ProductsService.create] Creating product with data:', {
+      modelNumber: productData.modelNumber,
       name: productData.name,
       srNo: productData.srNo,
       priority: productData.priority,
@@ -145,7 +147,7 @@ export class ProductsService {
     });
 
     const createdProduct = await this.prisma.product.create({
-      data: productData,
+      data: productData as Prisma.ProductUncheckedCreateInput,
     });
 
     console.log('[ProductsService.create] Product created successfully:', {
@@ -153,15 +155,15 @@ export class ProductsService {
       idType: typeof createdProduct.id,
       srNo: createdProduct.srNo,
       srNoType: typeof createdProduct.srNo,
+      modelNumber: createdProduct.modelNumber,
       name: createdProduct.name,
-      nameType: typeof createdProduct.name,
       priority: createdProduct.priority,
       priorityType: typeof createdProduct.priority,
       allFields: Object.keys(createdProduct),
       product: createdProduct,
     });
 
-    // Generate QR code if model number exists
+    // Generate QR code if model number exists (it's now always required)
     if (createdProduct.modelNumber) {
       try {
         const qrCodePath = await this.qrCodeService.generateProductQRCode(
@@ -177,9 +179,11 @@ export class ProductsService {
       } catch (error) {
         console.error('[ProductsService.create] Failed to generate QR code:', error);
         // Return product without QR code if generation fails
+        return createdProduct;
       }
     }
 
+    // Return product without QR code if model number is null
     return createdProduct;
   }
 
@@ -208,34 +212,7 @@ export class ProductsService {
       throw new BadRequestException('Maximum 5 images allowed');
     }
 
-    // Validate product name uniqueness (if name is being changed)
-    if (data.name && data.name !== product.name) {
-      const existingProduct = await this.prisma.product.findFirst({
-        where: {
-          name: data.name,
-          deletedAt: null,
-          NOT: { id },
-        },
-      });
-
-      if (existingProduct) {
-        throw new ConflictException('Product with this name already exists');
-      }
-    }
-
-    // If model number changed, regenerate QR code
-    if (data.modelNumber && data.modelNumber !== product.modelNumber) {
-      try {
-        const qrCodePath = await this.qrCodeService.updateProductQRCode(
-          id,
-          data.modelNumber,
-        );
-        data.qrCode = qrCodePath;
-      } catch (error) {
-        console.error('[ProductsService.update] Failed to update QR code:', error);
-        // Continue with update even if QR code generation fails
-      }
-    }
+    // Note: modelNumber is immutable and cannot be updated (excluded from UpdateProductDto)
 
     return this.prisma.product.update({
       where: { id },
@@ -375,6 +352,21 @@ export class ProductsService {
     return this.prisma.product.update({
       where: { id },
       data: { deletedAt: null },
+    });
+  }
+
+  async toggleDormant(id: string, isDormant: boolean): Promise<Product> {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: { isDormant },
     });
   }
 }

@@ -1,5 +1,8 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType, OmitType } from '@nestjs/mapped-types';
 import { CreateProductDto } from './create-product.dto';
 
-export class UpdateProductDto extends PartialType(CreateProductDto) {}
+// Omit modelNumber to make it immutable after creation
+export class UpdateProductDto extends PartialType(
+    OmitType(CreateProductDto, ['modelNumber'] as const)
+) { }
 

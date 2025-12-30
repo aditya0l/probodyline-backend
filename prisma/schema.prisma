@@ -58,8 +58,8 @@ model Product {
   id                    String   @id @default(uuid())
   srNo                   Int      // Auto-increment globally
   priority               Int      @default(1)
-  name                   String
-  modelNumber            String?
+  name                   String?  // Optional - model number is the primary identifier
+  modelNumber            String   @unique // Required, unique, immutable
   qrCode                 String?  // Auto-generated QR code path
   image                  String?  // URL/path
   images                 String[] // Array of URLs (max 5)
@@ -85,6 +85,7 @@ model Product {
   brand                  String?
   warranty               String?
   notes                  String?  @db.Text
+  isDormant              Boolean  @default(false) // Hide from quote application when true
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   deletedAt              DateTime?
@@ -101,6 +102,7 @@ model Product {
   @@index([productType])
   @@index([deletedAt])
   @@index([categoryId])
+  @@index([isDormant])
   @@map("products")
 }
 

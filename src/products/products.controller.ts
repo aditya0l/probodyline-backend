@@ -16,7 +16,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(private readonly productsService: ProductsService) { }
 
   @Post()
   @ApiOperation({ summary: 'Create a new product' })
@@ -120,6 +120,16 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'All stocks successfully synced' })
   syncAllStocks() {
     return this.productsService.syncAllStocks();
+  }
+
+  @Patch(':id/dormant')
+  @ApiOperation({ summary: 'Toggle dormant status for a product' })
+  @ApiParam({ name: 'id', description: 'Product UUID' })
+  @ApiBody({ schema: { type: 'object', properties: { isDormant: { type: 'boolean' } } } })
+  @ApiResponse({ status: 200, description: 'Dormant status successfully updated' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  toggleDormant(@Param('id') id: string, @Body('isDormant') isDormant: boolean) {
+    return this.productsService.toggleDormant(id, isDormant);
   }
 }
 

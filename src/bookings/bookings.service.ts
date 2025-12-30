@@ -39,9 +39,9 @@ export class BookingsService {
         quotationItemId: data.quotationItemId,
         quoteNumber: data.quoteNumber,
         productId: data.productId,
-        productName: product.name,
+        productName: product.name || product.modelNumber,
         productThumbnail: product.thumbnail,
-        modelNumber: product.modelNumber,
+        modelNumber: product.modelNumber || '',
         dispatchDate,
         bookedOn: new Date(),
         customerName: data.customerName,
@@ -306,7 +306,7 @@ export class BookingsService {
 
     return {
       productId,
-      productName: product.name,
+      productName: product.name || product.modelNumber,
       modelNumber: product.modelNumber,
       allocationByDate: Object.values(allocationByDate),
     };
@@ -385,7 +385,7 @@ export class BookingsService {
 
     return {
       productId,
-      productName: product.name,
+      productName: product.name || product.modelNumber,
       productThumbnail: product.thumbnail,
       modelNumber: product.modelNumber,
       selectedDate,

@@ -6,7 +6,7 @@ import { StockTransaction, Prisma, StockTransactionType } from '@prisma/client';
 
 @Injectable()
 export class StockService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createTransaction(
     data: CreateStockTransactionDto,
@@ -26,8 +26,8 @@ export class StockService {
     }
 
     // For OUT/SALE transactions, check stock availability and prevent negative stock
-    if (data.transactionType === StockTransactionType.OUT || 
-        data.transactionType === StockTransactionType.SALE) {
+    if (data.transactionType === StockTransactionType.OUT ||
+      data.transactionType === StockTransactionType.SALE) {
       const currentStock = await this.getCurrentStock(data.productId);
       if (currentStock < Math.abs(data.quantity)) {
         throw new BadRequestException(
@@ -92,8 +92,8 @@ export class StockService {
     }
     if (filters?.endDate) {
       // If date is in YYYY-MM-DD format, append time to get end of day
-      const endDateStr = filters.endDate.includes('T') 
-        ? filters.endDate 
+      const endDateStr = filters.endDate.includes('T')
+        ? filters.endDate
         : `${filters.endDate}T23:59:59.999Z`;
       dateFilter.lte = new Date(endDateStr);
     }
@@ -193,11 +193,11 @@ export class StockService {
       productId,
       ...(startDate &&
         endDate && {
-          date: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-          },
-        }),
+        date: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      }),
     };
 
     return this.prisma.stockTransaction.findMany({
@@ -473,7 +473,7 @@ export class StockService {
 
     // Calculate base stock values
     const stockOnDate = await this.getStockOnDate(productId, selectedDate);
-    
+
     // Calculate future dates
     const selectedDateObj = new Date(selectedDate);
     const plus15Date = new Date(selectedDateObj);
@@ -509,18 +509,18 @@ export class StockService {
     }
 
     // Resolve product relationships (model numbers to product names)
-    const resolveProductName = async (modelNumber: string | null): Promise<string | null> => {
-      if (!modelNumber) return null;
-      const relatedProduct = await this.prisma.product.findFirst({
+    const resolveProductName = async (modelNumbers: string[] | null): Promise<string | null> => {
+      if (!modelNumbers || modelNumbers.length === 0) return null;
+      const relatedProducts = await this.prisma.product.findMany({
         where: {
-          modelNumber,
+          modelNumber: { in: modelNumbers },
           deletedAt: null,
         },
         select: {
           name: true,
         },
       });
-      return relatedProduct?.name || null;
+      return relatedProducts.map(p => p.name).join(', ') || null;
     };
 
     const [cousinMachineName, orderTogetherName, swapMachineName] = await Promise.all([

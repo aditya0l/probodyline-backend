@@ -216,7 +216,7 @@ export class ProductsService {
 
     return this.prisma.product.update({
       where: { id },
-      data,
+      data: data as Prisma.ProductUncheckedUpdateInput,
     });
   }
 

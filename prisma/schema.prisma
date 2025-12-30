@@ -79,9 +79,9 @@ model Product {
   machineArtwork         String?  // URL
   brochure               String[] // JSON array of URLs
   thumbnail              String?  // URL
-  cousinMachine          String?  // Could be FK to Product
-  orderTogether          String?  // Could be FK to Product
-  swapMachine            String?  // Could be FK to Product
+  cousinMachine          String[] // Array of model numbers
+  orderTogether          String[] // Array of model numbers
+  swapMachine            String[] // Array of model numbers
   brand                  String?
   warranty               String?
   notes                  String?  @db.Text

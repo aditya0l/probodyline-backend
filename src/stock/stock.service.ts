@@ -449,12 +449,13 @@ export class StockService {
   /**
    * Get comprehensive stock projection data for a product
    * Includes base stock, after-order stock, next IN info, and product relationships
+   * Implements Anchored Balance Logic: Start from Current Stock and simulate forward
    */
   async getStockProjection(
     productId: string,
     selectedDate: string,
   ): Promise<any> {
-    // Get product
+    // 1. Get product current stock and relationships
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       select: {
@@ -471,44 +472,221 @@ export class StockService {
       throw new NotFoundException('Product not found');
     }
 
-    // Calculate base stock values
-    const stockOnDate = await this.getStockOnDate(productId, selectedDate);
+    const currentStock = product.todaysStock || 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // Calculate future dates
+    // 2. Fetch ALL future transactions from Today onwards
+    // We need to simulate the running balance starting from 'currentStock' (which is EOD today)
+    const futureTransactions = await this.prisma.stockTransaction.findMany({
+      where: {
+        productId,
+        date: {
+          gt: today, // Strictly greater than today (tomorrow onwards)
+        },
+      },
+      orderBy: { date: 'asc' }, // Order by date ascending to simulate timeline
+    });
+
+    // 3. Helper to find Min Balance in a date range
+    // We simulate the ledger: 
+    // - Start with `currentBalance` = `currentStock` (Today's EOD)
+    // - Iterate day by day (or transaction by transaction) forward
+    // - Track the Minimum Balance seen in the window of interest
+
+    const calculateMinBalance = (startDateStr: string, endDateStr: string): number => {
+      const startDate = new Date(startDateStr);
+      startDate.setHours(0, 0, 0, 0); // Normalize
+
+      const endDate = new Date(endDateStr);
+      endDate.setHours(23, 59, 59, 999); // End of day
+
+      let runningBalance = currentStock;
+      let minBalance = Infinity;
+
+      // If startDate is in the past relative to today, we default to currentStock or handle differently
+      // Ideally, the "Available to Promise" is forward looking.
+      // If selectedDate is Today, we start min check from Today.
+      // Since `currentStock` IS Today's EOD balance, the first check is just `currentStock`.
+
+      // If the start date is today or past, initial min is currentStock
+      if (startDate <= today) {
+        minBalance = runningBalance;
+      }
+
+      // Iterate through future transactions
+      // We need to check balance AFTER each transaction date
+      // Note: Ledger logic sums NET change per day.
+
+      // Group future transactions by Date for daily processing
+      const dailyChanges = new Map<string, number>();
+      futureTransactions.forEach(tx => {
+        const d = tx.date.toISOString().split('T')[0];
+        const change = tx.transactionType === 'IN' ? tx.quantity : -tx.quantity;
+        dailyChanges.set(d, (dailyChanges.get(d) || 0) + change);
+      });
+
+      // Get all unique dates from transactions + start/end boundaries if needed?
+      // Actually, we just need to iterate through the sorted transactions.
+      // But efficiently: we walk the timeline.
+
+      // "Available to Promise" logic:
+      // Minimum running balance from [StartDate, EndDate]
+
+      // 1. If today > StartDate, we need to handle "Backwards" logic? 
+      //    No, list view is usually "Future Availability". 
+      //    We assume List View asks "If I order on [SelectedDate]..."
+      //    So we only care about the timeline from SelectedDate onwards.
+
+      // ALGORITHM:
+      // 1. Walk from Today -> Future
+      // 2. Update Running Balance
+      // 3. If Date >= StartDate AND Date <= EndDate: Track Min Balance
+
+      // Initial state: Today (EOD)
+      // If StartDate <= Today, we consider Today's balance as a candidate
+      if (startDate <= today) {
+        minBalance = Math.min(minBalance, runningBalance);
+      }
+
+      // We need to walk potentially 365 days? No, just iterate transactions.
+      // BUT periods between transactions also matter (they hold the previous balance).
+
+      // Let's iterate future dates via transactions
+      // We must check the balance at the START of the window (if no transactions yet)
+
+      let cursorDate = new Date(today);
+      cursorDate.setDate(cursorDate.getDate() + 1); // Start checking from tomorrow
+
+      // We process transactions in order
+      for (const tx of futureTransactions) {
+        const txDate = new Date(tx.date);
+        txDate.setHours(0, 0, 0, 0);
+
+        // Before processing this transaction, key check:
+        // If we are currently INSIDE the window [StartDate, EndDate], 
+        // the `runningBalance` (which is the balance BEFORE this transaction) is valid for the days between prev tx and this tx.
+        // So we verify: if (prevDate...txDate) overlaps with Window, `runningBalance` is a candidate.
+
+        // Simplified approach:
+        // Update balance.
+        // If txDate >= StartDate, check min.
+
+        const change = tx.transactionType === 'IN' ? tx.quantity : -tx.quantity;
+        runningBalance += change;
+
+        if (txDate >= startDate && txDate <= endDate) {
+          minBalance = Math.min(minBalance, runningBalance);
+        }
+      }
+
+      // If we haven't found any transactions in the window, or minBalance is still Infinity (because window started after all transactions)
+      // The balance is simply the runningBalance carried forward.
+      if (minBalance === Infinity) {
+        // If the window is valid (StartDate <= EndDate)
+        if (startDate <= endDate) {
+          minBalance = runningBalance;
+        } else {
+          minBalance = 0; // Invalid window?
+        }
+      }
+
+      // Safety: If StartDate is way in the future beyond all transactions,
+      // the loop finished, runningBalance is the final balance.
+      // We should check if we ever entered the window.
+      // Actually, standard logic:
+      // The balance is a step function. We need the minimum value of this step function in the interval.
+
+      // Let's refine:
+      // We need the min value of function B(t) for t in [Start, End].
+      // Start with `currentBalance` (Today).
+      // `min` = Infinity.
+
+      // We scan through all critical points (transaction dates) AND the StartDate.
+
+      // Reset for robust calc
+      runningBalance = currentStock;
+
+      // 1. Calculate Balance AT StartDate
+      // Walk transactions from Tomorrow until StartDate
+      for (const tx of futureTransactions) {
+        const txDate = new Date(tx.date);
+        txDate.setHours(0, 0, 0, 0);
+        if (txDate < startDate) {
+          const change = tx.transactionType === 'IN' ? tx.quantity : -tx.quantity;
+          runningBalance += change;
+        } else {
+          break; // Stop at StartDate
+        }
+      }
+
+      // This is the balance at the beginning of StartDate
+      minBalance = runningBalance;
+
+      // 2. Now walk from StartDate to EndDate
+      for (const tx of futureTransactions) {
+        const txDate = new Date(tx.date);
+        txDate.setHours(0, 0, 0, 0);
+
+        if (txDate >= startDate && txDate <= endDate) {
+          const change = tx.transactionType === 'IN' ? tx.quantity : -tx.quantity;
+          runningBalance += change;
+          // Check min after update? Or before?
+          // Standard ledger: End of Day balance.
+          // So update first, then check.
+          minBalance = Math.min(minBalance, runningBalance);
+        }
+      }
+
+      return minBalance;
+    };
+
+    // Dates
     const selectedDateObj = new Date(selectedDate);
     const plus15Date = new Date(selectedDateObj);
     plus15Date.setDate(plus15Date.getDate() + 15);
     const plus30Date = new Date(selectedDateObj);
     plus30Date.setDate(plus30Date.getDate() + 30);
+    const plus360Date = new Date(selectedDateObj);
+    plus360Date.setDate(plus360Date.getDate() + 360); // 1 Year lookahead
 
-    const plus15DateStr = plus15Date.toISOString().split('T')[0];
-    const plus30DateStr = plus30Date.toISOString().split('T')[0];
+    // Calculate Min Balances ("Stock After Order On")
+    // "Stock on Selected Date" = Min Balance from SelectedDate -> +365
+    // "Stock + 15" = Min Balance from +15 -> +365
+    // "Stock + 30" = Min Balance from +30 -> +365
+    // "Stock + 360" = Just the balance at +360? Or Min? Often "Closing Balance"
+    // The prompt says "After Order Stock On (Today + 360)". Usually implies projected closing.
+    // Let's use simple closing balance for +360, but Min for the availability ones.
 
-    // Calculate stock after orders
-    const [
-      stockAfterOrderOnDate,
-      stockAfterOrderPlus15Days,
-      stockAfterOrderPlus30Days,
-      stockPlus30Days,
-      nextInInfo,
-    ] = await Promise.all([
-      this.getStockAfterOrderOnDate(productId, selectedDate),
-      this.getStockAfterOrderOnDate(productId, plus15DateStr),
-      this.getStockAfterOrderOnDate(productId, plus30DateStr),
-      this.getStockOnDate(productId, plus30DateStr),
-      this.getNextInInfo(productId),
-    ]);
+    const stockOnSelectedDate = calculateMinBalance(selectedDate, plus360Date.toISOString().split('T')[0]);
+    const stockPlus15Days = calculateMinBalance(plus15Date.toISOString().split('T')[0], plus360Date.toISOString().split('T')[0]);
+    const stockPlus30Days = calculateMinBalance(plus30Date.toISOString().split('T')[0], plus360Date.toISOString().split('T')[0]);
 
-    // Determine status
+    // For +360 specifically, maybe just get the final balance?
+    // Let's stick to the min behavior for consistency unless "Stock On" implies snapshot.
+    // "after order stock on" phrasing usually implies "Available".
+    // Let's use calculateMinBalance for consistency.
+    const stockPlus360Days = calculateMinBalance(plus360Date.toISOString().split('T')[0], plus360Date.toISOString().split('T')[0]);
+
+
+    // 4. Next In Date Logic
+    // Find first IN transaction > Today
+    const nextInTx = futureTransactions.find(tx => tx.transactionType === 'IN');
+    const nextInInfo = nextInTx ? {
+      date: new Date(nextInTx.date).toISOString().split('T')[0],
+      quantity: nextInTx.quantity
+    } : { date: null, quantity: null };
+
+    // 5. Determine Status
+    // Same logic: If Current < 0 -> Waiting. If +30 Min < 0 -> At Risk.
     let status: 'SAFE' | 'AT RISK' | 'WAITING LIST' = 'SAFE';
-    const todaysStock = product.todaysStock || 0;
-    if (todaysStock < 0) {
+    if (currentStock < 0) {
       status = 'WAITING LIST';
     } else if (stockPlus30Days < 0) {
       status = 'AT RISK';
     }
 
-    // Resolve product relationships (model numbers to product names)
+    // 6. Resolve Names
     const resolveProductName = async (modelNumbers: string[] | null): Promise<string | null> => {
       if (!modelNumbers || modelNumbers.length === 0) return null;
       const relatedProducts = await this.prisma.product.findMany({
@@ -530,12 +708,14 @@ export class StockService {
     ]);
 
     return {
-      stockOnDate,
+      stockOnDate: stockOnSelectedDate, // Mapping to frontend expectation
       stockPlus30Days,
       status,
-      stockAfterOrderOnDate,
-      stockAfterOrderPlus15Days,
-      stockAfterOrderPlus30Days,
+      // Extended fields
+      stockAfterOrderOnDate: stockOnSelectedDate,
+      stockAfterOrderPlus15Days: stockPlus15Days,
+      stockAfterOrderPlus30Days: stockPlus30Days,
+      stockPlus360Days,
       nextInDate: nextInInfo.date,
       nextInQuantity: nextInInfo.quantity,
       cousinMachineName,
@@ -544,4 +724,5 @@ export class StockService {
     };
   }
 }
+
 

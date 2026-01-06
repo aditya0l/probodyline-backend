@@ -49,9 +49,25 @@ export class StockService {
       }
     }
 
+    // Determine quantity with correct sign based on transaction type
+    let quantity = data.quantity;
+    if (
+      data.transactionType === StockTransactionType.OUT ||
+      data.transactionType === StockTransactionType.SALE
+    ) {
+      quantity = -Math.abs(data.quantity);
+    } else if (
+      data.transactionType === StockTransactionType.IN ||
+      data.transactionType === StockTransactionType.PURCHASE
+    ) {
+      quantity = Math.abs(data.quantity);
+    }
+    // For ADJUSTMENT, we trust the sign provided, or could enforce logic if needed.
+
     const transaction = await this.prisma.stockTransaction.create({
       data: {
         ...data,
+        quantity, // Use the signed quantity
         date: new Date(data.date),
       },
       include: {
@@ -215,20 +231,43 @@ export class StockService {
     id: string,
     data: UpdateStockTransactionDto,
   ): Promise<StockTransaction> {
-    // Get the transaction to find productId
+    // Get the transaction to find productId and current details
     const transaction = await this.prisma.stockTransaction.findUnique({
       where: { id },
-      select: { productId: true },
+      select: { productId: true, transactionType: true, quantity: true },
     });
 
     if (!transaction) {
       throw new NotFoundException('Stock transaction not found');
     }
 
+    // Determine quantity with correct sign if quantity or type is changing
+    let quantityToSave: number | undefined;
+
+    if (data.quantity !== undefined || data.transactionType !== undefined) {
+      const type = (data.transactionType as StockTransactionType) || transaction.transactionType;
+      const qty = data.quantity !== undefined ? data.quantity : transaction.quantity;
+
+      if (
+        type === StockTransactionType.OUT ||
+        type === StockTransactionType.SALE
+      ) {
+        quantityToSave = -Math.abs(qty);
+      } else if (
+        type === StockTransactionType.IN ||
+        type === StockTransactionType.PURCHASE
+      ) {
+        quantityToSave = Math.abs(qty);
+      } else {
+        quantityToSave = qty;
+      }
+    }
+
     const updated = await this.prisma.stockTransaction.update({
       where: { id },
       data: {
         ...data,
+        ...(quantityToSave !== undefined && { quantity: quantityToSave }),
         ...(data.date && { date: new Date(data.date) }),
       },
     });

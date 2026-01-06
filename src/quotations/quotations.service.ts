@@ -678,7 +678,7 @@ export class QuotationsService {
       await Promise.all(dispatchDatePromises);
 
       // Update PI status to CONFIRMED
-      return tx.quotation.update({
+      const confirmedQuotation = await tx.quotation.update({
         where: { id },
         data: {
           status: 'CONFIRMED',
@@ -688,8 +688,23 @@ export class QuotationsService {
           customer: true,
         },
       });
+
+      // SYNC: Update 'todaysStock' on the Product model for all affected products
+      // We do this after creating transactions to ensure strict consistency
+      for (const item of itemsWithProducts) {
+        const stockResult = await tx.stockTransaction.aggregate({
+          where: { productId: item.productId! },
+          _sum: { quantity: true },
+        });
+        const currentStock = stockResult._sum.quantity || 0;
+        await tx.product.update({
+          where: { id: item.productId! },
+          data: { todaysStock: currentStock },
+        });
+      }
+
+      return confirmedQuotation;
     });
   }
-
 }
 

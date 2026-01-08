@@ -542,46 +542,44 @@ export class StockService {
 
     const todaysPhysicalStock = currentStock - futureSum;
 
-    // 3. Helper to find Min Balance in a date range
-    const calculateMinBalance = (startDateStr: string, endDateStr: string): number => {
-      const startDate = new Date(startDateStr);
-      startDate.setHours(0, 0, 0, 0); // Normalize
+    // 3. Helper to calculate Projected Balance AT a specific date
+    const calculateProjectedBalance = (targetDateStr: string): number => {
+      const targetDate = new Date(targetDateStr);
+      targetDate.setHours(23, 59, 59, 999); // End of target day
 
-      const endDate = new Date(endDateStr);
-      endDate.setHours(23, 59, 59, 999); // End of day
+      let balance = todaysPhysicalStock;
 
-      // Start simulation from Today's Physical Stock
-      let runningBalance = todaysPhysicalStock;
-      let minBalance = Infinity;
-
-      // If the start date is today or past, initial min is current physical stock
-      if (startDate <= today) {
-        minBalance = runningBalance;
-      }
-
-      // Iterate through future transactions to simulate ledger
       for (const tx of futureTransactions) {
         const txDate = new Date(tx.date);
-        txDate.setHours(0, 0, 0, 0);
+        if (txDate > targetDate) break; // Stop if transaction is after target date
 
-        // Standard Ledger Walk: Update balance
+        const change = tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE' ? tx.quantity :
+          (tx.transactionType === 'OUT' || tx.transactionType === 'SALE' ? -Math.abs(tx.quantity) : tx.quantity);
+
+        balance += change;
+      }
+      return balance;
+    };
+
+    // Helper for Status: Check min balance within next 30 days
+    const calculateMinBalanceWindow = (days: number): number => {
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + days);
+      endDate.setHours(23, 59, 59, 999);
+
+      let runningBalance = todaysPhysicalStock;
+      let minBalance = runningBalance;
+
+      for (const tx of futureTransactions) {
+        const txDate = new Date(tx.date);
+        if (txDate > endDate) break;
+
         const change = tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE' ? tx.quantity :
           (tx.transactionType === 'OUT' || tx.transactionType === 'SALE' ? -Math.abs(tx.quantity) : tx.quantity);
 
         runningBalance += change;
-
-        // Check if this new balance falls within our window
-        if (txDate >= startDate && txDate <= endDate) {
-          minBalance = Math.min(minBalance, runningBalance);
-        }
+        minBalance = Math.min(minBalance, runningBalance);
       }
-
-      // If minBalance is still Infinity (no transactions in window or window started after all tx),
-      // fallback to the final runningBalance (carry over), provided window is valid.
-      if (minBalance === Infinity) {
-        minBalance = runningBalance;
-      }
-
       return minBalance;
     };
 
@@ -592,13 +590,13 @@ export class StockService {
     const plus30Date = new Date(selectedDateObj);
     plus30Date.setDate(plus30Date.getDate() + 30);
     const plus360Date = new Date(selectedDateObj);
-    plus360Date.setDate(plus360Date.getDate() + 360); // 1 Year lookahead
+    plus360Date.setDate(plus360Date.getDate() + 360);
 
-    // Calculate Min Balances ("Stock After Order On")
-    const stockOnSelectedDate = calculateMinBalance(selectedDate, plus360Date.toISOString().split('T')[0]);
-    const stockPlus15Days = calculateMinBalance(plus15Date.toISOString().split('T')[0], plus360Date.toISOString().split('T')[0]);
-    const stockPlus30Days = calculateMinBalance(plus30Date.toISOString().split('T')[0], plus360Date.toISOString().split('T')[0]);
-    const stockPlus360Days = calculateMinBalance(plus360Date.toISOString().split('T')[0], plus360Date.toISOString().split('T')[0]);
+    // Calculate Point-in-Time Projected Balances
+    const stockOnSelectedDate = calculateProjectedBalance(selectedDate);
+    const stockPlus15Days = calculateProjectedBalance(plus15Date.toISOString().split('T')[0]);
+    const stockPlus30Days = calculateProjectedBalance(plus30Date.toISOString().split('T')[0]);
+    const stockPlus360Days = calculateProjectedBalance(plus360Date.toISOString().split('T')[0]);
 
     // 4. Next In Date Logic
     // Find first IN transaction > Today
@@ -613,8 +611,12 @@ export class StockService {
     // Use Physical Stock for immediate status check
     if (todaysPhysicalStock < 0) {
       status = 'WAITING LIST';
-    } else if (stockPlus30Days < 0) {
-      status = 'AT RISK';
+    } else {
+      // Check for any dips in the next 30 days
+      const minBal30 = calculateMinBalanceWindow(30);
+      if (minBal30 < 0) {
+        status = 'AT RISK';
+      }
     }
 
     // 6. Resolve Names

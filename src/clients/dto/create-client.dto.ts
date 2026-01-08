@@ -2,35 +2,25 @@ import { IsString, IsDateString, IsNotEmpty, IsOptional } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateClientDto {
-  @ApiProperty({ description: 'Business token/contract date (YYYY-MM-DD)', example: '2024-01-15' })
+  @ApiPropertyOptional({ description: 'Business token/contract date (YYYY-MM-DD)', example: '2024-01-15' })
+  @IsOptional()
   @IsDateString()
-  @IsNotEmpty()
-  tokenDate: string;
+  tokenDate?: string;
 
-  @ApiProperty({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+  @ApiPropertyOptional({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  stateCode: string;
+  stateCode?: string;
 
-  @ApiProperty({ description: 'City name', example: 'Mumbai' })
+  @ApiPropertyOptional({ description: 'City name', example: 'Mumbai' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  city: string;
+  city?: string;
 
-  @ApiProperty({ description: 'Client name', example: 'John Doe' })
+  @ApiPropertyOptional({ description: 'Client name', example: 'John Doe' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  clientName: string;
-
-  @ApiProperty({ description: 'Sales person full name', example: 'Rajesh Kumar' })
-  @IsString()
-  @IsNotEmpty()
-  salesPerson: string;
-
-  @ApiProperty({ description: 'Sales initial (code identifier)', example: 'RK' })
-  @IsString()
-  @IsNotEmpty()
-  salesInitial: string;
+  clientName?: string;
 }
 
 

@@ -12,6 +12,8 @@ import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from 
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UseGuards, Request } from '@nestjs/common';
 import * as fs from 'fs';
 
 @ApiTags('clients')
@@ -19,19 +21,20 @@ import * as fs from 'fs';
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {
     // #region agent log
-    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'clients.controller.ts:21',message:'ClientsController constructor called',data:{controller:'ClientsController'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})+'\n');}catch(e){}
+    try { const logPath = '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log'; fs.appendFileSync(logPath, JSON.stringify({ location: 'clients.controller.ts:21', message: 'ClientsController constructor called', data: { controller: 'ClientsController' }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H1' }) + '\n'); } catch (e) { }
     // #endregion
     console.log('✅ ClientsController instantiated');
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new client' })
   @ApiResponse({ status: 201, description: 'Client successfully created' })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiResponse({ status: 409, description: 'Client code already exists' })
   @ApiBody({ type: CreateClientDto })
-  create(@Body() createClientDto: CreateClientDto) {
-    return this.clientsService.create(createClientDto);
+  create(@Body() createClientDto: CreateClientDto, @Request() req) {
+    return this.clientsService.create(createClientDto, req.user);
   }
 
   @Get('test')
@@ -59,7 +62,7 @@ export class ClientsController {
     @Query('limit') limit?: string,
   ) {
     // #region agent log
-    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'clients.controller.ts:62',message:'ClientsController.findAll method called',data:{search,stateCode,city,salesPerson,page,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})+'\n');}catch(e){}
+    try { const logPath = '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log'; fs.appendFileSync(logPath, JSON.stringify({ location: 'clients.controller.ts:62', message: 'ClientsController.findAll method called', data: { search, stateCode, city, salesPerson, page, limit }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H4' }) + '\n'); } catch (e) { }
     // #endregion
     console.log('📞 ClientsController.findAll called with:', { search, stateCode, city, salesPerson, page, limit });
     return this.clientsService.findAll({

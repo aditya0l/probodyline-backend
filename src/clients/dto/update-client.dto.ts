@@ -19,15 +19,5 @@ export class UpdateClientDto extends PartialType(OmitType(CreateClientDto, ['tok
   @IsString()
   @IsOptional()
   clientName?: string;
-
-  @ApiPropertyOptional({ description: 'Sales person full name', example: 'Rajesh Kumar' })
-  @IsString()
-  @IsOptional()
-  salesPerson?: string;
-
-  @ApiPropertyOptional({ description: 'Sales initial (code identifier)', example: 'RK' })
-  @IsString()
-  @IsOptional()
-  salesInitial?: string;
 }
 

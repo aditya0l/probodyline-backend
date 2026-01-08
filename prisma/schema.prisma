@@ -281,12 +281,11 @@ model StockTransaction {
 model Client {
   id            String   @id @default(uuid())
   clientCode    String   @unique // Auto-generated, immutable
-  tokenDate     DateTime // Business token/contract date, immutable
-  stateCode     String
-  city          String
-  clientName    String
-  salesPerson   String
-  salesInitial  String
+  tokenDate     DateTime? // Business token/contract date, immutable
+  stateCode     String?
+  city          String?
+  clientName    String?
+  salesInitial  String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   

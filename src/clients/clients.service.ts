@@ -83,14 +83,16 @@ export class ClientsService {
     return client;
   }
 
-  async create(data: CreateClientDto): Promise<any> {
+  async create(data: CreateClientDto, user: any): Promise<any> {
+    const salesTeam = user.name || user.email || 'SYSTEM';
+
     // Generate client code
     const clientCode = generateClientCode({
       tokenDate: data.tokenDate,
       stateCode: data.stateCode,
       city: data.city,
       clientName: data.clientName,
-      salesInitial: data.salesInitial,
+      salesInitial: salesTeam,
     });
 
     // Check if client code already exists
@@ -106,13 +108,13 @@ export class ClientsService {
     const client = await this.prisma.client.create({
       data: {
         clientCode,
-        tokenDate: new Date(data.tokenDate),
+        tokenDate: data.tokenDate ? new Date(data.tokenDate) : undefined,
         stateCode: data.stateCode,
         city: data.city,
         clientName: data.clientName,
-        salesPerson: data.salesPerson,
-        salesInitial: data.salesInitial,
-      },
+        // salesPerson removed
+        salesInitial: salesTeam,
+      } as any,
     });
 
     return client;
@@ -135,8 +137,7 @@ export class ClientsService {
         stateCode: data.stateCode,
         city: data.city,
         clientName: data.clientName,
-        salesPerson: data.salesPerson,
-        salesInitial: data.salesInitial,
+        // salesPerson and salesInitial are not manually updatable
       },
     });
 

@@ -1,22 +1,17 @@
 // Client code generation utility (backend version)
 
 export interface ClientCodeData {
-  tokenDate: string; // YYYY-MM-DD (business token/contract date)
-  stateCode: string;
-  city: string;
-  clientName: string;
-  salesInitial: string;
+  tokenDate?: string; // YYYY-MM-DD
+  stateCode?: string;
+  city?: string;
+  clientName?: string;
+  salesInitial: string; // Still required, provided by system/user context
 }
 
 /**
  * Generate canonical client code
  * Format: YYYY-MM-DD/STATE/CITY/CLIENT_NAME/SALES_INITIAL
- * 
- * Rules:
- * - "/" is delimiter
- * - No spaces (use underscore if needed)
- * - Token Date is immutable (business contract date)
- * - Sales Initial is mandatory
+ * Uses 'NA' for missing components.
  */
 export function generateClientCode(data: ClientCodeData): string {
   const {
@@ -27,16 +22,16 @@ export function generateClientCode(data: ClientCodeData): string {
     salesInitial,
   } = data;
 
-  // Validate sales initial
+  // Validate sales initial (still required as it comes from system)
   if (!salesInitial || salesInitial.trim().length === 0) {
     throw new Error('Sales initial is required');
   }
 
-  // Normalize components
-  const normalizedDate = tokenDate.split('T')[0]; // YYYY-MM-DD
-  const normalizedState = stateCode.toUpperCase().trim();
-  const normalizedCity = city.trim().replace(/\s+/g, '_');
-  const normalizedClientName = clientName.trim().replace(/\s+/g, '_');
+  // Normalize components or use defaults
+  const normalizedDate = tokenDate ? tokenDate.split('T')[0] : 'NA';
+  const normalizedState = stateCode ? stateCode.toUpperCase().trim() : 'NA';
+  const normalizedCity = city ? city.trim().replace(/\s+/g, '_') : 'NA';
+  const normalizedClientName = clientName ? clientName.trim().replace(/\s+/g, '_') : 'NA';
   const normalizedSalesInitial = salesInitial.toUpperCase().trim();
 
   // Build client code

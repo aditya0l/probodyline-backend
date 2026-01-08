@@ -221,10 +221,21 @@ export class ProductsService {
   }
 
   async remove(id: string): Promise<Product> {
-    // Soft delete
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    // Soft delete: Rename modelNumber to free it up for reuse
     return this.prisma.product.update({
       where: { id },
-      data: { deletedAt: new Date() },
+      data: {
+        deletedAt: new Date(),
+        modelNumber: `${product.modelNumber}_DEL_${Date.now()}`
+      },
     });
   }
 

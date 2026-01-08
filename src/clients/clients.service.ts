@@ -84,7 +84,14 @@ export class ClientsService {
   }
 
   async create(data: CreateClientDto, user: any): Promise<any> {
-    const salesTeam = user.name || user.email || 'SYSTEM';
+    const salesTeam = user?.name
+      ? user.name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 3)
+      : 'SYS';
 
     // Generate client code
     const clientCode = generateClientCode({

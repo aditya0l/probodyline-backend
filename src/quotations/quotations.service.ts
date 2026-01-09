@@ -119,14 +119,10 @@ export class QuotationsService {
       }
 
       // Validate items
-      for (const item of data.items) {
-        if (item.quantity <= 0) {
-          throw new BadRequestException('Item quantity must be greater than 0');
-        }
-        if (item.rate <= 0) {
-          throw new BadRequestException('Item rate must be greater than 0');
-        }
-      }
+      // Relaxed validation: Allow 0 rate and quantity
+      // Logic handled by DTO @Min(0)
+
+      // Validate items logic removed (previously checked <= 0)
 
       // Validate GST rate
       if (data.gstRate !== undefined && (data.gstRate < 0 || data.gstRate > 100)) {
@@ -582,8 +578,8 @@ export class QuotationsService {
         throw new BadRequestException('Only DRAFT PI can be confirmed');
       }
 
-      // Get all items with products
-      const itemsWithProducts = quotation.items.filter((item) => item.productId);
+      // Get all items with products and positive quantity (skip 0 quantity items)
+      const itemsWithProducts = quotation.items.filter((item) => item.productId && item.quantity > 0);
 
       if (itemsWithProducts.length === 0) {
         throw new BadRequestException('PI has no items to confirm');

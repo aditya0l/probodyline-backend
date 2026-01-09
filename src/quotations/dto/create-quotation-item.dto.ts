@@ -25,13 +25,11 @@ export class CreateQuotationItemDto {
   @ApiProperty({ description: 'Unit rate/price', example: 50000, type: Number })
   @IsNumber()
   @Min(0)
-  @IsPositive()
   rate: number;
 
   @ApiProperty({ description: 'Quantity', example: 2, type: Number })
   @IsNumber()
-  @Min(1)
-  @IsPositive()
+  @Min(0)
   quantity: number;
 
   // Denormalized product fields

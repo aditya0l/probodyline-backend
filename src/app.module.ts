@@ -34,6 +34,8 @@ import { configValidationSchema } from './config/config.schema';
       {
         rootPath: join(__dirname, '..', 'public'),
         exclude: ['/api/(.*)'],
+        // Explicitly parse path to avoid default '*' which fails path-to-regexp validation
+        renderPath: '/__no_fallback__',
       },
       {
         rootPath: join(__dirname, '..', 'uploads'),

@@ -33,13 +33,13 @@ import { configValidationSchema } from './config/config.schema';
     ServeStaticModule.forRoot(
       {
         rootPath: join(__dirname, '..', 'public'),
-        // Use regex to bypass path-to-regexp string parsing and avoid wildcard errors
-        renderPath: /^(?!\/api\/).*/ as unknown as string, // serve everything except /api/**
-        exclude: [/^\/api\/.*/] as unknown as string[], // keep API routes out of static handling
+        exclude: ['/api/(.*)'],
       },
       {
         rootPath: join(__dirname, '..', 'uploads'),
         serveRoot: '/uploads',
+        // Use a dummy string path to prevent wildcard generation and disable SPA fallback
+        renderPath: '/uploads/__non_existent__',
       }
     ),
     ConfigModule.forRoot({

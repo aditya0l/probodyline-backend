@@ -30,12 +30,18 @@ import { configValidationSchema } from './config/config.schema';
 @Module({
   imports: [
     // Serve assets from /public (e.g., logo.png) at the root path; exclude API routes
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-      // Use regex to bypass path-to-regexp string parsing and avoid wildcard errors
-      renderPath: /^(?!\/api\/).*/ as unknown as string, // serve everything except /api/**
-      exclude: [/^\/api\/.*/] as unknown as string[], // keep API routes out of static handling
-    }),
+    ServeStaticModule.forRoot(
+      {
+        rootPath: join(__dirname, '..', 'public'),
+        // Use regex to bypass path-to-regexp string parsing and avoid wildcard errors
+        renderPath: /^(?!\/api\/).*/ as unknown as string, // serve everything except /api/**
+        exclude: [/^\/api\/.*/] as unknown as string[], // keep API routes out of static handling
+      },
+      {
+        rootPath: join(__dirname, '..', 'uploads'),
+        serveRoot: '/uploads',
+      }
+    ),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
@@ -84,7 +90,7 @@ export class AppModule implements NestModule {
     console.log('🔵 Checking GymsModule:', typeof GymsModule, GymsModule.name);
     console.log('🔵 Checking ClientsModule:', typeof ClientsModule, ClientsModule.name);
   }
-  
+
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(LoggerMiddleware).forRoutes('*');
   }

@@ -330,7 +330,8 @@ export class QuotationsService {
 
     // Simple update without items
     const { items, deliveryDate, bookingDate, dispatchDate, installationDate, inaugurationDate, ...updateData } = data;
-    return this.prisma.quotation.update({
+
+    const result = await this.prisma.quotation.update({
       where: { id },
       data: {
         ...updateData,
@@ -342,6 +343,37 @@ export class QuotationsService {
         leadName: updateData.leadName !== undefined ? updateData.leadName : undefined,
       },
     });
+
+    // Propagate Dispatch Date to Stock Transactions and Bookings if changed
+    if (dispatchDate) {
+      const newDispatcherDate = new Date(dispatchDate);
+
+      // Update Stock Transactions (Confirmed PIs)
+      await this.prisma.stockTransaction.updateMany({
+        where: {
+          referenceId: id,
+          transactionType: 'OUT', // Ensure we only touch OUT transactions linked to this quote
+          // We can check referenceType too, but referenceId is unique enough usually. 
+          // Safest to check types used: 'QUOTATION' and 'PI_BOOKING'
+          referenceType: { in: ['QUOTATION', 'PI_BOOKING'] }
+        },
+        data: {
+          date: newDispatcherDate,
+        },
+      });
+
+      // Update Bookings
+      await this.prisma.booking.updateMany({
+        where: {
+          quotationId: id,
+        },
+        data: {
+          dispatchDate: newDispatcherDate,
+        },
+      });
+    }
+
+    return result;
   }
 
   async remove(id: string): Promise<Quotation> {

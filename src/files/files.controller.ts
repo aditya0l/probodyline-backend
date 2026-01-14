@@ -21,7 +21,7 @@ import * as path from 'path';
 @ApiTags('files')
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(private readonly filesService: FilesService) { }
 
   @Post('upload')
   @ApiOperation({ summary: 'Upload a file' })
@@ -76,12 +76,13 @@ export class FilesController {
   @ApiResponse({ status: 404, description: 'File not found' })
   async getFile(@Param('path') filepath: string, @Res() res: Response) {
     const fullPath = this.filesService.getFilePath(filepath);
-    
+
     if (!fs.existsSync(fullPath)) {
-      return res.status(404).json({ message: 'File not found' });
+      res.status(404).json({ message: 'File not found' });
+      return;
     }
 
-    return res.sendFile(path.resolve(fullPath));
+    res.sendFile(path.resolve(fullPath));
   }
 
   @Delete('*path')

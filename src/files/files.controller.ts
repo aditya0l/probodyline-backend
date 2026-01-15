@@ -78,7 +78,17 @@ export class FilesController {
     const fullPath = this.filesService.getFilePath(filepath);
 
     if (!fs.existsSync(fullPath)) {
-      res.status(404).json({ message: 'File not found' });
+      const dir = path.dirname(fullPath);
+      res.status(404).json({
+        message: 'File not found',
+        debug: {
+          attemptedPath: fullPath,
+          cwd: process.cwd(),
+          exists: false,
+          dirExists: fs.existsSync(dir),
+          filesInDir: fs.existsSync(dir) ? fs.readdirSync(dir) : 'Dir not found'
+        }
+      });
       return;
     }
 

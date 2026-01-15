@@ -74,8 +74,9 @@ export class FilesController {
   @ApiParam({ name: 'path', description: 'File path' })
   @ApiResponse({ status: 200, description: 'File content' })
   @ApiResponse({ status: 404, description: 'File not found' })
-  async getFile(@Param('path') filepath: string, @Res() res: Response) {
-    const fullPath = this.filesService.getFilePath(filepath);
+  async getFile(@Param('path') filepath: string | string[], @Res() res: Response) {
+    const safeFilePath = Array.isArray(filepath) ? filepath.join('/') : filepath;
+    const fullPath = this.filesService.getFilePath(safeFilePath);
 
     if (!fs.existsSync(fullPath)) {
       const dir = path.dirname(fullPath);
@@ -83,6 +84,7 @@ export class FilesController {
         message: 'File not found',
         debug: {
           attemptedPath: fullPath,
+          originalParam: filepath,
           cwd: process.cwd(),
           exists: false,
           dirExists: fs.existsSync(dir),

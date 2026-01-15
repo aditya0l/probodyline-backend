@@ -380,5 +380,37 @@ export class ProductsService {
       data: { isDormant },
     });
   }
+
+  async regenerateAllQRs(): Promise<{ count: number; errors: number }> {
+    const products = await this.prisma.product.findMany({
+      where: { deletedAt: null },
+      select: { id: true, modelNumber: true },
+    });
+
+    let count = 0;
+    let errors = 0;
+
+    for (const product of products) {
+      if (product.modelNumber) {
+        try {
+          const qrCodePath = await this.qrCodeService.generateProductQRCode(
+            product.id,
+            product.modelNumber,
+          );
+
+          await this.prisma.product.update({
+            where: { id: product.id },
+            data: { qrCode: qrCodePath },
+          });
+          count++;
+        } catch (error) {
+          console.error(`Failed to regenerate QR for product ${product.id}:`, error);
+          errors++;
+        }
+      }
+    }
+
+    return { count, errors };
+  }
 }
 

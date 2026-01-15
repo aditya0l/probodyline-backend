@@ -131,5 +131,12 @@ export class ProductsController {
   toggleDormant(@Param('id') id: string, @Body('isDormant') isDormant: boolean) {
     return this.productsService.toggleDormant(id, isDormant);
   }
+
+  @Post('regenerate-all-qrs')
+  @ApiOperation({ summary: 'Regenerate QR codes for all products' })
+  @ApiResponse({ status: 200, description: 'QRs regenerated successfully' })
+  regenerateAllQRs() {
+    return this.productsService.regenerateAllQRs();
+  }
 }
 

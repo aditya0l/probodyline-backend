@@ -23,6 +23,7 @@ import { ClientsModule } from './clients/clients.module';
 import { GymsModule } from './gyms/gyms.module';
 import { LeadsModule } from './leads/leads.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { SalesOrdersModule } from './sales-orders/sales-orders.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
@@ -76,6 +77,7 @@ import { configValidationSchema } from './config/config.schema';
     ClientsModule,
     LeadsModule,
     BookingsModule,
+    SalesOrdersModule,
   ],
   controllers: [AppController],
   providers: [

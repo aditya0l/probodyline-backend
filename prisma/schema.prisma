@@ -182,6 +182,7 @@ model Quotation {
   // Relations
   customer              Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items                 QuotationItem[]
+  salesOrders           SalesOrder[]
 
   @@index([status])
   @@index([createdAt])
@@ -193,6 +194,7 @@ model Quotation {
 model QuotationItem {
   id                    String   @id @default(uuid())
   quotationId           String
+  salesOrderId          String?
   srNo                  Int
   productId             String?
   
@@ -226,10 +228,37 @@ model QuotationItem {
   // Relations
   quotation             Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   product               Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+  salesOrder            SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
 
   @@index([quotationId])
   @@index([productId])
+  @@index([salesOrderId])
   @@map("quotation_items")
+}
+
+model SalesOrder {
+  id              String   @id @default(uuid())
+  quotationId     String
+  soNumber        String   @unique // e.g., SO22064_03_01
+  dispatchDate    DateTime?
+  status          String   @default("DRAFT") // DRAFT, SAVED, BOOKED
+  
+  // Financial (Snapshot for this SO)
+  subtotal        Decimal  @db.Decimal(12, 2) @default(0)
+  gstAmount       Decimal  @db.Decimal(12, 2) @default(0)
+  grandTotal      Decimal  @db.Decimal(12, 2) @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  bookedAt        DateTime?
+
+  // Relations
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  items           QuotationItem[]
+
+  @@index([quotationId])
+  @@index([status])
+  @@map("sales_orders")
 }
 
 // Phase 3 Models

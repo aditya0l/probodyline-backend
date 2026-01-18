@@ -34,6 +34,18 @@ export class SalesOrdersController {
         return this.salesOrdersService.findByQuotation(quotationId);
     }
 
+    @Get()
+    @ApiOperation({ summary: 'Get all Sales Orders' })
+    findAll() {
+        return this.salesOrdersService.findAll();
+    }
+
+    @Get(':id')
+    @ApiOperation({ summary: 'Get a single Sales Order' })
+    findOne(@Param('id') id: string) {
+        return this.salesOrdersService.findOne(id);
+    }
+
     @Delete(':id')
     @ApiOperation({ summary: 'Delete a Draft Sales Order' })
     deleteSalesOrder(@Param('id') id: string) {

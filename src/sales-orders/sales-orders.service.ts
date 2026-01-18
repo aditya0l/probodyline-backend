@@ -205,6 +205,34 @@ export class SalesOrdersService {
         });
     }
 
+    async findAll() {
+        return this.prisma.salesOrder.findMany({
+            include: {
+                quotation: {
+                    select: { id: true, quoteNumber: true, clientName: true, gymName: true }
+                },
+                items: {
+                    select: { id: true, modelNumber: true, productName: true, quantity: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+
+    async findOne(id: string) {
+        const so = await this.prisma.salesOrder.findUnique({
+            where: { id },
+            include: {
+                items: true,
+                quotation: {
+                    include: { items: true } // Need full quotation items to allow swapping/splitting
+                }
+            }
+        });
+        if (!so) throw new NotFoundException('Sales Order not found');
+        return so;
+    }
+
     async deleteSalesOrder(id: string) {
         const so = await this.prisma.salesOrder.findUnique({ where: { id } });
         if (!so) throw new NotFoundException('Sales Order not found');

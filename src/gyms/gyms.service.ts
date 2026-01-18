@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateGymDto } from './dto/create-gym.dto';
 import { UpdateGymDto } from './dto/update-gym.dto';
@@ -7,7 +12,7 @@ import { generateGymCode } from '../common/utils/gym-code.util';
 
 @Injectable()
 export class GymsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   private async generateLocationQR(locationLink: string): Promise<string> {
     try {
@@ -155,7 +160,9 @@ export class GymsService {
     const updated = await this.prisma.gym.update({
       where: { id },
       data: {
-        installationDate: data.installationDate ? new Date(data.installationDate) : undefined,
+        installationDate: data.installationDate
+          ? new Date(data.installationDate)
+          : undefined,
         stateCode: data.stateCode,
         city: data.city,
         gymName: data.gymName,
@@ -208,7 +215,10 @@ export class GymsService {
 
   async addInaugurationCommitment(
     gymId: string,
-    data: CreateInaugurationCommitmentDto & { source?: 'SYSTEM' | 'USER'; createdBy?: string },
+    data: CreateInaugurationCommitmentDto & {
+      source?: 'SYSTEM' | 'USER';
+      createdBy?: string;
+    },
   ): Promise<any> {
     // Verify gym exists
     const gym = await this.prisma.gym.findUnique({

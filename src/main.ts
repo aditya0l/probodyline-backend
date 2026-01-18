@@ -10,22 +10,38 @@ import * as fs from 'fs';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // #region agent log
-  try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'main.ts:11',message:'NestFactory.create completed',data:{appCreated:!!app},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})+'\n');}catch(e){}
+  try {
+    const logPath = '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
+    fs.appendFileSync(
+      logPath,
+      JSON.stringify({
+        location: 'main.ts:11',
+        message: 'NestFactory.create completed',
+        data: { appCreated: !!app },
+        timestamp: Date.now(),
+        sessionId: 'debug-session',
+        runId: 'run1',
+        hypothesisId: 'H2',
+      }) + '\n',
+    );
+  } catch (e) {}
   // #endregion
-  
+
   // Security headers with Helmet
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
       },
-    },
-    crossOriginEmbedderPolicy: false,
-  }));
-  
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+
   // Enable CORS for frontend communication
   app.enableCors({
     origin: (origin, callback) => {
@@ -34,9 +50,13 @@ async function bootstrap() {
         'http://localhost:3001',
         process.env.FRONTEND_URL,
       ].filter(Boolean);
-      
+
       // Allow any Vercel deployment
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app')
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -105,8 +125,10 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`🚀 Backend server running on http://localhost:${port}`);
-  console.log(`📚 API Documentation available at http://localhost:${port}/api/docs`);
-  
+  console.log(
+    `📚 API Documentation available at http://localhost:${port}/api/docs`,
+  );
+
   // Log registered routes for debugging
   console.log('\n📋 Key API Routes Status:');
   console.log('  ✓ /api/health - Health check endpoint');
@@ -114,15 +136,32 @@ async function bootstrap() {
   console.log('  ✓ /api/clients - Clients module (ClientsController)');
   console.log('  ✓ /api/docs - Swagger API documentation');
   console.log('');
-  
+
   // Verify modules are loaded
   try {
     const httpAdapter = app.getHttpAdapter();
     // #region agent log
-    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'main.ts:120',message:'App initialization complete, checking route registration',data:{hasHttpAdapter:!!httpAdapter},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})+'\n');}catch(e){}
+    try {
+      const logPath =
+        '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
+      fs.appendFileSync(
+        logPath,
+        JSON.stringify({
+          location: 'main.ts:120',
+          message: 'App initialization complete, checking route registration',
+          data: { hasHttpAdapter: !!httpAdapter },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H2',
+        }) + '\n',
+      );
+    } catch (e) {}
     // #endregion
     console.log('✅ Application initialized successfully');
-    console.log('✅ All modules loaded (including GymsModule and ClientsModule)');
+    console.log(
+      '✅ All modules loaded (including GymsModule and ClientsModule)',
+    );
   } catch (error) {
     console.error('❌ Error during application initialization:', error);
   }

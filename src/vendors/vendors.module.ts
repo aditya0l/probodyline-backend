@@ -8,4 +8,3 @@ import { VendorsController } from './vendors.controller';
   exports: [VendorsService],
 })
 export class VendorsModule {}
-

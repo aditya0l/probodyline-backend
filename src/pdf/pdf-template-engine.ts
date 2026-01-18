@@ -10,12 +10,38 @@ export interface TemplateData {
  */
 export function numberToWords(amount: number): string {
   const ones = [
-    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-    'Seventeen', 'Eighteen', 'Nineteen',
+    '',
+    'One',
+    'Two',
+    'Three',
+    'Four',
+    'Five',
+    'Six',
+    'Seven',
+    'Eight',
+    'Nine',
+    'Ten',
+    'Eleven',
+    'Twelve',
+    'Thirteen',
+    'Fourteen',
+    'Fifteen',
+    'Sixteen',
+    'Seventeen',
+    'Eighteen',
+    'Nineteen',
   ];
   const tens = [
-    '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety',
+    '',
+    '',
+    'Twenty',
+    'Thirty',
+    'Forty',
+    'Fifty',
+    'Sixty',
+    'Seventy',
+    'Eighty',
+    'Ninety',
   ];
 
   function convertHundreds(num: number): string {
@@ -57,14 +83,18 @@ export function renderTemplate(template: string, data: TemplateData): string {
   let html = template;
 
   // Handle conditionals {{#if variable}}...{{/if}}
-  let maxIterations = 50;
+  const maxIterations = 50;
   let iteration = 0;
 
   while (iteration < maxIterations) {
     iteration++;
     const before = html;
 
-    const ifMatches: Array<{ start: number; variable: string; tagLength: number }> = [];
+    const ifMatches: Array<{
+      start: number;
+      variable: string;
+      tagLength: number;
+    }> = [];
     const ifRegex = /\{\{#if\s+(\w+)\}\}/g;
     let match;
 
@@ -114,26 +144,32 @@ export function renderTemplate(template: string, data: TemplateData): string {
       }
 
       const value = data[variable];
-      const shouldRender = value !== undefined && value !== null && value !== false && value !== '';
+      const shouldRender =
+        value !== undefined &&
+        value !== null &&
+        value !== false &&
+        value !== '';
 
       // Check for {{else}} at the same level
       let elsePos = -1;
       let elseDepth = 0;
       let elseSearch = start + tagLength;
-      
+
       while (elseSearch < endPos - 7) {
         const nextIf = html.indexOf('{{#if', elseSearch);
         const nextEndIf = html.indexOf('{{/if}}', elseSearch);
         const nextElse = html.indexOf('{{else}}', elseSearch);
-        
+
         const positions = [
-          {type: 'if', pos: nextIf},
-          {type: 'endif', pos: nextEndIf},
-          {type: 'else', pos: nextElse}
-        ].filter(p => p.pos !== -1 && p.pos < endPos - 7).sort((a, b) => a.pos - b.pos);
-        
+          { type: 'if', pos: nextIf },
+          { type: 'endif', pos: nextEndIf },
+          { type: 'else', pos: nextElse },
+        ]
+          .filter((p) => p.pos !== -1 && p.pos < endPos - 7)
+          .sort((a, b) => a.pos - b.pos);
+
         if (positions.length === 0) break;
-        
+
         const next = positions[0];
         if (next.type === 'if') {
           elseDepth++;
@@ -179,7 +215,11 @@ export function renderTemplate(template: string, data: TemplateData): string {
     const beforeLoops = html;
     let processedAnyLoop = false;
 
-    const eachMatches: Array<{ start: number; arrayName: string; tagLength: number }> = [];
+    const eachMatches: Array<{
+      start: number;
+      arrayName: string;
+      tagLength: number;
+    }> = [];
     const eachRegex = /\{\{#each\s+(\w+)\}\}/g;
     let eachMatch;
 
@@ -223,163 +263,238 @@ export function renderTemplate(template: string, data: TemplateData): string {
 
       const content = html.substring(start + tagLength, endPos - 9);
 
-      if (/\{\{#each\s+\w+\}\}/.test(content) || /\{\{#if\s+\w+\}\}/.test(content)) {
+      if (
+        /\{\{#each\s+\w+\}\}/.test(content) ||
+        /\{\{#if\s+\w+\}\}/.test(content)
+      ) {
         continue;
       }
 
       const array = data[arrayName] || [];
 
-      const processedContent = array.map((item: any, index: number) => {
-        let itemContent = content;
+      const processedContent = array
+        .map((item: any, index: number) => {
+          let itemContent = content;
 
-        // Handle nested loops {{#each this.cells}}
-        const nestedEachRegex = /\{\{#each\s+this\.(\w+)\}\}/g;
-        let nestedMatch;
-        while ((nestedMatch = nestedEachRegex.exec(itemContent)) !== null) {
-          const nestedArrayName = nestedMatch[1];
-          const nestedStart = nestedMatch.index;
-          const nestedEnd = itemContent.indexOf('{{/each}}', nestedStart);
-          
-          if (nestedEnd !== -1) {
-            const nestedContent = itemContent.substring(nestedStart + nestedMatch[0].length, nestedEnd);
-            const nestedArray = item[nestedArrayName] || [];
-            const nestedProcessed = nestedArray.map((nestedItem: any, nestedIndex: number) => {
-              let nestedItemContent = nestedContent;
-              
-              // Process from innermost to outermost by repeatedly finding and processing the deepest {{#if}}
-              let maxIterations = 50;
-              let iteration = 0;
-              
-              while (iteration < maxIterations) {
-                iteration++;
-                const before = nestedItemContent;
-                
-                // Find all {{#if this.property}} tags
-                const ifStarts: Array<{pos: number, prop: string, length: number}> = [];
-                const ifRegex = /\{\{#if\s+this\.(\w+)\}\}/g;
-                let match;
-                while ((match = ifRegex.exec(nestedItemContent)) !== null) {
-                  ifStarts.push({
-                    pos: match.index,
-                    prop: match[1],
-                    length: match[0].length
-                  });
-                }
-                
-                if (ifStarts.length === 0) break;
-                
-                // Process the LAST (innermost/rightmost) {{#if}} first
-                const lastIf = ifStarts[ifStarts.length - 1];
-                const startPos = lastIf.pos;
-                const startTagLength = lastIf.length;
-                const nestedIfProp = lastIf.prop;
-                
-                // Find the matching {{/if}} for this specific {{#if}}
-                let depth = 1;
-                let searchPos = startPos + startTagLength;
-                let endPos = -1;
-                
-                while (depth > 0 && searchPos < nestedItemContent.length) {
-                  const nextIfPos = nestedItemContent.indexOf('{{#if', searchPos);
-                  const nextEndIfPos = nestedItemContent.indexOf('{{/if}}', searchPos);
-                  
-                  if (nextEndIfPos === -1) break;
-                  
-                  if (nextIfPos !== -1 && nextIfPos < nextEndIfPos) {
-                    depth++;
-                    searchPos = nextIfPos + 5;
-                  } else {
-                    depth--;
-                    if (depth === 0) {
-                      endPos = nextEndIfPos;
-                      break;
-                    }
-                    searchPos = nextEndIfPos + 7;
-                  }
-                }
-                
-                if (endPos !== -1) {
-                  const innerContent = nestedItemContent.substring(startPos + startTagLength, endPos);
-                  const nestedIfValue = nestedItem[nestedIfProp];
-                  const shouldRender = nestedIfValue !== undefined && nestedIfValue !== null && nestedIfValue !== false && nestedIfValue !== '';
-                  
-                  // Find {{else}} at the SAME level (not nested)
-                  let elsePos = -1;
-                  let elseDepth = 0;
-                  let elseSearch = startPos + startTagLength;
-                  
-                  while (elseSearch < endPos) {
-                    const nextIf = nestedItemContent.indexOf('{{#if', elseSearch);
-                    const nextEndIf = nestedItemContent.indexOf('{{/if}}', elseSearch);
-                    const nextElse = nestedItemContent.indexOf('{{else}}', elseSearch);
-                    
-                    // Find the next significant tag
-                    const positions = [
-                      {type: 'if', pos: nextIf},
-                      {type: 'endif', pos: nextEndIf},
-                      {type: 'else', pos: nextElse}
-                    ].filter(p => p.pos !== -1 && p.pos < endPos).sort((a, b) => a.pos - b.pos);
-                    
-                    if (positions.length === 0) break;
-                    
-                    const next = positions[0];
-                    if (next.type === 'if') {
-                      elseDepth++;
-                      elseSearch = next.pos + 5;
-                    } else if (next.type === 'endif') {
-                      elseDepth--;
-                      elseSearch = next.pos + 7;
-                    } else if (next.type === 'else' && elseDepth === 0) {
-                      elsePos = next.pos;
-                      break;
-                    } else {
-                      elseSearch = next.pos + 8;
-                    }
-                  }
-                  
-                  let replacement = '';
-                  if (elsePos !== -1) {
-                    const trueContent = nestedItemContent.substring(startPos + startTagLength, elsePos);
-                    const falseContent = nestedItemContent.substring(elsePos + 8, endPos);
-                    replacement = shouldRender ? trueContent : falseContent;
-                  } else {
-                    replacement = shouldRender ? innerContent : '';
-                  }
-                  
-                  nestedItemContent = nestedItemContent.substring(0, startPos) + replacement + nestedItemContent.substring(endPos + 7);
-                }
-                
-                if (before === nestedItemContent) break;
-              }
-              
-              // Replace variable references
-              nestedItemContent = nestedItemContent.replace(/\{\{\{this\.(\w+)\}\}\}/g, (m, prop) => {
-                return nestedItem[prop] !== undefined && nestedItem[prop] !== null ? String(nestedItem[prop]) : '';
-              });
-              nestedItemContent = nestedItemContent.replace(/\{\{this\.(\w+)\}\}/g, (m, prop) => {
-                return nestedItem[prop] !== undefined && nestedItem[prop] !== null ? String(nestedItem[prop]) : '';
-              });
-              
-              return nestedItemContent;
-            }).join('');
+          // Handle nested loops {{#each this.cells}}
+          const nestedEachRegex = /\{\{#each\s+this\.(\w+)\}\}/g;
+          let nestedMatch;
+          while ((nestedMatch = nestedEachRegex.exec(itemContent)) !== null) {
+            const nestedArrayName = nestedMatch[1];
+            const nestedStart = nestedMatch.index;
+            const nestedEnd = itemContent.indexOf('{{/each}}', nestedStart);
 
-            itemContent = itemContent.substring(0, nestedStart) + nestedProcessed + itemContent.substring(nestedEnd + 9);
+            if (nestedEnd !== -1) {
+              const nestedContent = itemContent.substring(
+                nestedStart + nestedMatch[0].length,
+                nestedEnd,
+              );
+              const nestedArray = item[nestedArrayName] || [];
+              const nestedProcessed = nestedArray
+                .map((nestedItem: any, nestedIndex: number) => {
+                  let nestedItemContent = nestedContent;
+
+                  // Process from innermost to outermost by repeatedly finding and processing the deepest {{#if}}
+                  const maxIterations = 50;
+                  let iteration = 0;
+
+                  while (iteration < maxIterations) {
+                    iteration++;
+                    const before = nestedItemContent;
+
+                    // Find all {{#if this.property}} tags
+                    const ifStarts: Array<{
+                      pos: number;
+                      prop: string;
+                      length: number;
+                    }> = [];
+                    const ifRegex = /\{\{#if\s+this\.(\w+)\}\}/g;
+                    let match;
+                    while ((match = ifRegex.exec(nestedItemContent)) !== null) {
+                      ifStarts.push({
+                        pos: match.index,
+                        prop: match[1],
+                        length: match[0].length,
+                      });
+                    }
+
+                    if (ifStarts.length === 0) break;
+
+                    // Process the LAST (innermost/rightmost) {{#if}} first
+                    const lastIf = ifStarts[ifStarts.length - 1];
+                    const startPos = lastIf.pos;
+                    const startTagLength = lastIf.length;
+                    const nestedIfProp = lastIf.prop;
+
+                    // Find the matching {{/if}} for this specific {{#if}}
+                    let depth = 1;
+                    let searchPos = startPos + startTagLength;
+                    let endPos = -1;
+
+                    while (depth > 0 && searchPos < nestedItemContent.length) {
+                      const nextIfPos = nestedItemContent.indexOf(
+                        '{{#if',
+                        searchPos,
+                      );
+                      const nextEndIfPos = nestedItemContent.indexOf(
+                        '{{/if}}',
+                        searchPos,
+                      );
+
+                      if (nextEndIfPos === -1) break;
+
+                      if (nextIfPos !== -1 && nextIfPos < nextEndIfPos) {
+                        depth++;
+                        searchPos = nextIfPos + 5;
+                      } else {
+                        depth--;
+                        if (depth === 0) {
+                          endPos = nextEndIfPos;
+                          break;
+                        }
+                        searchPos = nextEndIfPos + 7;
+                      }
+                    }
+
+                    if (endPos !== -1) {
+                      const innerContent = nestedItemContent.substring(
+                        startPos + startTagLength,
+                        endPos,
+                      );
+                      const nestedIfValue = nestedItem[nestedIfProp];
+                      const shouldRender =
+                        nestedIfValue !== undefined &&
+                        nestedIfValue !== null &&
+                        nestedIfValue !== false &&
+                        nestedIfValue !== '';
+
+                      // Find {{else}} at the SAME level (not nested)
+                      let elsePos = -1;
+                      let elseDepth = 0;
+                      let elseSearch = startPos + startTagLength;
+
+                      while (elseSearch < endPos) {
+                        const nextIf = nestedItemContent.indexOf(
+                          '{{#if',
+                          elseSearch,
+                        );
+                        const nextEndIf = nestedItemContent.indexOf(
+                          '{{/if}}',
+                          elseSearch,
+                        );
+                        const nextElse = nestedItemContent.indexOf(
+                          '{{else}}',
+                          elseSearch,
+                        );
+
+                        // Find the next significant tag
+                        const positions = [
+                          { type: 'if', pos: nextIf },
+                          { type: 'endif', pos: nextEndIf },
+                          { type: 'else', pos: nextElse },
+                        ]
+                          .filter((p) => p.pos !== -1 && p.pos < endPos)
+                          .sort((a, b) => a.pos - b.pos);
+
+                        if (positions.length === 0) break;
+
+                        const next = positions[0];
+                        if (next.type === 'if') {
+                          elseDepth++;
+                          elseSearch = next.pos + 5;
+                        } else if (next.type === 'endif') {
+                          elseDepth--;
+                          elseSearch = next.pos + 7;
+                        } else if (next.type === 'else' && elseDepth === 0) {
+                          elsePos = next.pos;
+                          break;
+                        } else {
+                          elseSearch = next.pos + 8;
+                        }
+                      }
+
+                      let replacement = '';
+                      if (elsePos !== -1) {
+                        const trueContent = nestedItemContent.substring(
+                          startPos + startTagLength,
+                          elsePos,
+                        );
+                        const falseContent = nestedItemContent.substring(
+                          elsePos + 8,
+                          endPos,
+                        );
+                        replacement = shouldRender ? trueContent : falseContent;
+                      } else {
+                        replacement = shouldRender ? innerContent : '';
+                      }
+
+                      nestedItemContent =
+                        nestedItemContent.substring(0, startPos) +
+                        replacement +
+                        nestedItemContent.substring(endPos + 7);
+                    }
+
+                    if (before === nestedItemContent) break;
+                  }
+
+                  // Replace variable references
+                  nestedItemContent = nestedItemContent.replace(
+                    /\{\{\{this\.(\w+)\}\}\}/g,
+                    (m, prop) => {
+                      return nestedItem[prop] !== undefined &&
+                        nestedItem[prop] !== null
+                        ? String(nestedItem[prop])
+                        : '';
+                    },
+                  );
+                  nestedItemContent = nestedItemContent.replace(
+                    /\{\{this\.(\w+)\}\}/g,
+                    (m, prop) => {
+                      return nestedItem[prop] !== undefined &&
+                        nestedItem[prop] !== null
+                        ? String(nestedItem[prop])
+                        : '';
+                    },
+                  );
+
+                  return nestedItemContent;
+                })
+                .join('');
+
+              itemContent =
+                itemContent.substring(0, nestedStart) +
+                nestedProcessed +
+                itemContent.substring(nestedEnd + 9);
+            }
           }
-        }
 
-        // Replace {{this.property}} with item.property
-        itemContent = itemContent.replace(/\{\{\{this\.(\w+)\}\}\}/g, (m, prop) => {
-          return item[prop] !== undefined && item[prop] !== null ? String(item[prop]) : '';
-        });
+          // Replace {{this.property}} with item.property
+          itemContent = itemContent.replace(
+            /\{\{\{this\.(\w+)\}\}\}/g,
+            (m, prop) => {
+              return item[prop] !== undefined && item[prop] !== null
+                ? String(item[prop])
+                : '';
+            },
+          );
 
-        itemContent = itemContent.replace(/\{\{this\.(\w+)\}\}/g, (m, prop) => {
-          return item[prop] !== undefined && item[prop] !== null ? String(item[prop]) : '';
-        });
+          itemContent = itemContent.replace(
+            /\{\{this\.(\w+)\}\}/g,
+            (m, prop) => {
+              return item[prop] !== undefined && item[prop] !== null
+                ? String(item[prop])
+                : '';
+            },
+          );
 
-        itemContent = itemContent.replace(/\{\{@index\}\}/g, String(index + 1));
+          itemContent = itemContent.replace(
+            /\{\{@index\}\}/g,
+            String(index + 1),
+          );
 
-        return itemContent;
-      }).join('');
+          return itemContent;
+        })
+        .join('');
 
       const beforeBlock = html.substring(0, start);
       const afterBlock = html.substring(endPos);
@@ -410,4 +525,3 @@ export function renderTemplate(template: string, data: TemplateData): string {
 
   return html;
 }
-

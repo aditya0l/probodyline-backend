@@ -11,4 +11,3 @@ export class UpdateQuotationDto extends PartialType(CreateQuotationDto) {
   @Type(() => CreateQuotationItemDto)
   items?: CreateQuotationItemDto[];
 }
-

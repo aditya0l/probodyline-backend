@@ -2,7 +2,10 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy {
+  // Extended PrismaClient to include lifecycle hooks
   constructor() {
     // Configure connection pool in DATABASE_URL
     // Format: postgresql://user:password@host:port/database?connection_limit=10&pool_timeout=20
@@ -10,7 +13,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     // - connection_limit: Maximum number of connections (default: depends on database)
     // - pool_timeout: Timeout for getting a connection (default: 10s)
     // Recommended: connection_limit=10 for small apps, 20+ for high traffic
-    
+
     super({
       datasources: {
         db: {
@@ -18,7 +21,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         },
       },
       // Connection pool configuration for better performance
-      log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+      log:
+        process.env.NODE_ENV === 'development'
+          ? ['query', 'error', 'warn']
+          : ['error'],
     });
 
     // Note: Prisma middleware ($use) is deprecated in Prisma 5+
@@ -34,4 +40,3 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     await this.$disconnect();
   }
 }
-

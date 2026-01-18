@@ -8,4 +8,3 @@ import { CustomersController } from './customers.controller';
   exports: [CustomersService],
 })
 export class CustomersModule {}
-

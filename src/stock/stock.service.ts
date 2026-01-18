@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateStockTransactionDto } from './dto/create-stock-transaction.dto';
 import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
@@ -26,12 +30,14 @@ export class StockService {
     }
 
     // For OUT/SALE transactions, check stock availability and prevent negative stock
-    if (data.transactionType === StockTransactionType.OUT ||
-      data.transactionType === StockTransactionType.SALE) {
+    if (
+      data.transactionType === StockTransactionType.OUT ||
+      data.transactionType === StockTransactionType.SALE
+    ) {
       const currentStock = await this.getCurrentStock(data.productId);
       if (currentStock < Math.abs(data.quantity)) {
         throw new BadRequestException(
-          `Insufficient stock. Current stock: ${currentStock}, requested: ${Math.abs(data.quantity)}`
+          `Insufficient stock. Current stock: ${currentStock}, requested: ${Math.abs(data.quantity)}`,
         );
       }
     }
@@ -245,8 +251,11 @@ export class StockService {
     let quantityToSave: number | undefined;
 
     if (data.quantity !== undefined || data.transactionType !== undefined) {
-      const type = (data.transactionType as StockTransactionType) || transaction.transactionType;
-      const qty = data.quantity !== undefined ? data.quantity : transaction.quantity;
+      const type =
+        (data.transactionType as StockTransactionType) ||
+        transaction.transactionType;
+      const qty =
+        data.quantity !== undefined ? data.quantity : transaction.quantity;
 
       if (
         type === StockTransactionType.OUT ||
@@ -315,9 +324,7 @@ export class StockService {
     return deleted;
   }
 
-  async getLowStockProducts(
-    threshold: number = 10,
-  ): Promise<any[]> {
+  async getLowStockProducts(threshold: number = 10): Promise<any[]> {
     // Get all products
     const products = await this.prisma.product.findMany({
       where: {
@@ -465,7 +472,7 @@ export class StockService {
     //       quantity: nextTransaction.quantity,
     //     };
     //   }
-    // } else 
+    // } else
     if (nextTransaction) {
       return {
         date: new Date(nextTransaction.date).toISOString().split('T')[0],
@@ -483,6 +490,49 @@ export class StockService {
       date: null,
       quantity: null,
     };
+  }
+
+  /**
+   * Bulk get stock projection for multiple products
+   */
+  async getBulkProjectedStock(productIds: string[], selectedDate: string) {
+    // 1. Get all products with necessary fields
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        todaysStock: true,
+      },
+    });
+
+    const results = await Promise.all(
+      products.map(async (product) => {
+        try {
+          const projection = await this.getStockProjection(
+            product.id,
+            selectedDate,
+          );
+          return {
+            productId: product.id,
+            ...projection,
+            // Map to frontend expected keys if different, but getStockProjection returns extensive data
+            stockAtDispatch: projection.stockAfterOrderOnDate,
+            stockPlus30: projection.stockAfterOrderPlus30Days,
+            currentStock: projection.todaysPhysicalStock,
+          };
+        } catch (e) {
+          return {
+            productId: product.id,
+            stockAtDispatch: 0,
+            stockPlus30: 0,
+            currentStock: 0,
+            status: 'SAFE',
+          };
+        }
+      }),
+    );
+
+    return results;
   }
 
   /**
@@ -529,14 +579,18 @@ export class StockService {
 
     // Calculate Today's Real Physical Stock (Total - Future Changes)
     let futureSum = 0;
-    futureTransactions.forEach(tx => {
+    futureTransactions.forEach((tx) => {
       // Logic: If Sum = Past + Future. Past = Sum - Future.
       // But we need to subract the 'change'.
       // IN adds to stock. OUT subtracts.
       // So FutureNetChange = Sum(IN) - Sum(OUT).
       // TodayStock = CurrentStock - FutureNetChange.
-      const change = tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE' ? tx.quantity :
-        (tx.transactionType === 'OUT' || tx.transactionType === 'SALE' ? -Math.abs(tx.quantity) : tx.quantity);
+      const change =
+        tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE'
+          ? tx.quantity
+          : tx.transactionType === 'OUT' || tx.transactionType === 'SALE'
+            ? -Math.abs(tx.quantity)
+            : tx.quantity;
       futureSum += change;
     });
 
@@ -544,7 +598,10 @@ export class StockService {
 
     // 3. Helper to calculate MINIMUM Projected Balance starting from a specific date (Available to Promise)
     // Matches logic in stockDetailClient.tsx (findMinBalance)
-    const calculateMinProjectedBalance = (startDateStr: string, lookAheadDays: number = 365): number => {
+    const calculateMinProjectedBalance = (
+      startDateStr: string,
+      lookAheadDays: number = 365,
+    ): number => {
       const startDate = new Date(startDateStr);
       startDate.setHours(23, 59, 59, 999); // Start checking from end of this day
 
@@ -559,8 +616,12 @@ export class StockService {
         const txDate = new Date(tx.date);
         if (txDate > startDate) break;
 
-        const change = tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE' ? tx.quantity :
-          (tx.transactionType === 'OUT' || tx.transactionType === 'SALE' ? -Math.abs(tx.quantity) : tx.quantity);
+        const change =
+          tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE'
+            ? tx.quantity
+            : tx.transactionType === 'OUT' || tx.transactionType === 'SALE'
+              ? -Math.abs(tx.quantity)
+              : tx.quantity;
 
         currentBalance += change;
       }
@@ -574,10 +635,14 @@ export class StockService {
       for (const tx of futureTransactions) {
         const txDate = new Date(tx.date);
         if (txDate <= startDate) continue; // Already processed
-        if (txDate > endDate) break;       // Outside window
+        if (txDate > endDate) break; // Outside window
 
-        const change = tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE' ? tx.quantity :
-          (tx.transactionType === 'OUT' || tx.transactionType === 'SALE' ? -Math.abs(tx.quantity) : tx.quantity);
+        const change =
+          tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE'
+            ? tx.quantity
+            : tx.transactionType === 'OUT' || tx.transactionType === 'SALE'
+              ? -Math.abs(tx.quantity)
+              : tx.quantity;
 
         runningBalance += change;
         if (runningBalance < minBalance) {
@@ -590,7 +655,10 @@ export class StockService {
 
     // Helper for Status: Check min balance from TODAY to Today+30
     // Replaced by using calculateMinProjectedBalance(today, 30)
-    const minBal30 = calculateMinProjectedBalance(today.toISOString().split('T')[0], 30);
+    const minBal30 = calculateMinProjectedBalance(
+      today.toISOString().split('T')[0],
+      30,
+    );
 
     // Dates
     const selectedDateObj = new Date(selectedDate);
@@ -603,17 +671,27 @@ export class StockService {
 
     // Calculate Available Stock (Min Projected)
     const stockOnSelectedDate = calculateMinProjectedBalance(selectedDate);
-    const stockPlus15Days = calculateMinProjectedBalance(plus15Date.toISOString().split('T')[0]);
-    const stockPlus30Days = calculateMinProjectedBalance(plus30Date.toISOString().split('T')[0]);
-    const stockPlus360Days = calculateMinProjectedBalance(plus360Date.toISOString().split('T')[0]);
+    const stockPlus15Days = calculateMinProjectedBalance(
+      plus15Date.toISOString().split('T')[0],
+    );
+    const stockPlus30Days = calculateMinProjectedBalance(
+      plus30Date.toISOString().split('T')[0],
+    );
+    const stockPlus360Days = calculateMinProjectedBalance(
+      plus360Date.toISOString().split('T')[0],
+    );
 
     // 4. Next In Date Logic
     // Find first IN transaction > Today
-    const nextInTx = futureTransactions.find(tx => tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE');
-    const nextInInfo = nextInTx ? {
-      date: new Date(nextInTx.date).toISOString().split('T')[0],
-      quantity: nextInTx.quantity
-    } : { date: null, quantity: null };
+    const nextInTx = futureTransactions.find(
+      (tx) => tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE',
+    );
+    const nextInInfo = nextInTx
+      ? {
+        date: new Date(nextInTx.date).toISOString().split('T')[0],
+        quantity: nextInTx.quantity,
+      }
+      : { date: null, quantity: null };
 
     // 5. Determine Status
     let status: 'SAFE' | 'AT RISK' | 'WAITING LIST' = 'SAFE';
@@ -622,14 +700,19 @@ export class StockService {
       status = 'WAITING LIST';
     } else {
       // Check for any dips in the next 30 days
-      const minBal30 = calculateMinProjectedBalance(today.toISOString().split('T')[0], 30);
+      const minBal30 = calculateMinProjectedBalance(
+        today.toISOString().split('T')[0],
+        30,
+      );
       if (minBal30 < 0) {
         status = 'AT RISK';
       }
     }
 
     // 6. Resolve Names
-    const resolveProductName = async (modelNumbers: string[] | null): Promise<string | null> => {
+    const resolveProductName = async (
+      modelNumbers: string[] | null,
+    ): Promise<string | null> => {
       if (!modelNumbers || modelNumbers.length === 0) return null;
       const relatedProducts = await this.prisma.product.findMany({
         where: {
@@ -640,14 +723,15 @@ export class StockService {
           name: true,
         },
       });
-      return relatedProducts.map(p => p.name).join(', ') || null;
+      return relatedProducts.map((p) => p.name).join(', ') || null;
     };
 
-    const [cousinMachineName, orderTogetherName, swapMachineName] = await Promise.all([
-      resolveProductName(product.cousinMachine),
-      resolveProductName(product.orderTogether),
-      resolveProductName(product.swapMachine),
-    ]);
+    const [cousinMachineName, orderTogetherName, swapMachineName] =
+      await Promise.all([
+        resolveProductName(product.cousinMachine),
+        resolveProductName(product.orderTogether),
+        resolveProductName(product.swapMachine),
+      ]);
 
     return {
       todaysPhysicalStock, // New field for frontend

@@ -27,7 +27,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest() as Request & { requestId?: string };
+    const request = ctx.getRequest();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
@@ -37,7 +37,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
+
       // Map HTTP status to error codes
       if (status === HttpStatus.NOT_FOUND) {
         errorCode = ErrorCode.NOT_FOUND;
@@ -50,7 +50,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       } else if (status === HttpStatus.CONFLICT) {
         errorCode = ErrorCode.CONFLICT;
       }
-      
+
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
         error = exceptionResponse;
@@ -118,4 +118,3 @@ export class HttpExceptionFilter implements ExceptionFilter {
     response.status(status).json(errorResponse);
   }
 }
-

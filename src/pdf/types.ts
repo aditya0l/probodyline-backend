@@ -68,7 +68,9 @@ export interface PDFTemplateData {
 
   // Table Data
   tableHeaders: Array<{ label: string; className: string }>;
-  products: Array<{ cells: Array<{ value: string; className: string; isImage: boolean }> }>;
+  products: Array<{
+    cells: Array<{ value: string; className: string; isImage: boolean }>;
+  }>;
   columnCount: number;
   useLandscape: boolean;
 
@@ -89,4 +91,3 @@ export interface PDFTemplateData {
   // CSS content
   CSS_CONTENT: string;
 }
-

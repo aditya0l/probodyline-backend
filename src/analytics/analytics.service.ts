@@ -173,7 +173,9 @@ export class AnalyticsService {
     startDate?: string,
     endDate?: string,
   ) {
-    const start = startDate ? new Date(startDate) : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // Default: last 90 days
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(Date.now() - 90 * 24 * 60 * 60 * 1000); // Default: last 90 days
     const end = endDate ? new Date(endDate) : new Date();
 
     const quotations = await this.prisma.quotation.findMany({
@@ -193,7 +195,10 @@ export class AnalyticsService {
     });
 
     // Group by period
-    const trends: Record<string, { date: string; revenue: number; count: number }> = {};
+    const trends: Record<
+      string,
+      { date: string; revenue: number; count: number }
+    > = {};
 
     quotations.forEach((q) => {
       const date = new Date(q.createdAt);
@@ -338,4 +343,3 @@ export class AnalyticsService {
       }));
   }
 }
-

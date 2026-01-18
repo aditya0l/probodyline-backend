@@ -1,9 +1,20 @@
-import { IsString, IsDateString, IsNotEmpty, IsOptional, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class CreateGymDto {
-  @ApiProperty({ description: 'Installation date (YYYY-MM-DD)', example: '2024-01-15' })
+  @ApiProperty({
+    description: 'Installation date (YYYY-MM-DD)',
+    example: '2024-01-15',
+  })
   @IsDateString()
   @IsNotEmpty()
   installationDate: string;
@@ -36,20 +47,27 @@ export class CreateGymDto {
   @IsNotEmpty()
   branchTitle: string;
 
-  @ApiProperty({ description: 'Sales initial (code identifier)', example: 'RK' })
+  @ApiProperty({
+    description: 'Sales initial (code identifier)',
+    example: 'RK',
+  })
   @IsString()
   @IsNotEmpty()
   salesInitial: string;
 
-  @ApiPropertyOptional({ description: 'Instagram link', example: 'https://instagram.com/helion_fitness' })
+  @ApiPropertyOptional({
+    description: 'Instagram link',
+    example: 'https://instagram.com/helion_fitness',
+  })
   @IsString()
   @IsOptional()
   instagramLink?: string;
 
-  @ApiPropertyOptional({ description: 'Location link (Google Maps)', example: 'https://maps.google.com/?q=Mumbai+Helion' })
+  @ApiPropertyOptional({
+    description: 'Location link (Google Maps)',
+    example: 'https://maps.google.com/?q=Mumbai+Helion',
+  })
   @IsString()
   @IsOptional()
   locationLink?: string;
 }
-
-

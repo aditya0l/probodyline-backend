@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateLeadDto, LeadStatus } from './dto/create-lead.dto';
 
@@ -33,16 +37,22 @@ export class LeadsService {
 
   async create(data: CreateLeadDto): Promise<any> {
     // Stub implementation
-    throw new BadRequestException('Lead model not implemented yet. Please add Lead model to Prisma schema.');
+    throw new BadRequestException(
+      'Lead model not implemented yet. Please add Lead model to Prisma schema.',
+    );
   }
 
   async updateStatus(id: string, status: string, notes?: string): Promise<any> {
     // Stub implementation
-    throw new BadRequestException('Lead model not implemented yet. Please add Lead model to Prisma schema.');
+    throw new BadRequestException(
+      'Lead model not implemented yet. Please add Lead model to Prisma schema.',
+    );
   }
 
   async remove(id: string): Promise<any> {
     // Stub implementation
-    throw new BadRequestException('Lead model not implemented yet. Please add Lead model to Prisma schema.');
+    throw new BadRequestException(
+      'Lead model not implemented yet. Please add Lead model to Prisma schema.',
+    );
   }
 }

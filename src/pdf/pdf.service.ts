@@ -5,7 +5,11 @@ import * as path from 'path';
 import { QuotationsService } from '../quotations/quotations.service';
 import { PrismaService } from '../common/prisma.service';
 import { renderTemplate, numberToWords } from './pdf-template-engine';
-import { buildTableData, imageToDataURL, CANONICAL_COLUMN_ORDER } from './pdf-template-engine-helpers';
+import {
+  buildTableData,
+  imageToDataURL,
+  CANONICAL_COLUMN_ORDER,
+} from './pdf-template-engine-helpers';
 import { QuotationColumnId, PDFTemplateData } from './types';
 import { Quotation, Customer, QuotationItem } from '@prisma/client';
 
@@ -65,11 +69,17 @@ export class PdfService {
     try {
       const page = await browser.newPage();
       // Use 'domcontentloaded' instead of 'networkidle0' for faster loading
-      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await page.setContent(html, {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000,
+      });
 
       // Determine if landscape is needed
-      const useLandscape = (quotation.visibleColumns && 
-        Object.values(quotation.visibleColumns).filter(Boolean).length >= 13) || false;
+      const useLandscape =
+        (quotation.visibleColumns &&
+          Object.values(quotation.visibleColumns).filter(Boolean).length >=
+            13) ||
+        false;
 
       // Generate PDF
       const pdf = await page.pdf({
@@ -130,24 +140,24 @@ export class PdfService {
     // Determine visible columns based on template type and quotation settings
     let visibleColumns: QuotationColumnId[] = [];
     let useLandscape = false;
-    let showHeader = true;
+    const showHeader = true;
     let showClientInfo = true;
-    let showGymName = true;
-    let showDeliveryDate = true;
-    let showDisclaimer = false;  // Only show in price-list template
+    const showGymName = true;
+    const showDeliveryDate = true;
+    let showDisclaimer = false; // Only show in price-list template
     let showTotals = true;
     let showBankDetails = true;
     let showGSTBreakdown = false;
-    let showSubtotalLabel = true;  // Most templates show subtotal label, except wholesale
+    let showSubtotalLabel = true; // Most templates show subtotal label, except wholesale
     let titleText = 'PROFORMA INVOICE';
 
     // Adjustments based on template type
     switch (templateType) {
       case 'wholesale':
         titleText = 'WHOLESALE INVOICE';
-        showSubtotalLabel = false;  // Don't show separate subtotal label for wholesale
-        showGSTBreakdown = true;    // Wholesale uses breakdown format (3-row table)
-        showDisclaimer = true;      // Show disclaimer in totals for wholesale
+        showSubtotalLabel = false; // Don't show separate subtotal label for wholesale
+        showGSTBreakdown = true; // Wholesale uses breakdown format (3-row table)
+        showDisclaimer = true; // Show disclaimer in totals for wholesale
         // Wholesale: 7 columns matching the template design (ignore saved visibleColumns)
         visibleColumns = [
           'srNo',
@@ -162,9 +172,9 @@ export class PdfService {
         break;
       case 'retail':
         titleText = 'RETAIL INVOICE';
-        showSubtotalLabel = false;  // Retail uses simplified format (no subtotal label)
-        showGSTBreakdown = false;   // No breakdown for retail (simple 2-line format)
-        showDisclaimer = false;     // No disclaimer for retail
+        showSubtotalLabel = false; // Retail uses simplified format (no subtotal label)
+        showGSTBreakdown = false; // No breakdown for retail (simple 2-line format)
+        showDisclaimer = false; // No disclaimer for retail
         // Retail: always use predefined columns (ignore saved visibleColumns)
         visibleColumns = [
           'srNo',
@@ -192,10 +202,10 @@ export class PdfService {
         break;
       case 'price-list':
         titleText = 'PRICE LIST';
-        showDisclaimer = true;      // ONLY price-list shows disclaimer
+        showDisclaimer = true; // ONLY price-list shows disclaimer
         showClientInfo = false;
         showTotals = false;
-        showBankDetails = true;     // Show bank details in price-list
+        showBankDetails = true; // Show bank details in price-list
         // Price list: always use predefined columns (ignore saved visibleColumns)
         visibleColumns = [
           'srNo',
@@ -216,8 +226,8 @@ export class PdfService {
             .map(([columnId]) => columnId as QuotationColumnId);
           if (customVisibleColumns.length > 0) {
             // Sort columns according to canonical order to ensure consistent left-to-right sequence
-            userSelectedColumns = CANONICAL_COLUMN_ORDER.filter(col => 
-              customVisibleColumns.includes(col)
+            userSelectedColumns = CANONICAL_COLUMN_ORDER.filter((col) =>
+              customVisibleColumns.includes(col),
             );
           }
         }
@@ -234,11 +244,12 @@ export class PdfService {
         break;
     }
 
-    const { headers: tableHeaders, rows: productsTableRows } = await buildTableData(
-      quotation.items,
-      visibleColumns,
-      visibleColumns.length,
-    );
+    const { headers: tableHeaders, rows: productsTableRows } =
+      await buildTableData(
+        quotation.items,
+        visibleColumns,
+        visibleColumns.length,
+      );
 
     // Convert company logo to base64
     let companyLogoBase64 = '';
@@ -324,7 +335,11 @@ export class PdfService {
     };
 
     // Load the base HTML template
-    const templatePath = path.join(__dirname, 'templates', 'quotation-template.html');
+    const templatePath = path.join(
+      __dirname,
+      'templates',
+      'quotation-template.html',
+    );
     const cssPath = path.join(__dirname, 'templates', 'quotation-styles.css');
 
     let htmlTemplate = '';
@@ -369,4 +384,3 @@ export class PdfService {
     return `${year}-${month}-${day}`;
   }
 }
-

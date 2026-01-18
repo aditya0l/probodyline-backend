@@ -10,5 +10,3 @@ import { CommonModule } from '../common/common.module';
   exports: [LeadsService],
 })
 export class LeadsModule {}
-
-

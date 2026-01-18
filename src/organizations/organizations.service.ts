@@ -48,7 +48,9 @@ export class OrganizationsService {
       orderBy: { createdAt: 'asc' },
     });
     if (!org) {
-      throw new NotFoundException('Organization not found. Please create an organization first.');
+      throw new NotFoundException(
+        'Organization not found. Please create an organization first.',
+      );
     }
     return org;
   }
@@ -58,4 +60,3 @@ export class OrganizationsService {
     return this.update(org.id, data);
   }
 }
-

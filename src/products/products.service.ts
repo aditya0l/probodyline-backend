@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -10,17 +15,15 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private qrCodeService: QRCodeService,
-  ) { }
+  ) {}
 
-  async findAll(
-    filters?: {
-      search?: string;
-      productType?: string;
-      categoryId?: string;
-      page?: number;
-      limit?: number;
-    },
-  ): Promise<{ data: Product[]; total: number }> {
+  async findAll(filters?: {
+    search?: string;
+    productType?: string;
+    categoryId?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Product[]; total: number }> {
     const where: Prisma.ProductWhereInput = {
       deletedAt: null,
       ...(filters?.search && {
@@ -104,7 +107,9 @@ export class ProductsService {
 
     // Validate priority
     if (data.priority !== undefined && data.priority < 0) {
-      throw new BadRequestException('Priority must be greater than or equal to 0');
+      throw new BadRequestException(
+        'Priority must be greater than or equal to 0',
+      );
     }
 
     // Validate arrays don't exceed limits
@@ -121,7 +126,9 @@ export class ProductsService {
     });
 
     if (existingProduct) {
-      throw new ConflictException('Product with this model number already exists');
+      throw new ConflictException(
+        'Product with this model number already exists',
+      );
     }
 
     // Get next srNo globally
@@ -177,7 +184,10 @@ export class ProductsService {
           data: { qrCode: qrCodePath },
         });
       } catch (error) {
-        console.error('[ProductsService.create] Failed to generate QR code:', error);
+        console.error(
+          '[ProductsService.create] Failed to generate QR code:',
+          error,
+        );
         // Return product without QR code if generation fails
         return createdProduct;
       }
@@ -204,7 +214,9 @@ export class ProductsService {
 
     // Validate priority
     if (data.priority !== undefined && data.priority < 0) {
-      throw new BadRequestException('Priority must be greater than or equal to 0');
+      throw new BadRequestException(
+        'Priority must be greater than or equal to 0',
+      );
     }
 
     // Validate arrays don't exceed limits
@@ -234,7 +246,7 @@ export class ProductsService {
       where: { id },
       data: {
         deletedAt: new Date(),
-        modelNumber: `${product.modelNumber}_DEL_${Date.now()}`
+        modelNumber: `${product.modelNumber}_DEL_${Date.now()}`,
       },
     });
   }
@@ -255,7 +267,14 @@ export class ProductsService {
 
     const srNo = (lastProduct?.srNo || 0) + 1;
 
-    const { id: _, srNo: __, createdAt: ___, updatedAt: ____, deletedAt: _____, ...productData } = product;
+    const {
+      id: _,
+      srNo: __,
+      createdAt: ___,
+      updatedAt: ____,
+      deletedAt: _____,
+      ...productData
+    } = product;
 
     return this.prisma.product.create({
       data: {
@@ -404,7 +423,10 @@ export class ProductsService {
           });
           count++;
         } catch (error) {
-          console.error(`Failed to regenerate QR for product ${product.id}:`, error);
+          console.error(
+            `Failed to regenerate QR for product ${product.id}:`,
+            error,
+          );
           errors++;
         }
       }
@@ -413,4 +435,3 @@ export class ProductsService {
     return { count, errors };
   }
 }
-

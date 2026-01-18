@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
@@ -42,7 +47,9 @@ export class QuotationsService {
 
           let sequence = 1;
           if (lastQuote) {
-            const lastSequence = parseInt(lastQuote.quoteNumber.split('-')[2] || '0');
+            const lastSequence = parseInt(
+              lastQuote.quoteNumber.split('-')[2] || '0',
+            );
             sequence = lastSequence + 1;
           }
 
@@ -67,10 +74,14 @@ export class QuotationsService {
       } catch (error) {
         attempts++;
         if (attempts >= maxAttempts) {
-          throw new Error(`Failed to generate unique quote number after ${maxAttempts} attempts`);
+          throw new Error(
+            `Failed to generate unique quote number after ${maxAttempts} attempts`,
+          );
         }
         // Wait a small random time before retry (exponential backoff)
-        await new Promise((resolve) => setTimeout(resolve, Math.random() * 100 * attempts));
+        await new Promise((resolve) =>
+          setTimeout(resolve, Math.random() * 100 * attempts),
+        );
       }
     }
 
@@ -109,9 +120,41 @@ export class QuotationsService {
         },
         salesOrders: {
           include: { items: true },
-          orderBy: { soNumber: 'asc' }
+          orderBy: { soNumber: 'asc' },
         },
       },
+    });
+  }
+
+  async getRelatedQuotations(quoteNumber: string) {
+    // Extract base number (e.g., "22064" from "22064_02" or "Q-20250101-001")
+    // Assuming the format is something we can match loosely.
+    // The user example "22064" seems to be a custom format or part of the standard.
+    // Standard format in schema: Q-YYYYMMDD-XXX
+    // If the user manually edits or if we have a "Base ID", we'd use that.
+    // For now, let's assume we match loosely on the first segment or the whole string minus suffix.
+
+    // Simplest approach: If quoteNumber has underscores, take the part before the last underscore?
+    // User Example: 22064 -> 22064_01 -> 22064_02
+    // Base seems to be "22064".
+
+    const base = quoteNumber.includes('_') ? quoteNumber.split('_')[0] : quoteNumber;
+
+    return this.prisma.quotation.findMany({
+      where: {
+        quoteNumber: {
+          startsWith: base
+        }
+      },
+      select: {
+        id: true,
+        quoteNumber: true,
+        createdAt: true,
+        status: true
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
     });
   }
 
@@ -129,7 +172,10 @@ export class QuotationsService {
       // Validate items logic removed (previously checked <= 0)
 
       // Validate GST rate
-      if (data.gstRate !== undefined && (data.gstRate < 0 || data.gstRate > 100)) {
+      if (
+        data.gstRate !== undefined &&
+        (data.gstRate < 0 || data.gstRate > 100)
+      ) {
         throw new BadRequestException('GST rate must be between 0 and 100');
       }
 
@@ -150,7 +196,9 @@ export class QuotationsService {
             where: { id: item.productId },
           });
           if (!product) {
-            throw new NotFoundException(`Product with ID ${item.productId} not found`);
+            throw new NotFoundException(
+              `Product with ID ${item.productId} not found`,
+            );
           }
         }
       }
@@ -164,7 +212,9 @@ export class QuotationsService {
       });
 
       if (!org) {
-        throw new NotFoundException('Organization not found. Please create an organization first.');
+        throw new NotFoundException(
+          'Organization not found. Please create an organization first.',
+        );
       }
 
       // Calculate totals
@@ -202,8 +252,12 @@ export class QuotationsService {
           leadName: data.leadName || null,
           bookingDate: data.bookingDate ? new Date(data.bookingDate) : null,
           dispatchDate: data.dispatchDate ? new Date(data.dispatchDate) : null,
-          installationDate: data.installationDate ? new Date(data.installationDate) : null,
-          inaugurationDate: data.inaugurationDate ? new Date(data.inaugurationDate) : null,
+          installationDate: data.installationDate
+            ? new Date(data.installationDate)
+            : null,
+          inaugurationDate: data.inaugurationDate
+            ? new Date(data.inaugurationDate)
+            : null,
           // Financial
           subtotal,
           gstRate,
@@ -273,7 +327,15 @@ export class QuotationsService {
         });
 
         // Extract items and other fields
-        const { items, deliveryDate, bookingDate, dispatchDate, installationDate, inaugurationDate, ...updateData } = data;
+        const {
+          items,
+          deliveryDate,
+          bookingDate,
+          dispatchDate,
+          installationDate,
+          inaugurationDate,
+          ...updateData
+        } = data;
         const itemsToCreate = items!; // Non-null assertion since we checked above
 
         // Calculate new totals
@@ -294,9 +356,16 @@ export class QuotationsService {
             deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
             bookingDate: bookingDate ? new Date(bookingDate) : undefined,
             dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
-            installationDate: installationDate ? new Date(installationDate) : undefined,
-            inaugurationDate: inaugurationDate ? new Date(inaugurationDate) : undefined,
-            leadName: updateData.leadName !== undefined ? updateData.leadName : undefined,
+            installationDate: installationDate
+              ? new Date(installationDate)
+              : undefined,
+            inaugurationDate: inaugurationDate
+              ? new Date(inaugurationDate)
+              : undefined,
+            leadName:
+              updateData.leadName !== undefined
+                ? updateData.leadName
+                : undefined,
             items: {
               create: itemsToCreate.map((item, index) => ({
                 srNo: index + 1,
@@ -333,7 +402,15 @@ export class QuotationsService {
     }
 
     // Simple update without items
-    const { items, deliveryDate, bookingDate, dispatchDate, installationDate, inaugurationDate, ...updateData } = data;
+    const {
+      items,
+      deliveryDate,
+      bookingDate,
+      dispatchDate,
+      installationDate,
+      inaugurationDate,
+      ...updateData
+    } = data;
 
     const result = await this.prisma.quotation.update({
       where: { id },
@@ -342,9 +419,14 @@ export class QuotationsService {
         deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
         bookingDate: bookingDate ? new Date(bookingDate) : undefined,
         dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
-        installationDate: installationDate ? new Date(installationDate) : undefined,
-        inaugurationDate: inaugurationDate ? new Date(inaugurationDate) : undefined,
-        leadName: updateData.leadName !== undefined ? updateData.leadName : undefined,
+        installationDate: installationDate
+          ? new Date(installationDate)
+          : undefined,
+        inaugurationDate: inaugurationDate
+          ? new Date(inaugurationDate)
+          : undefined,
+        leadName:
+          updateData.leadName !== undefined ? updateData.leadName : undefined,
       },
     });
 
@@ -357,9 +439,9 @@ export class QuotationsService {
         where: {
           referenceId: id,
           transactionType: 'OUT', // Ensure we only touch OUT transactions linked to this quote
-          // We can check referenceType too, but referenceId is unique enough usually. 
+          // We can check referenceType too, but referenceId is unique enough usually.
           // Safest to check types used: 'QUOTATION' and 'PI_BOOKING'
-          referenceType: { in: ['QUOTATION', 'PI_BOOKING'] }
+          referenceType: { in: ['QUOTATION', 'PI_BOOKING'] },
         },
         data: {
           date: newDispatcherDate,
@@ -480,9 +562,7 @@ export class QuotationsService {
         data: {
           ...data,
           totalAmount:
-            data.rate && data.quantity
-              ? data.rate * data.quantity
-              : undefined,
+            data.rate && data.quantity ? data.rate * data.quantity : undefined,
         },
       });
 
@@ -526,7 +606,10 @@ export class QuotationsService {
       where: { quotationId },
     });
 
-    const subtotal = items.reduce((sum, item) => sum + item.totalAmount.toNumber(), 0);
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.totalAmount.toNumber(),
+      0,
+    );
     const quotation = await tx.quotation.findUnique({
       where: { id: quotationId },
     });
@@ -615,7 +698,9 @@ export class QuotationsService {
       }
 
       // Get all items with products and positive quantity (skip 0 quantity items)
-      const itemsWithProducts = quotation.items.filter((item) => item.productId && item.quantity > 0);
+      const itemsWithProducts = quotation.items.filter(
+        (item) => item.productId && item.quantity > 0,
+      );
 
       if (itemsWithProducts.length === 0) {
         throw new BadRequestException('PI has no items to confirm');
@@ -670,7 +755,7 @@ export class QuotationsService {
 
         const allocatedStock = existingBookings.reduce(
           (sum, b) => sum + b.requiredQuantity,
-          0
+          0,
         );
 
         const availableStock = Math.max(0, baseStock - allocatedStock);
@@ -739,4 +824,3 @@ export class QuotationsService {
     });
   }
 }
-

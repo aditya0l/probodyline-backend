@@ -11,7 +11,15 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { GymsService } from './gyms.service';
 import { CreateGymDto } from './dto/create-gym.dto';
 import { UpdateGymDto } from './dto/update-gym.dto';
@@ -23,7 +31,22 @@ import * as fs from 'fs';
 export class GymsController {
   constructor(private readonly gymsService: GymsService) {
     // #region agent log
-    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'gyms.controller.ts:25',message:'GymsController constructor called',data:{controller:'GymsController'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})+'\n');}catch(e){}
+    try {
+      const logPath =
+        '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
+      fs.appendFileSync(
+        logPath,
+        JSON.stringify({
+          location: 'gyms.controller.ts:25',
+          message: 'GymsController constructor called',
+          data: { controller: 'GymsController' },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H1',
+        }) + '\n',
+      );
+    } catch (e) {}
     // #endregion
     console.log('✅ GymsController instantiated');
   }
@@ -42,16 +65,37 @@ export class GymsController {
   @ApiOperation({ summary: 'Test endpoint to verify controller is accessible' })
   @ApiResponse({ status: 200, description: 'Controller is working' })
   test() {
-    return { message: 'GymsController is working', timestamp: new Date().toISOString() };
+    return {
+      message: 'GymsController is working',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all gyms with filtering and pagination' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search term for gym name, city, code, or state' })
-  @ApiQuery({ name: 'stateCode', required: false, description: 'Filter by state code' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search term for gym name, city, code, or state',
+  })
+  @ApiQuery({
+    name: 'stateCode',
+    required: false,
+    description: 'Filter by state code',
+  })
   @ApiQuery({ name: 'city', required: false, description: 'Filter by city' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (0-indexed)', type: Number })
-  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (0-indexed)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page',
+    type: Number,
+  })
   @ApiResponse({ status: 200, description: 'Paginated list of gyms' })
   findAll(
     @Query('search') search?: string,
@@ -61,9 +105,30 @@ export class GymsController {
     @Query('limit') limit?: string,
   ) {
     // #region agent log
-    try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'gyms.controller.ts:59',message:'GymsController.findAll method called',data:{search,stateCode,city,page,limit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})+'\n');}catch(e){}
+    try {
+      const logPath =
+        '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
+      fs.appendFileSync(
+        logPath,
+        JSON.stringify({
+          location: 'gyms.controller.ts:59',
+          message: 'GymsController.findAll method called',
+          data: { search, stateCode, city, page, limit },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H4',
+        }) + '\n',
+      );
+    } catch (e) {}
     // #endregion
-    console.log('📞 GymsController.findAll called with:', { search, stateCode, city, page, limit });
+    console.log('📞 GymsController.findAll called with:', {
+      search,
+      stateCode,
+      city,
+      page,
+      limit,
+    });
     return this.gymsService.findAll({
       search,
       stateCode,
@@ -83,7 +148,9 @@ export class GymsController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update gym (installation date changes tracked in history)' })
+  @ApiOperation({
+    summary: 'Update gym (installation date changes tracked in history)',
+  })
   @ApiParam({ name: 'id', description: 'Gym UUID' })
   @ApiResponse({ status: 200, description: 'Gym successfully updated' })
   @ApiResponse({ status: 404, description: 'Gym not found' })
@@ -139,7 +206,10 @@ export class GymsController {
   @ApiParam({ name: 'clientId', description: 'Client UUID' })
   @ApiResponse({ status: 201, description: 'Client successfully linked' })
   @ApiResponse({ status: 404, description: 'Gym or client not found' })
-  @ApiResponse({ status: 409, description: 'Client is already linked to this gym' })
+  @ApiResponse({
+    status: 409,
+    description: 'Client is already linked to this gym',
+  })
   linkClient(@Param('id') id: string, @Param('clientId') clientId: string) {
     return this.gymsService.linkClient(id, clientId);
   }
@@ -169,8 +239,14 @@ export class GymsController {
   @ApiParam({ name: 'technicianId', description: 'Technician UUID' })
   @ApiResponse({ status: 201, description: 'Technician successfully linked' })
   @ApiResponse({ status: 404, description: 'Gym not found' })
-  @ApiResponse({ status: 409, description: 'Technician is already linked to this gym' })
-  linkTechnician(@Param('id') id: string, @Param('technicianId') technicianId: string) {
+  @ApiResponse({
+    status: 409,
+    description: 'Technician is already linked to this gym',
+  })
+  linkTechnician(
+    @Param('id') id: string,
+    @Param('technicianId') technicianId: string,
+  ) {
     return this.gymsService.linkTechnician(id, technicianId);
   }
 
@@ -179,8 +255,14 @@ export class GymsController {
   @ApiParam({ name: 'id', description: 'Gym UUID' })
   @ApiParam({ name: 'technicianId', description: 'Technician UUID' })
   @ApiResponse({ status: 200, description: 'Technician successfully unlinked' })
-  @ApiResponse({ status: 404, description: 'Gym, technician, or link not found' })
-  unlinkTechnician(@Param('id') id: string, @Param('technicianId') technicianId: string) {
+  @ApiResponse({
+    status: 404,
+    description: 'Gym, technician, or link not found',
+  })
+  unlinkTechnician(
+    @Param('id') id: string,
+    @Param('technicianId') technicianId: string,
+  ) {
     return this.gymsService.unlinkTechnician(id, technicianId);
   }
 
@@ -226,7 +308,10 @@ export class GymsController {
   }
 
   @Get(':id/summary')
-  @ApiOperation({ summary: 'Get gym summary (clients, quotes, orders, technicians, inauguration date)' })
+  @ApiOperation({
+    summary:
+      'Get gym summary (clients, quotes, orders, technicians, inauguration date)',
+  })
   @ApiParam({ name: 'id', description: 'Gym UUID' })
   @ApiResponse({ status: 200, description: 'Gym summary' })
   @ApiResponse({ status: 404, description: 'Gym not found' })
@@ -234,5 +319,3 @@ export class GymsController {
     return this.gymsService.getGymSummary(id);
   }
 }
-
-

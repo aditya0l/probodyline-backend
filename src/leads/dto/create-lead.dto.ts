@@ -15,17 +15,26 @@ export class CreateLeadDto {
   @IsString()
   name: string;
 
-  @ApiPropertyOptional({ description: 'Company name', example: 'ABC Corporation' })
+  @ApiPropertyOptional({
+    description: 'Company name',
+    example: 'ABC Corporation',
+  })
   @IsString()
   @IsOptional()
   company?: string;
 
-  @ApiPropertyOptional({ description: 'Email address', example: 'john@example.com' })
+  @ApiPropertyOptional({
+    description: 'Email address',
+    example: 'john@example.com',
+  })
   @IsEmail()
   @IsOptional()
   email?: string;
 
-  @ApiPropertyOptional({ description: 'Phone number', example: '+91 9876543210' })
+  @ApiPropertyOptional({
+    description: 'Phone number',
+    example: '+91 9876543210',
+  })
   @IsString()
   @IsOptional()
   phone?: string;
@@ -50,15 +59,20 @@ export class CreateLeadDto {
   @IsOptional()
   source?: string;
 
-  @ApiPropertyOptional({ description: 'Lead status', enum: LeadStatus, default: LeadStatus.NEW })
+  @ApiPropertyOptional({
+    description: 'Lead status',
+    enum: LeadStatus,
+    default: LeadStatus.NEW,
+  })
   @IsEnum(LeadStatus)
   @IsOptional()
   status?: LeadStatus;
 
-  @ApiPropertyOptional({ description: 'Notes', example: 'Interested in premium equipment' })
+  @ApiPropertyOptional({
+    description: 'Notes',
+    example: 'Interested in premium equipment',
+  })
   @IsString()
   @IsOptional()
   notes?: string;
 }
-
-

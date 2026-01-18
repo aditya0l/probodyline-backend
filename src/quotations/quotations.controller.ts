@@ -8,7 +8,14 @@ import {
   Delete,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
 import { UpdateQuotationDto } from './dto/update-quotation.dto';
@@ -18,7 +25,13 @@ import { UpdateQuotationItemDto } from './dto/update-quotation-item.dto';
 @ApiTags('quotations')
 @Controller('quotations')
 export class QuotationsController {
-  constructor(private readonly quotationsService: QuotationsService) {}
+  constructor(private readonly quotationsService: QuotationsService) { }
+
+  @Get(':quoteNumber/history')
+  @ApiOperation({ summary: 'Get history of a quotation' })
+  getHistory(@Param('quoteNumber') quoteNumber: string) {
+    return this.quotationsService.getRelatedQuotations(quoteNumber);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new quotation' })
@@ -73,8 +86,16 @@ export class QuotationsController {
   @ApiParam({ name: 'id', description: 'Quotation UUID' })
   @ApiResponse({ status: 200, description: 'Status successfully updated' })
   @ApiResponse({ status: 404, description: 'Quotation not found' })
-  @ApiResponse({ status: 400, description: 'Bad request - insufficient stock or validation failed' })
-  @ApiBody({ schema: { type: 'object', properties: { status: { type: 'string', example: 'approved' } } } })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - insufficient stock or validation failed',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { status: { type: 'string', example: 'approved' } },
+    },
+  })
   updateStatus(@Param('id') id: string, @Body('status') status: string) {
     return this.quotationsService.updateStatus(id, status);
   }
@@ -142,7 +163,10 @@ export class QuotationsController {
   @Post(':id/convert-to-pi')
   @ApiOperation({ summary: 'Convert quotation to PI (Proforma Invoice)' })
   @ApiParam({ name: 'id', description: 'Quotation UUID' })
-  @ApiResponse({ status: 200, description: 'Quotation successfully converted to PI' })
+  @ApiResponse({
+    status: 200,
+    description: 'Quotation successfully converted to PI',
+  })
   @ApiResponse({ status: 404, description: 'Quotation not found' })
   @ApiResponse({ status: 400, description: 'Quotation is already converted' })
   convertToPI(@Param('id') id: string) {
@@ -159,4 +183,3 @@ export class QuotationsController {
     return this.quotationsService.confirmPI(id);
   }
 }
-

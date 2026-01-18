@@ -11,4 +11,3 @@ import { CommonModule } from '../common/common.module';
   exports: [PdfService],
 })
 export class PdfModule {}
-

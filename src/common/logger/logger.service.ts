@@ -10,12 +10,16 @@ export class LoggerService implements NestLoggerService {
 
   log(message: any, context?: string) {
     const ctx = context || this.context || 'Application';
-    console.log(`[${new Date().toISOString()}] [${ctx}] ${this.formatMessage(message)}`);
+    console.log(
+      `[${new Date().toISOString()}] [${ctx}] ${this.formatMessage(message)}`,
+    );
   }
 
   error(message: any, trace?: string, context?: string) {
     const ctx = context || this.context || 'Application';
-    console.error(`[${new Date().toISOString()}] [${ctx}] ERROR: ${this.formatMessage(message)}`);
+    console.error(
+      `[${new Date().toISOString()}] [${ctx}] ERROR: ${this.formatMessage(message)}`,
+    );
     if (trace) {
       console.error(`[${new Date().toISOString()}] [${ctx}] TRACE: ${trace}`);
     }
@@ -23,20 +27,26 @@ export class LoggerService implements NestLoggerService {
 
   warn(message: any, context?: string) {
     const ctx = context || this.context || 'Application';
-    console.warn(`[${new Date().toISOString()}] [${ctx}] WARN: ${this.formatMessage(message)}`);
+    console.warn(
+      `[${new Date().toISOString()}] [${ctx}] WARN: ${this.formatMessage(message)}`,
+    );
   }
 
   debug(message: any, context?: string) {
     const ctx = context || this.context || 'Application';
     if (process.env.NODE_ENV === 'development') {
-      console.debug(`[${new Date().toISOString()}] [${ctx}] DEBUG: ${this.formatMessage(message)}`);
+      console.debug(
+        `[${new Date().toISOString()}] [${ctx}] DEBUG: ${this.formatMessage(message)}`,
+      );
     }
   }
 
   verbose(message: any, context?: string) {
     const ctx = context || this.context || 'Application';
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[${new Date().toISOString()}] [${ctx}] VERBOSE: ${this.formatMessage(message)}`);
+      console.log(
+        `[${new Date().toISOString()}] [${ctx}] VERBOSE: ${this.formatMessage(message)}`,
+      );
     }
   }
 
@@ -47,4 +57,3 @@ export class LoggerService implements NestLoggerService {
     return String(message);
   }
 }
-

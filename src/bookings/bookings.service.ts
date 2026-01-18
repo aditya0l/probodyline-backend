@@ -1,10 +1,14 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { BookingStatus } from '@prisma/client';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Create a new booking manually
@@ -16,7 +20,9 @@ export class BookingsService {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product with ID ${data.productId} not found`);
+      throw new NotFoundException(
+        `Product with ID ${data.productId} not found`,
+      );
     }
 
     // Determine allocation status based on stock
@@ -87,7 +93,8 @@ export class BookingsService {
 
     if (filters?.status && filters.status !== 'ALL') {
       // Convert "WAITING LIST" to "WAITING_LIST" for enum
-      const statusEnum = filters.status === 'WAITING LIST' ? 'WAITING_LIST' : filters.status;
+      const statusEnum =
+        filters.status === 'WAITING LIST' ? 'WAITING_LIST' : filters.status;
       where.status = statusEnum;
     }
 
@@ -106,7 +113,10 @@ export class BookingsService {
     }
 
     if (filters?.productModel) {
-      where.modelNumber = { contains: filters.productModel, mode: 'insensitive' };
+      where.modelNumber = {
+        contains: filters.productModel,
+        mode: 'insensitive',
+      };
     }
 
     // Execute query
@@ -115,10 +125,7 @@ export class BookingsService {
         where,
         skip,
         take: limit,
-        orderBy: [
-          { dispatchDate: 'asc' },
-          { bookedOn: 'asc' },
-        ],
+        orderBy: [{ dispatchDate: 'asc' }, { bookedOn: 'asc' }],
       }),
       this.prisma.booking.count({ where }),
     ]);
@@ -135,14 +142,17 @@ export class BookingsService {
    */
   private async calculateDynamicStatus(bookings: any[]): Promise<any[]> {
     // Group bookings by productId + dispatchDate
-    const grouped = bookings.reduce((acc, booking) => {
-      const key = `${booking.productId}|${booking.dispatchDate.toISOString().split('T')[0]}`;
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(booking);
-      return acc;
-    }, {} as Record<string, any[]>);
+    const grouped = bookings.reduce(
+      (acc, booking) => {
+        const key = `${booking.productId}|${booking.dispatchDate.toISOString().split('T')[0]}`;
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(booking);
+        return acc;
+      },
+      {} as Record<string, any[]>,
+    );
 
     // Calculate status for each group
     const results: any[] = [];
@@ -154,8 +164,8 @@ export class BookingsService {
       const baseStock = await this.getStockOnDate(productId, new Date(dateStr));
 
       // Sort by bookedOn (FIFO)
-      const sorted = (groupBookings as any[]).sort((a: any, b: any) =>
-        a.bookedOn.getTime() - b.bookedOn.getTime()
+      const sorted = (groupBookings as any[]).sort(
+        (a: any, b: any) => a.bookedOn.getTime() - b.bookedOn.getTime(),
       );
 
       // Calculate status with running stock
@@ -170,7 +180,8 @@ export class BookingsService {
         } else {
           // WAITING_LIST
           booking.calculatedStatus = BookingStatus.WAITING_LIST;
-          booking.calculatedWaitingQuantity = booking.requiredQuantity - Math.max(0, runningStock);
+          booking.calculatedWaitingQuantity =
+            booking.requiredQuantity - Math.max(0, runningStock);
           runningStock = 0;
         }
 
@@ -225,7 +236,9 @@ export class BookingsService {
     const updated = await this.prisma.booking.update({
       where: { id },
       data: {
-        dispatchDate: data.dispatchDate ? new Date(data.dispatchDate) : undefined,
+        dispatchDate: data.dispatchDate
+          ? new Date(data.dispatchDate)
+          : undefined,
         requiredQuantity: data.requiredQuantity,
         status: data.status,
         waitingQuantity: data.waitingQuantity,
@@ -276,33 +289,33 @@ export class BookingsService {
     // Get all bookings for this product
     const bookings = await this.prisma.booking.findMany({
       where: { productId },
-      orderBy: [
-        { dispatchDate: 'asc' },
-        { bookedOn: 'asc' },
-      ],
+      orderBy: [{ dispatchDate: 'asc' }, { bookedOn: 'asc' }],
     });
 
     // Group by dispatch date
-    const allocationByDate = bookings.reduce((acc, booking) => {
-      const dateKey = booking.dispatchDate.toISOString().split('T')[0];
-      if (!acc[dateKey]) {
-        acc[dateKey] = {
-          date: dateKey,
-          totalConfirmed: 0,
-          totalWaiting: 0,
-          bookings: [],
-        };
-      }
+    const allocationByDate = bookings.reduce(
+      (acc, booking) => {
+        const dateKey = booking.dispatchDate.toISOString().split('T')[0];
+        if (!acc[dateKey]) {
+          acc[dateKey] = {
+            date: dateKey,
+            totalConfirmed: 0,
+            totalWaiting: 0,
+            bookings: [],
+          };
+        }
 
-      if (booking.status === BookingStatus.CONFIRM) {
-        acc[dateKey].totalConfirmed += booking.requiredQuantity;
-      } else {
-        acc[dateKey].totalWaiting += booking.waitingQuantity;
-      }
+        if (booking.status === BookingStatus.CONFIRM) {
+          acc[dateKey].totalConfirmed += booking.requiredQuantity;
+        } else {
+          acc[dateKey].totalWaiting += booking.waitingQuantity;
+        }
 
-      acc[dateKey].bookings.push(booking);
-      return acc;
-    }, {} as Record<string, any>);
+        acc[dateKey].bookings.push(booking);
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
 
     return {
       productId,
@@ -317,7 +330,10 @@ export class BookingsService {
    * Uses FIFO (First In, First Out) priority based on bookedOn timestamp
    * Status is calculated dynamically based on stock availability
    */
-  async getBookingAllocation(productId: string, selectedDate: string): Promise<any> {
+  async getBookingAllocation(
+    productId: string,
+    selectedDate: string,
+  ): Promise<any> {
     // Verify product exists
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -328,7 +344,10 @@ export class BookingsService {
     }
 
     // Get base stock on selected date
-    const baseStock = await this.getStockOnDate(productId, new Date(selectedDate));
+    const baseStock = await this.getStockOnDate(
+      productId,
+      new Date(selectedDate),
+    );
 
     // Get all bookings for this product on this date (ordered by bookedOn for FIFO priority)
     const bookings = await this.prisma.booking.findMany({
@@ -361,7 +380,8 @@ export class BookingsService {
       } else {
         // Insufficient stock - WAITING_LIST
         calculatedStatus = 'WAITING LIST';
-        calculatedWaitingQuantity = booking.requiredQuantity - Math.max(0, runningStock);
+        calculatedWaitingQuantity =
+          booking.requiredQuantity - Math.max(0, runningStock);
         totalWaitingQuantity += calculatedWaitingQuantity;
         runningStock = 0; // All stock consumed
       }
@@ -444,7 +464,7 @@ export class BookingsService {
     });
 
     const models = products
-      .map(p => p.modelNumber)
+      .map((p) => p.modelNumber)
       .filter(Boolean) as string[];
 
     return {
@@ -488,7 +508,7 @@ export class BookingsService {
 
     const allocatedStock = confirmedBookings.reduce(
       (sum, b) => sum + b.requiredQuantity,
-      0
+      0,
     );
 
     return Math.max(0, baseStock - allocatedStock);

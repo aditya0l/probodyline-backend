@@ -1,5 +1,11 @@
 import { Controller, Post, Body, Get, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -19,7 +25,11 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User successfully registered', type: AuthResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered',
+    type: AuthResponseDto,
+  })
   @ApiResponse({ status: 409, description: 'User already exists' })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: RegisterDto })
@@ -29,7 +39,11 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
-  @ApiResponse({ status: 200, description: 'Login successful', type: AuthResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: AuthResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: LoginDto })
@@ -45,8 +59,11 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@CurrentUser() user: any) {
     // If auth is disabled, DevAuthBypassGuard will inject mock user
-    const isAuthDisabled = this.configService.get<boolean>('auth.disabled', false);
-    
+    const isAuthDisabled = this.configService.get<boolean>(
+      'auth.disabled',
+      false,
+    );
+
     if (isAuthDisabled && !user) {
       // Return mock user for development
       return {
@@ -69,4 +86,3 @@ export class AuthController {
     };
   }
 }
-

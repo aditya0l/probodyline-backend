@@ -1,8 +1,20 @@
-import { IsString, IsOptional, IsNumber, IsUUID, IsArray, Min, IsPositive, Length } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsUUID,
+  IsArray,
+  Min,
+  IsPositive,
+  Length,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateQuotationItemDto {
-  @ApiPropertyOptional({ description: 'Product UUID (if linked to product)', example: '123e4567-e89b-12d3-a456-426614174002' })
+  @ApiPropertyOptional({
+    description: 'Product UUID (if linked to product)',
+    example: '123e4567-e89b-12d3-a456-426614174002',
+  })
   @IsOptional()
   @IsUUID()
   productId?: string;
@@ -33,7 +45,11 @@ export class CreateQuotationItemDto {
   quantity: number;
 
   // Denormalized product fields
-  @ApiPropertyOptional({ description: 'Product priority', example: 1, type: Number })
+  @ApiPropertyOptional({
+    description: 'Product priority',
+    example: 1,
+    type: Number,
+  })
   @IsOptional()
   @IsNumber()
   @IsPositive()
@@ -44,12 +60,18 @@ export class CreateQuotationItemDto {
   @IsString()
   productType?: string;
 
-  @ApiPropertyOptional({ description: 'Series name', example: 'Professional Series' })
+  @ApiPropertyOptional({
+    description: 'Series name',
+    example: 'Professional Series',
+  })
   @IsOptional()
   @IsString()
   seriesName?: string;
 
-  @ApiPropertyOptional({ description: 'Packaging description array', type: [String] })
+  @ApiPropertyOptional({
+    description: 'Packaging description array',
+    type: [String],
+  })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
@@ -61,32 +83,52 @@ export class CreateQuotationItemDto {
   @IsString({ each: true })
   keyword?: string[];
 
-  @ApiPropertyOptional({ description: 'Current stock (can be negative)', example: 10, type: Number })
+  @ApiPropertyOptional({
+    description: 'Current stock (can be negative)',
+    example: 10,
+    type: Number,
+  })
   @IsOptional()
   @IsNumber()
   todaysStock?: number;
 
-  @ApiPropertyOptional({ description: 'Stock plus 360 days (can be negative)', example: 50, type: Number })
+  @ApiPropertyOptional({
+    description: 'Stock plus 360 days (can be negative)',
+    example: 50,
+    type: Number,
+  })
   @IsOptional()
   @IsNumber()
   stockPlus360Days?: number;
 
-  @ApiPropertyOptional({ description: 'Cousin machine', example: 'Treadmill Pro 3000' })
+  @ApiPropertyOptional({
+    description: 'Cousin machine',
+    example: 'Treadmill Pro 3000',
+  })
   @IsOptional()
   @IsString()
   cousinMachine?: string;
 
-  @ApiPropertyOptional({ description: 'Order together product', example: 'Dumbbell Set' })
+  @ApiPropertyOptional({
+    description: 'Order together product',
+    example: 'Dumbbell Set',
+  })
   @IsOptional()
   @IsString()
   orderTogether?: string;
 
-  @ApiPropertyOptional({ description: 'Swap machine product', example: 'Treadmill Pro 6000' })
+  @ApiPropertyOptional({
+    description: 'Swap machine product',
+    example: 'Treadmill Pro 6000',
+  })
   @IsOptional()
   @IsString()
   swapMachine?: string;
 
-  @ApiPropertyOptional({ description: 'Category name', example: 'Cardio Equipment' })
+  @ApiPropertyOptional({
+    description: 'Category name',
+    example: 'Cardio Equipment',
+  })
   @IsOptional()
   @IsString()
   category?: string;
@@ -106,4 +148,3 @@ export class CreateQuotationItemDto {
   @IsString()
   notes?: string;
 }
-

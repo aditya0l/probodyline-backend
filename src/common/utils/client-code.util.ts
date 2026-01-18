@@ -14,13 +14,7 @@ export interface ClientCodeData {
  * Uses 'NA' for missing components.
  */
 export function generateClientCode(data: ClientCodeData): string {
-  const {
-    tokenDate,
-    stateCode,
-    city,
-    clientName,
-    salesInitial,
-  } = data;
+  const { tokenDate, stateCode, city, clientName, salesInitial } = data;
 
   // Validate sales initial (still required as it comes from system)
   if (!salesInitial || salesInitial.trim().length === 0) {
@@ -31,7 +25,9 @@ export function generateClientCode(data: ClientCodeData): string {
   const normalizedDate = tokenDate ? tokenDate.split('T')[0] : 'NA';
   const normalizedState = stateCode ? stateCode.toUpperCase().trim() : 'NA';
   const normalizedCity = city ? city.trim().replace(/\s+/g, '_') : 'NA';
-  const normalizedClientName = clientName ? clientName.trim().replace(/\s+/g, '_') : 'NA';
+  const normalizedClientName = clientName
+    ? clientName.trim().replace(/\s+/g, '_')
+    : 'NA';
   const normalizedSalesInitial = salesInitial.toUpperCase().trim();
 
   // Build client code
@@ -67,5 +63,3 @@ export function parseClientCode(clientCode: string): ClientCodeData | null {
     return null;
   }
 }
-
-

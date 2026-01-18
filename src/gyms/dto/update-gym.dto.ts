@@ -6,11 +6,17 @@ import { Type } from 'class-transformer';
 
 export class UpdateGymDto extends PartialType(CreateGymDto) {
   // installationDate can be updated, but history is tracked via AuditLog
-  @ApiPropertyOptional({ description: 'Installation date (YYYY-MM-DD)', example: '2024-01-15' })
+  @ApiPropertyOptional({
+    description: 'Installation date (YYYY-MM-DD)',
+    example: '2024-01-15',
+  })
   @IsOptional()
   installationDate?: string;
 
-  @ApiPropertyOptional({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+  @ApiPropertyOptional({
+    description: 'State code (e.g., MH, DL, KA)',
+    example: 'MH',
+  })
   @IsString()
   @IsOptional()
   stateCode?: string;
@@ -25,7 +31,10 @@ export class UpdateGymDto extends PartialType(CreateGymDto) {
   @IsOptional()
   gymName?: string;
 
-  @ApiPropertyOptional({ description: 'Branch code (1.0 to 99.0)', example: 1.0 })
+  @ApiPropertyOptional({
+    description: 'Branch code (1.0 to 99.0)',
+    example: 1.0,
+  })
   @IsNumber()
   @Type(() => Number)
   @Min(1.0)
@@ -38,20 +47,27 @@ export class UpdateGymDto extends PartialType(CreateGymDto) {
   @IsOptional()
   branchTitle?: string;
 
-  @ApiPropertyOptional({ description: 'Sales initial (code identifier)', example: 'RK' })
+  @ApiPropertyOptional({
+    description: 'Sales initial (code identifier)',
+    example: 'RK',
+  })
   @IsString()
   @IsOptional()
   salesInitial?: string;
 
-  @ApiPropertyOptional({ description: 'Instagram link', example: 'https://instagram.com/helion_fitness' })
+  @ApiPropertyOptional({
+    description: 'Instagram link',
+    example: 'https://instagram.com/helion_fitness',
+  })
   @IsString()
   @IsOptional()
   instagramLink?: string;
 
-  @ApiPropertyOptional({ description: 'Location link (Google Maps)', example: 'https://maps.google.com/?q=Mumbai+Helion' })
+  @ApiPropertyOptional({
+    description: 'Location link (Google Maps)',
+    example: 'https://maps.google.com/?q=Mumbai+Helion',
+  })
   @IsString()
   @IsOptional()
   locationLink?: string;
 }
-
-

@@ -20,9 +20,10 @@ export interface Response<T> {
 }
 
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, Response<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  Response<T>
+> {
   /**
    * Recursively converts Prisma Decimal objects to plain numbers.
    * Handles nested objects, arrays, and preserves null/undefined values.
@@ -77,7 +78,12 @@ export class TransformInterceptor<T>
     return next.handle().pipe(
       map((data) => {
         // If data already has a standardized format, return as is
-        if (data && typeof data === 'object' && 'data' in data && 'total' in data) {
+        if (
+          data &&
+          typeof data === 'object' &&
+          'data' in data &&
+          'total' in data
+        ) {
           // Paginated response
           const page = query.page ? Number(query.page) : 0;
           const limit = query.limit ? Number(query.limit) : 50;
@@ -105,4 +111,3 @@ export class TransformInterceptor<T>
     );
   }
 }
-

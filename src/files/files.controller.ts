@@ -10,7 +10,15 @@ import {
   Query,
   BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { FilesService } from './files.service';
@@ -21,7 +29,7 @@ import * as path from 'path';
 @ApiTags('files')
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) { }
+  constructor(private readonly filesService: FilesService) {}
 
   @Post('upload')
   @ApiOperation({ summary: 'Upload a file' })
@@ -41,9 +49,16 @@ export class FilesController {
       },
     },
   })
-  @ApiQuery({ name: 'folder', required: false, description: 'Optional folder path for organization' })
+  @ApiQuery({
+    name: 'folder',
+    required: false,
+    description: 'Optional folder path for organization',
+  })
   @ApiResponse({ status: 201, description: 'File successfully uploaded' })
-  @ApiResponse({ status: 400, description: 'Bad request - no file or invalid file type/size' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - no file or invalid file type/size',
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -74,8 +89,13 @@ export class FilesController {
   @ApiParam({ name: 'path', description: 'File path' })
   @ApiResponse({ status: 200, description: 'File content' })
   @ApiResponse({ status: 404, description: 'File not found' })
-  async getFile(@Param('path') filepath: string | string[], @Res() res: Response) {
-    const safeFilePath = Array.isArray(filepath) ? filepath.join('/') : filepath;
+  async getFile(
+    @Param('path') filepath: string | string[],
+    @Res() res: Response,
+  ) {
+    const safeFilePath = Array.isArray(filepath)
+      ? filepath.join('/')
+      : filepath;
     const fullPath = this.filesService.getFilePath(safeFilePath);
 
     if (!fs.existsSync(fullPath)) {
@@ -88,8 +108,10 @@ export class FilesController {
           cwd: process.cwd(),
           exists: false,
           dirExists: fs.existsSync(dir),
-          filesInDir: fs.existsSync(dir) ? fs.readdirSync(dir) : 'Dir not found'
-        }
+          filesInDir: fs.existsSync(dir)
+            ? fs.readdirSync(dir)
+            : 'Dir not found',
+        },
       });
       return;
     }
@@ -107,4 +129,3 @@ export class FilesController {
     return { message: 'File deleted successfully' };
   }
 }
-

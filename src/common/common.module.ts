@@ -8,4 +8,3 @@ import { PrismaHealthService } from './prisma-health.service';
   exports: [PrismaService, PrismaHealthService],
 })
 export class CommonModule {}
-

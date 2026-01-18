@@ -4,8 +4,13 @@ import { IsString, IsOptional } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 // OmitType excludes tokenDate (immutable field) from CreateClientDto, then PartialType makes all remaining fields optional
-export class UpdateClientDto extends PartialType(OmitType(CreateClientDto, ['tokenDate'] as const)) {
-  @ApiPropertyOptional({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+export class UpdateClientDto extends PartialType(
+  OmitType(CreateClientDto, ['tokenDate'] as const),
+) {
+  @ApiPropertyOptional({
+    description: 'State code (e.g., MH, DL, KA)',
+    example: 'MH',
+  })
   @IsString()
   @IsOptional()
   stateCode?: string;
@@ -20,4 +25,3 @@ export class UpdateClientDto extends PartialType(OmitType(CreateClientDto, ['tok
   @IsOptional()
   clientName?: string;
 }
-

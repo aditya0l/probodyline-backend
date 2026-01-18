@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsNumber, IsEmail, Length, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEmail,
+  Length,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateOrganizationDto {
@@ -7,7 +15,10 @@ export class CreateOrganizationDto {
   @Length(1, 255)
   name: string;
 
-  @ApiProperty({ description: 'Organization address', example: '123 Main St, City, State 12345' })
+  @ApiProperty({
+    description: 'Organization address',
+    example: '123 Main St, City, State 12345',
+  })
   @IsString()
   @Length(1, 500)
   address: string;
@@ -17,30 +28,48 @@ export class CreateOrganizationDto {
   @Length(15, 15)
   gst: string;
 
-  @ApiProperty({ description: 'Contact phone number', example: '+91 9876543210' })
+  @ApiProperty({
+    description: 'Contact phone number',
+    example: '+91 9876543210',
+  })
   @IsString()
   @Length(10, 20)
   phone: string;
 
-  @ApiProperty({ description: 'Contact email address', example: 'contact@probodyline.com' })
+  @ApiProperty({
+    description: 'Contact email address',
+    example: 'contact@probodyline.com',
+  })
   @IsEmail()
   email: string;
 
-  @ApiProperty({ description: 'Website URL', example: 'https://www.probodyline.com' })
+  @ApiProperty({
+    description: 'Website URL',
+    example: 'https://www.probodyline.com',
+  })
   @IsString()
   website: string;
 
-  @ApiProperty({ description: 'Primary contact person name', example: 'John Doe' })
+  @ApiProperty({
+    description: 'Primary contact person name',
+    example: 'John Doe',
+  })
   @IsString()
   @Length(1, 255)
   contactPerson: string;
 
-  @ApiPropertyOptional({ description: 'Logo URL or base64 string', example: 'https://example.com/logo.png' })
+  @ApiPropertyOptional({
+    description: 'Logo URL or base64 string',
+    example: 'https://example.com/logo.png',
+  })
   @IsOptional()
   @IsString()
   logo?: string;
 
-  @ApiPropertyOptional({ description: 'Bank account details', example: 'Account: 1234567890, IFSC: ABCD0123456' })
+  @ApiPropertyOptional({
+    description: 'Bank account details',
+    example: 'Account: 1234567890, IFSC: ABCD0123456',
+  })
   @IsOptional()
   @IsString()
   bankDetails?: string;
@@ -55,11 +84,14 @@ export class CreateOrganizationDto {
   @IsString()
   warrantyInfo?: string;
 
-  @ApiPropertyOptional({ description: 'Default GST rate percentage', example: 18, type: Number })
+  @ApiPropertyOptional({
+    description: 'Default GST rate percentage',
+    example: 18,
+    type: Number,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Max(100)
   defaultGstRate?: number;
 }
-

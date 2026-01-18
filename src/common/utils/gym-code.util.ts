@@ -13,7 +13,7 @@ export interface GymCodeData {
 /**
  * Generate canonical gym code
  * Format: YYYY-MM-DD/STATE/CITY/GYM_NAME/BRANCH_CODE/BRANCH_TITLE/SALES_INITIAL
- * 
+ *
  * Rules:
  * - "/" is delimiter
  * - No spaces (use underscore if needed)
@@ -87,5 +87,3 @@ export function parseGymCode(gymCode: string): GymCodeData | null {
     return null;
   }
 }
-
-

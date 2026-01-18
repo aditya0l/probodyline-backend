@@ -8,7 +8,13 @@ import {
   Delete,
   Put,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { OrganizationsService } from './organizations.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
@@ -20,7 +26,10 @@ export class OrganizationsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new organization' })
-  @ApiResponse({ status: 201, description: 'Organization successfully created' })
+  @ApiResponse({
+    status: 201,
+    description: 'Organization successfully created',
+  })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: CreateOrganizationDto })
   create(@Body() createOrganizationDto: CreateOrganizationDto) {
@@ -46,7 +55,10 @@ export class OrganizationsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update organization' })
   @ApiParam({ name: 'id', description: 'Organization UUID' })
-  @ApiResponse({ status: 200, description: 'Organization successfully updated' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization successfully updated',
+  })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: UpdateOrganizationDto })
@@ -60,7 +72,10 @@ export class OrganizationsController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete organization' })
   @ApiParam({ name: 'id', description: 'Organization UUID' })
-  @ApiResponse({ status: 200, description: 'Organization successfully deleted' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization successfully deleted',
+  })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   remove(@Param('id') id: string) {
     return this.organizationsService.remove(id);
@@ -77,7 +92,10 @@ export class OrganizationsController {
 
   @Put('singleton')
   @ApiOperation({ summary: 'Update the organization (singleton)' })
-  @ApiResponse({ status: 200, description: 'Organization successfully updated' })
+  @ApiResponse({
+    status: 200,
+    description: 'Organization successfully updated',
+  })
   @ApiResponse({ status: 404, description: 'Organization not found' })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: UpdateOrganizationDto })
@@ -85,4 +103,3 @@ export class OrganizationsController {
     return this.organizationsService.updateSingleton(updateOrganizationDto);
   }
 }
-

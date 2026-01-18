@@ -1,12 +1,21 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import { BookingStatus } from '@prisma/client';
 
 @Injectable()
 export class SalesOrdersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService) {
+        // Service for handling Sales Orders and Splits
+    }
 
-    async createSplit(quotationId: string, itemIds: string[], dispatchDate?: string) {
+    async createSplit(
+        quotationId: string,
+        itemIds: string[],
+        dispatchDate?: string,
+    ) {
         return this.prisma.$transaction(async (tx) => {
             // 1. Validate Quotation
             const quotation = await tx.quotation.findUnique({
@@ -24,22 +33,29 @@ export class SalesOrdersService {
             });
 
             if (items.length !== itemIds.length) {
-                throw new BadRequestException('Some items do not belong to this quotation');
+                throw new BadRequestException(
+                    'Some items do not belong to this quotation',
+                );
             }
 
             for (const item of items) {
                 if (item.salesOrderId) {
-                    throw new BadRequestException(`Item ${item.modelNumber} is already in another Sales Order`);
+                    throw new BadRequestException(
+                        `Item ${item.modelNumber} is already in another Sales Order`,
+                    );
                 }
             }
 
             // 3. Generate SO Number (Simple logic for now: QNo-01, -02 etc)
             const soCount = await tx.salesOrder.count({ where: { quotationId } });
             const suffix = String(soCount + 1).padStart(2, '0');
-            const soNumber = `${quotation.quoteNumber}_${suffix}`;
+            const soNumber = `${quotation.quoteNumber}_${suffix} `;
 
             // 4. Calculate Totals for this Split
-            const subtotal = items.reduce((sum, item) => sum + Number(item.totalAmount), 0);
+            const subtotal = items.reduce(
+                (sum, item) => sum + Number(item.totalAmount),
+                0,
+            );
             const gstRate = Number(quotation.gstRate);
             const gstAmount = (subtotal * gstRate) / 100;
             const grandTotal = subtotal + gstAmount;
@@ -71,7 +87,8 @@ export class SalesOrdersService {
         return this.prisma.$transaction(async (tx) => {
             const so = await tx.salesOrder.findUnique({ where: { id: soId } });
             if (!so) throw new NotFoundException('Sales Order not found');
-            if (so.status === 'BOOKED') throw new BadRequestException('Cannot edit a BOOKED Sales Order');
+            if (so.status === 'BOOKED')
+                throw new BadRequestException('Cannot edit a BOOKED Sales Order');
 
             // Unlink all current items
             await tx.quotationItem.updateMany({
@@ -89,7 +106,9 @@ export class SalesOrdersService {
 
             for (const item of items) {
                 if (item.salesOrderId && item.salesOrderId !== soId) {
-                    throw new BadRequestException(`Item ${item.modelNumber} is already in another Sales Order`);
+                    throw new BadRequestException(
+                        `Item ${item.modelNumber} is already in another Sales Order`,
+                    );
                 }
             }
 
@@ -99,10 +118,15 @@ export class SalesOrdersService {
             });
 
             // Recalculate Totals
-            const quotation = await tx.quotation.findUnique({ where: { id: so.quotationId } });
+            const quotation = await tx.quotation.findUnique({
+                where: { id: so.quotationId },
+            });
             if (!quotation) throw new NotFoundException('Quotation not found'); // Should exist
 
-            const subtotal = items.reduce((sum, item) => sum + Number(item.totalAmount), 0);
+            const subtotal = items.reduce(
+                (sum, item) => sum + Number(item.totalAmount),
+                0,
+            );
             const gstRate = Number(quotation.gstRate);
             const gstAmount = (subtotal * gstRate) / 100;
             const grandTotal = subtotal + gstAmount;
@@ -113,7 +137,7 @@ export class SalesOrdersService {
                     dispatchDate: dispatchDate ? new Date(dispatchDate) : so.dispatchDate,
                     subtotal,
                     gstAmount,
-                    grandTotal
+                    grandTotal,
                 },
             });
         });
@@ -125,13 +149,16 @@ export class SalesOrdersService {
                 where: { id: soId },
                 include: {
                     items: true,
-                    quotation: true
+                    quotation: true,
                 },
             });
             if (!so) throw new NotFoundException('Sales Order not found');
-            if (so.status === 'BOOKED') throw new BadRequestException('Sales Order is already BOOKED');
-            if (so.items.length === 0) throw new BadRequestException('Cannot book an empty Sales Order');
-            if (!so.dispatchDate) throw new BadRequestException('Dispatch Date is required to book');
+            if (so.status === 'BOOKED')
+                throw new BadRequestException('Sales Order is already BOOKED');
+            if (so.items.length === 0)
+                throw new BadRequestException('Cannot book an empty Sales Order');
+            if (!so.dispatchDate)
+                throw new BadRequestException('Dispatch Date is required to book');
 
             // Create Bookings & Stock Transactions
             const promises = so.items.map(async (item) => {
@@ -146,13 +173,15 @@ export class SalesOrdersService {
                         referenceType: 'SALES_ORDER',
                         referenceId: so.id, // Linking to SO, not just Quotation
                         date: so.dispatchDate!,
-                        notes: `Sales Order ${so.soNumber} - ${item.productName}`,
-                    }
+                        notes: `Sales Order ${so.soNumber} - ${item.productName} `,
+                    },
                 });
 
                 // Booking Logic (Simplified Copy from Quotations Service)
                 // 1. Get Stock
-                const product = await tx.product.findUnique({ where: { id: item.productId } });
+                const product = await tx.product.findUnique({
+                    where: { id: item.productId },
+                });
                 if (!product) return;
 
                 // (Simplified stock check logic - for now assume logic exists or copy helper from booking service if strict needed)
@@ -177,11 +206,11 @@ export class SalesOrdersService {
                         waitingQuantity: 0,
                         customerName: so.quotation.clientName,
                         gymName: so.quotation.gymName,
-                        city: so.quotation.clientCity
-                    }
+                        city: so.quotation.clientCity,
+                    },
                 });
 
-                // Update Product "Today's Stock" Cache 
+                // Update Product "Today's Stock" Cache
                 // (This usually requires re-summing transactions)
             });
 
@@ -191,8 +220,8 @@ export class SalesOrdersService {
                 where: { id: soId },
                 data: {
                     status: 'BOOKED',
-                    bookedAt: new Date()
-                }
+                    bookedAt: new Date(),
+                },
             });
         });
     }
@@ -201,7 +230,7 @@ export class SalesOrdersService {
         return this.prisma.salesOrder.findMany({
             where: { quotationId },
             include: { items: true },
-            orderBy: { soNumber: 'asc' }
+            orderBy: { soNumber: 'asc' },
         });
     }
 
@@ -209,13 +238,23 @@ export class SalesOrdersService {
         return this.prisma.salesOrder.findMany({
             include: {
                 quotation: {
-                    select: { id: true, quoteNumber: true, clientName: true, gymName: true }
+                    select: {
+                        id: true,
+                        quoteNumber: true,
+                        clientName: true,
+                        gymName: true,
+                    },
                 },
                 items: {
-                    select: { id: true, modelNumber: true, productName: true, quantity: true }
-                }
+                    select: {
+                        id: true,
+                        modelNumber: true,
+                        productName: true,
+                        quantity: true,
+                    },
+                },
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
         });
     }
 
@@ -225,9 +264,9 @@ export class SalesOrdersService {
             include: {
                 items: true,
                 quotation: {
-                    include: { items: true } // Need full quotation items to allow swapping/splitting
-                }
-            }
+                    include: { items: true }, // Need full quotation items to allow swapping/splitting
+                },
+            },
         });
         if (!so) throw new NotFoundException('Sales Order not found');
         return so;
@@ -236,9 +275,10 @@ export class SalesOrdersService {
     async deleteSalesOrder(id: string) {
         const so = await this.prisma.salesOrder.findUnique({ where: { id } });
         if (!so) throw new NotFoundException('Sales Order not found');
-        if (so.status === 'BOOKED') throw new BadRequestException('Cannot delete a BOOKED Sales Order');
+        if (so.status === 'BOOKED')
+            throw new BadRequestException('Cannot delete a BOOKED Sales Order');
 
-        // Items will automatically unlink because relation is SetNull? 
+        // Items will automatically unlink because relation is SetNull?
         // No, we defined onDelete: SetNull in schema.
         // So items.salesOrderId becomes null. Correct.
         return this.prisma.salesOrder.delete({ where: { id } });

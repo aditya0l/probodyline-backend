@@ -1,13 +1,24 @@
-import { IsString, IsDateString, IsNotEmpty, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateClientDto {
-  @ApiPropertyOptional({ description: 'Business token/contract date (YYYY-MM-DD)', example: '2024-01-15' })
+  @ApiPropertyOptional({
+    description: 'Business token/contract date (YYYY-MM-DD)',
+    example: '2024-01-15',
+  })
   @IsOptional()
   @IsDateString()
   tokenDate?: string;
 
-  @ApiPropertyOptional({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+  @ApiPropertyOptional({
+    description: 'State code (e.g., MH, DL, KA)',
+    example: 'MH',
+  })
   @IsOptional()
   @IsString()
   stateCode?: string;
@@ -22,5 +33,3 @@ export class CreateClientDto {
   @IsString()
   clientName?: string;
 }
-
-

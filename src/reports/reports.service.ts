@@ -6,15 +6,13 @@ import { Prisma } from '@prisma/client';
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
-  async getSalesReport(
-    filters?: {
-      startDate?: string;
-      endDate?: string;
-      customerId?: string;
-      productId?: string;
-      status?: string[];
-    },
-  ) {
+  async getSalesReport(filters?: {
+    startDate?: string;
+    endDate?: string;
+    customerId?: string;
+    productId?: string;
+    status?: string[];
+  }) {
     const where: Prisma.QuotationWhereInput = {
       deletedAt: null,
       ...(filters?.startDate &&
@@ -25,7 +23,7 @@ export class ReportsService {
           },
         }),
       ...(filters?.customerId && { customerId: filters.customerId }),
-      ...(filters?.status && { status: { in: filters.status as string[] } }),
+      ...(filters?.status && { status: { in: filters.status } }),
       ...(filters?.productId && {
         items: {
           some: {
@@ -80,13 +78,11 @@ export class ReportsService {
     };
   }
 
-  async getStockReport(
-    filters?: {
-      lowStockThreshold?: number;
-      productId?: string;
-      categoryId?: string;
-    },
-  ) {
+  async getStockReport(filters?: {
+    lowStockThreshold?: number;
+    productId?: string;
+    categoryId?: string;
+  }) {
     const products = await this.prisma.product.findMany({
       where: {
         deletedAt: null,
@@ -178,12 +174,7 @@ export class ReportsService {
     };
   }
 
-  async getQuotationReport(
-    filters?: {
-      startDate?: string;
-      endDate?: string;
-    },
-  ) {
+  async getQuotationReport(filters?: { startDate?: string; endDate?: string }) {
     const where: Prisma.QuotationWhereInput = {
       deletedAt: null,
       ...(filters?.startDate &&
@@ -233,12 +224,7 @@ export class ReportsService {
     };
   }
 
-  async getFinancialReport(
-    filters?: {
-      startDate?: string;
-      endDate?: string;
-    },
-  ) {
+  async getFinancialReport(filters?: { startDate?: string; endDate?: string }) {
     const where: Prisma.QuotationWhereInput = {
       deletedAt: null,
       status: { in: ['approved', 'converted'] }, // Only count confirmed/converted
@@ -296,4 +282,3 @@ export class ReportsService {
     };
   }
 }
-

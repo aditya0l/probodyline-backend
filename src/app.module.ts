@@ -43,7 +43,7 @@ import { configValidationSchema } from './config/config.schema';
         serveRoot: '/uploads',
         // Use a dummy string path to prevent wildcard generation and disable SPA fallback
         renderPath: '/uploads/__non_existent__',
-      }
+      },
     ),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -54,10 +54,12 @@ import { configValidationSchema } from './config/config.schema';
         abortEarly: false,
       },
     }),
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // 1 minute
-      limit: 100, // 100 requests per minute per IP
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 100, // 100 requests per minute per IP
+      },
+    ]),
     CommonModule,
     OrganizationsModule,
     CategoriesModule,
@@ -92,7 +94,11 @@ export class AppModule implements NestModule {
   constructor() {
     console.log('🔵 AppModule constructor called');
     console.log('🔵 Checking GymsModule:', typeof GymsModule, GymsModule.name);
-    console.log('🔵 Checking ClientsModule:', typeof ClientsModule, ClientsModule.name);
+    console.log(
+      '🔵 Checking ClientsModule:',
+      typeof ClientsModule,
+      ClientsModule.name,
+    );
   }
 
   configure(consumer: MiddlewareConsumer) {

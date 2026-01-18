@@ -11,8 +11,26 @@ export class LoggerMiddleware implements NestMiddleware {
     const requestId = randomUUID();
 
     // #region agent log
-    if (originalUrl.includes('/api/gyms') || originalUrl.includes('/api/clients')) {
-      try{const logPath='/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';fs.appendFileSync(logPath,JSON.stringify({location:'logger.middleware.ts:12',message:'Request received in middleware',data:{method,originalUrl,path:originalUrl.split('?')[0]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H5'})+'\n');}catch(e){}
+    if (
+      originalUrl.includes('/api/gyms') ||
+      originalUrl.includes('/api/clients')
+    ) {
+      try {
+        const logPath =
+          '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
+        fs.appendFileSync(
+          logPath,
+          JSON.stringify({
+            location: 'logger.middleware.ts:12',
+            message: 'Request received in middleware',
+            data: { method, originalUrl, path: originalUrl.split('?')[0] },
+            timestamp: Date.now(),
+            sessionId: 'debug-session',
+            runId: 'run1',
+            hypothesisId: 'H5',
+          }) + '\n',
+        );
+      } catch (e) {}
     }
     // #endregion
 
@@ -34,4 +52,3 @@ export class LoggerMiddleware implements NestMiddleware {
     next();
   }
 }
-

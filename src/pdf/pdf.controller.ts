@@ -1,5 +1,11 @@
 import { Controller, Get, Post, Param, Query, Res } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { PdfService } from './pdf.service';
 import type { Response } from 'express';
 
@@ -11,8 +17,18 @@ export class PdfController {
   @Post('quotations/:id/generate')
   @ApiOperation({ summary: 'Generate PDF for a quotation' })
   @ApiParam({ name: 'id', description: 'Quotation UUID' })
-  @ApiQuery({ name: 'template', required: false, description: 'Template type (default, wholesale, retail, loading, price-list)', enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'] })
-  @ApiResponse({ status: 200, description: 'PDF file generated successfully', content: { 'application/pdf': {} } })
+  @ApiQuery({
+    name: 'template',
+    required: false,
+    description:
+      'Template type (default, wholesale, retail, loading, price-list)',
+    enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'PDF file generated successfully',
+    content: { 'application/pdf': {} },
+  })
   @ApiResponse({ status: 404, description: 'Quotation not found' })
   async generatePDF(
     @Param('id') quotationId: string,
@@ -52,8 +68,18 @@ export class PdfController {
   @Get('quotations/:id/preview')
   @ApiOperation({ summary: 'Preview HTML for a quotation PDF' })
   @ApiParam({ name: 'id', description: 'Quotation UUID' })
-  @ApiQuery({ name: 'template', required: false, description: 'Template type (default, wholesale, retail, loading, price-list)', enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'] })
-  @ApiResponse({ status: 200, description: 'HTML preview generated successfully', content: { 'text/html': {} } })
+  @ApiQuery({
+    name: 'template',
+    required: false,
+    description:
+      'Template type (default, wholesale, retail, loading, price-list)',
+    enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'HTML preview generated successfully',
+    content: { 'text/html': {} },
+  })
   @ApiResponse({ status: 404, description: 'Quotation not found' })
   async previewHTML(
     @Param('id') quotationId: string,
@@ -69,4 +95,3 @@ export class PdfController {
     res.send(html);
   }
 }
-

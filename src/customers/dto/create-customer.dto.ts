@@ -12,7 +12,10 @@ export class CreateCustomerDto {
   @IsString()
   gymName?: string;
 
-  @ApiPropertyOptional({ description: 'Customer address', example: '123 Main St' })
+  @ApiPropertyOptional({
+    description: 'Customer address',
+    example: '123 Main St',
+  })
   @IsOptional()
   @IsString()
   address?: string;
@@ -22,27 +25,42 @@ export class CreateCustomerDto {
   @IsString()
   city?: string;
 
-  @ApiPropertyOptional({ description: 'Area/Locality', example: 'Andheri West' })
+  @ApiPropertyOptional({
+    description: 'Area/Locality',
+    example: 'Andheri West',
+  })
   @IsOptional()
   @IsString()
   area?: string;
 
-  @ApiPropertyOptional({ description: 'GST number', example: '27ABCDE1234F1Z5' })
+  @ApiPropertyOptional({
+    description: 'GST number',
+    example: '27ABCDE1234F1Z5',
+  })
   @IsOptional()
   @IsString()
   gst?: string;
 
-  @ApiPropertyOptional({ description: 'Phone number', example: '+91 9876543210' })
+  @ApiPropertyOptional({
+    description: 'Phone number',
+    example: '+91 9876543210',
+  })
   @IsOptional()
   @IsString()
   phone?: string;
 
-  @ApiPropertyOptional({ description: 'Email address', example: 'john.doe@example.com' })
+  @ApiPropertyOptional({
+    description: 'Email address',
+    example: 'john.doe@example.com',
+  })
   @IsOptional()
   @IsEmail()
   email?: string;
 
-  @ApiPropertyOptional({ description: 'Contact person name', example: 'Jane Smith' })
+  @ApiPropertyOptional({
+    description: 'Contact person name',
+    example: 'Jane Smith',
+  })
   @IsOptional()
   @IsString()
   contactPerson?: string;
@@ -52,4 +70,3 @@ export class CreateCustomerDto {
   @IsString()
   notes?: string;
 }
-

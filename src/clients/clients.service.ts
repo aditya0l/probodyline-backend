@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -6,7 +11,7 @@ import { generateClientCode } from '../common/utils/client-code.util';
 
 @Injectable()
 export class ClientsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async findAll(filters?: {
     search?: string;
@@ -41,7 +46,10 @@ export class ClientsService {
     }
 
     if (filters?.salesPerson) {
-      where.salesPerson = { contains: filters.salesPerson, mode: 'insensitive' };
+      where.salesPerson = {
+        contains: filters.salesPerson,
+        mode: 'insensitive',
+      };
     }
 
     // Execute query
@@ -86,11 +94,11 @@ export class ClientsService {
   async create(data: CreateClientDto, user: any): Promise<any> {
     const salesTeam = user?.name
       ? user.name
-        .split(' ')
-        .map((n: string) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 3)
+          .split(' ')
+          .map((n: string) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 3)
       : 'SYS';
 
     // Generate client code
@@ -108,7 +116,9 @@ export class ClientsService {
     });
 
     if (existing) {
-      throw new ConflictException(`Client with code ${clientCode} already exists`);
+      throw new ConflictException(
+        `Client with code ${clientCode} already exists`,
+      );
     }
 
     // Create client
@@ -388,14 +398,18 @@ export class ClientsService {
         where: { id: partnerRefId },
       });
       if (!partnerClient) {
-        throw new NotFoundException(`Partner client with ID ${partnerRefId} not found`);
+        throw new NotFoundException(
+          `Partner client with ID ${partnerRefId} not found`,
+        );
       }
     } else if (partnerType === 'LEAD') {
       const partnerLead = await this.prisma.lead.findUnique({
         where: { id: partnerRefId },
       });
       if (!partnerLead) {
-        throw new NotFoundException(`Partner lead with ID ${partnerRefId} not found`);
+        throw new NotFoundException(
+          `Partner lead with ID ${partnerRefId} not found`,
+        );
       }
     }
 

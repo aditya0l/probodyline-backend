@@ -8,7 +8,14 @@ import {
   Delete,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { VendorsService } from './vendors.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -50,10 +57,7 @@ export class VendorsController {
   @ApiResponse({ status: 404, description: 'Vendor not found' })
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: UpdateVendorDto })
-  update(
-    @Param('id') id: string,
-    @Body() updateVendorDto: UpdateVendorDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateVendorDto: UpdateVendorDto) {
     return this.vendorsService.update(id, updateVendorDto);
   }
 
@@ -83,4 +87,3 @@ export class VendorsController {
     return this.vendorsService.restore(id);
   }
 }
-

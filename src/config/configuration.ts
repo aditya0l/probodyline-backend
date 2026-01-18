@@ -26,4 +26,3 @@ export default () => ({
     disabled: process.env.DISABLE_AUTH === 'true',
   },
 });
-

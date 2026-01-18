@@ -8,7 +8,14 @@ import {
   Delete,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -16,7 +23,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) { }
+  constructor(private readonly productsService: ProductsService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new product' })
@@ -29,11 +36,33 @@ export class ProductsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all products with filtering and pagination' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search term for name, model, series, or keywords' })
-  @ApiQuery({ name: 'productType', required: false, description: 'Filter by product type' })
-  @ApiQuery({ name: 'categoryId', required: false, description: 'Filter by category UUID' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (0-indexed)', type: Number })
-  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search term for name, model, series, or keywords',
+  })
+  @ApiQuery({
+    name: 'productType',
+    required: false,
+    description: 'Filter by product type',
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    description: 'Filter by category UUID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (0-indexed)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page',
+    type: Number,
+  })
   @ApiResponse({ status: 200, description: 'Paginated list of products' })
   findAll(
     @Query('search') search?: string,
@@ -107,7 +136,9 @@ export class ProductsController {
   }
 
   @Post('sync-stock/:productId')
-  @ApiOperation({ summary: 'Sync stock for a single product from transactions' })
+  @ApiOperation({
+    summary: 'Sync stock for a single product from transactions',
+  })
   @ApiParam({ name: 'productId', description: 'Product UUID' })
   @ApiResponse({ status: 200, description: 'Stock successfully synced' })
   @ApiResponse({ status: 404, description: 'Product not found' })
@@ -125,10 +156,18 @@ export class ProductsController {
   @Patch(':id/dormant')
   @ApiOperation({ summary: 'Toggle dormant status for a product' })
   @ApiParam({ name: 'id', description: 'Product UUID' })
-  @ApiBody({ schema: { type: 'object', properties: { isDormant: { type: 'boolean' } } } })
-  @ApiResponse({ status: 200, description: 'Dormant status successfully updated' })
+  @ApiBody({
+    schema: { type: 'object', properties: { isDormant: { type: 'boolean' } } },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dormant status successfully updated',
+  })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  toggleDormant(@Param('id') id: string, @Body('isDormant') isDormant: boolean) {
+  toggleDormant(
+    @Param('id') id: string,
+    @Body('isDormant') isDormant: boolean,
+  ) {
     return this.productsService.toggleDormant(id, isDormant);
   }
 
@@ -139,4 +178,3 @@ export class ProductsController {
     return this.productsService.regenerateAllQRs();
   }
 }
-

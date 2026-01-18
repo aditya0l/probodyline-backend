@@ -8,7 +8,14 @@ import {
   Delete,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -21,7 +28,22 @@ import * as fs from 'fs';
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {
     // #region agent log
-    try { const logPath = '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log'; fs.appendFileSync(logPath, JSON.stringify({ location: 'clients.controller.ts:21', message: 'ClientsController constructor called', data: { controller: 'ClientsController' }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H1' }) + '\n'); } catch (e) { }
+    try {
+      const logPath =
+        '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
+      fs.appendFileSync(
+        logPath,
+        JSON.stringify({
+          location: 'clients.controller.ts:21',
+          message: 'ClientsController constructor called',
+          data: { controller: 'ClientsController' },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H1',
+        }) + '\n',
+      );
+    } catch (e) {}
     // #endregion
     console.log('✅ ClientsController instantiated');
   }
@@ -41,17 +63,43 @@ export class ClientsController {
   @ApiOperation({ summary: 'Test endpoint to verify controller is accessible' })
   @ApiResponse({ status: 200, description: 'Controller is working' })
   test() {
-    return { message: 'ClientsController is working', timestamp: new Date().toISOString() };
+    return {
+      message: 'ClientsController is working',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all clients with filtering and pagination' })
-  @ApiQuery({ name: 'search', required: false, description: 'Search term for client name, city, code, state, or sales person' })
-  @ApiQuery({ name: 'stateCode', required: false, description: 'Filter by state code' })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description:
+      'Search term for client name, city, code, state, or sales person',
+  })
+  @ApiQuery({
+    name: 'stateCode',
+    required: false,
+    description: 'Filter by state code',
+  })
   @ApiQuery({ name: 'city', required: false, description: 'Filter by city' })
-  @ApiQuery({ name: 'salesPerson', required: false, description: 'Filter by sales person' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number (0-indexed)', type: Number })
-  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number })
+  @ApiQuery({
+    name: 'salesPerson',
+    required: false,
+    description: 'Filter by sales person',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (0-indexed)',
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page',
+    type: Number,
+  })
   @ApiResponse({ status: 200, description: 'Paginated list of clients' })
   findAll(
     @Query('search') search?: string,
@@ -62,9 +110,31 @@ export class ClientsController {
     @Query('limit') limit?: string,
   ) {
     // #region agent log
-    try { const logPath = '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log'; fs.appendFileSync(logPath, JSON.stringify({ location: 'clients.controller.ts:62', message: 'ClientsController.findAll method called', data: { search, stateCode, city, salesPerson, page, limit }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'H4' }) + '\n'); } catch (e) { }
+    try {
+      const logPath =
+        '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
+      fs.appendFileSync(
+        logPath,
+        JSON.stringify({
+          location: 'clients.controller.ts:62',
+          message: 'ClientsController.findAll method called',
+          data: { search, stateCode, city, salesPerson, page, limit },
+          timestamp: Date.now(),
+          sessionId: 'debug-session',
+          runId: 'run1',
+          hypothesisId: 'H4',
+        }) + '\n',
+      );
+    } catch (e) {}
     // #endregion
-    console.log('📞 ClientsController.findAll called with:', { search, stateCode, city, salesPerson, page, limit });
+    console.log('📞 ClientsController.findAll called with:', {
+      search,
+      stateCode,
+      city,
+      salesPerson,
+      page,
+      limit,
+    });
     return this.clientsService.findAll({
       search,
       stateCode,
@@ -119,7 +189,10 @@ export class ClientsController {
   @ApiParam({ name: 'gymId', description: 'Gym UUID' })
   @ApiResponse({ status: 201, description: 'Gym successfully linked' })
   @ApiResponse({ status: 404, description: 'Client or gym not found' })
-  @ApiResponse({ status: 409, description: 'Gym is already linked to this client' })
+  @ApiResponse({
+    status: 409,
+    description: 'Gym is already linked to this client',
+  })
   linkGym(@Param('id') id: string, @Param('gymId') gymId: string) {
     return this.clientsService.linkGym(id, gymId);
   }
@@ -149,7 +222,10 @@ export class ClientsController {
   @ApiParam({ name: 'leadId', description: 'Lead UUID' })
   @ApiResponse({ status: 201, description: 'Lead successfully linked' })
   @ApiResponse({ status: 404, description: 'Client or lead not found' })
-  @ApiResponse({ status: 409, description: 'Lead is already linked to this client' })
+  @ApiResponse({
+    status: 409,
+    description: 'Lead is already linked to this client',
+  })
   linkLead(@Param('id') id: string, @Param('leadId') leadId: string) {
     return this.clientsService.linkLead(id, leadId);
   }
@@ -176,10 +252,22 @@ export class ClientsController {
   @Post(':id/partners')
   @ApiOperation({ summary: 'Link a partner (client or lead) to a client' })
   @ApiParam({ name: 'id', description: 'Client UUID' })
-  @ApiBody({ schema: { type: 'object', properties: { partnerType: { type: 'string', enum: ['CLIENT', 'LEAD'] }, partnerRefId: { type: 'string' } }, required: ['partnerType', 'partnerRefId'] } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        partnerType: { type: 'string', enum: ['CLIENT', 'LEAD'] },
+        partnerRefId: { type: 'string' },
+      },
+      required: ['partnerType', 'partnerRefId'],
+    },
+  })
   @ApiResponse({ status: 201, description: 'Partner successfully linked' })
   @ApiResponse({ status: 404, description: 'Client or partner not found' })
-  @ApiResponse({ status: 409, description: 'Partner is already linked to this client' })
+  @ApiResponse({
+    status: 409,
+    description: 'Partner is already linked to this client',
+  })
   linkPartner(
     @Param('id') id: string,
     @Body('partnerType') partnerType: 'CLIENT' | 'LEAD',
@@ -193,13 +281,21 @@ export class ClientsController {
   @ApiParam({ name: 'id', description: 'Client UUID' })
   @ApiParam({ name: 'partnerId', description: 'Partner UUID' })
   @ApiResponse({ status: 200, description: 'Partner successfully unlinked' })
-  @ApiResponse({ status: 404, description: 'Client, partner, or link not found' })
-  unlinkPartner(@Param('id') id: string, @Param('partnerId') partnerId: string) {
+  @ApiResponse({
+    status: 404,
+    description: 'Client, partner, or link not found',
+  })
+  unlinkPartner(
+    @Param('id') id: string,
+    @Param('partnerId') partnerId: string,
+  ) {
     return this.clientsService.unlinkPartner(id, partnerId);
   }
 
   @Get(':id/summary')
-  @ApiOperation({ summary: 'Get client summary (gyms, quotes, orders, pending spare parts)' })
+  @ApiOperation({
+    summary: 'Get client summary (gyms, quotes, orders, pending spare parts)',
+  })
   @ApiParam({ name: 'id', description: 'Client UUID' })
   @ApiResponse({ status: 200, description: 'Client summary' })
   @ApiResponse({ status: 404, description: 'Client not found' })
@@ -207,5 +303,3 @@ export class ClientsController {
     return this.clientsService.getClientSummary(id);
   }
 }
-
-

@@ -11,4 +11,3 @@ import { StockModule } from '../stock/stock.module';
   exports: [BookingsService],
 })
 export class BookingsModule {}
-

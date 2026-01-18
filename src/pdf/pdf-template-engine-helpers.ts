@@ -57,26 +57,26 @@ export const COLUMN_LABELS: Record<QuotationColumnId, string> = {
 
 const HEADER_ABBREVIATIONS: Record<string, string> = {
   'S.No': 'S.NO',
-  'Picture': 'PIC',
+  Picture: 'PIC',
   'Items / Product Name': 'PRODUCT',
   'Model No': 'MODEL',
-  'Priority': 'PRI',
+  Priority: 'PRI',
   'Product Type': 'TYPE',
-  'Series': 'SER',
-  'Packaging': 'PKG',
-  'Keywords': 'KW',
-  'Stock': 'STK',
+  Series: 'SER',
+  Packaging: 'PKG',
+  Keywords: 'KW',
+  Stock: 'STK',
   'Stock + 360': 'STK+360',
   'Cousin Machine': 'COUSIN',
   'Order Together': 'ORDER',
   'Swap Machine': 'SWAP',
-  'Category': 'CAT',
-  'Brand': 'BRAND',
-  'Warranty': 'WAR',
-  'Notes': 'NOTES',
-  'Rate': 'RATE',
-  'Quantity': 'QTY',
-  'Amount': 'AMT',
+  Category: 'CAT',
+  Brand: 'BRAND',
+  Warranty: 'WAR',
+  Notes: 'NOTES',
+  Rate: 'RATE',
+  Quantity: 'QTY',
+  Amount: 'AMT',
 };
 
 export function getColumnClass(colId: QuotationColumnId): string {
@@ -93,7 +93,10 @@ export function getColumnClass(colId: QuotationColumnId): string {
   return 'col-left';
 }
 
-export function getCellValue(item: QuotationItem, colId: QuotationColumnId): string {
+export function getCellValue(
+  item: QuotationItem,
+  colId: QuotationColumnId,
+): string {
   switch (colId) {
     case 'srNo':
       return String(item.srNo);
@@ -118,7 +121,9 @@ export function getCellValue(item: QuotationItem, colId: QuotationColumnId): str
     case 'todaysStock':
       return item.todaysStock !== undefined ? String(item.todaysStock) : '';
     case 'stockPlus360Days':
-      return item.stockPlus360Days !== undefined ? String(item.stockPlus360Days) : '';
+      return item.stockPlus360Days !== undefined
+        ? String(item.stockPlus360Days)
+        : '';
     case 'cousinMachine':
       return item.cousinMachine || '';
     case 'orderTogether':
@@ -134,16 +139,22 @@ export function getCellValue(item: QuotationItem, colId: QuotationColumnId): str
     case 'notes':
       return item.notes || '';
     case 'rate':
-      const rate = typeof item.rate === 'object' && item.rate !== null && 'toNumber' in item.rate
-        ? item.rate.toNumber()
-        : Number(item.rate);
+      const rate =
+        typeof item.rate === 'object' &&
+        item.rate !== null &&
+        'toNumber' in item.rate
+          ? item.rate.toNumber()
+          : Number(item.rate);
       return `₹${rate.toLocaleString('en-IN')}`;
     case 'quantity':
       return String(item.quantity);
     case 'totalAmount':
-      const total = typeof item.totalAmount === 'object' && item.totalAmount !== null && 'toNumber' in item.totalAmount
-        ? item.totalAmount.toNumber()
-        : Number(item.totalAmount);
+      const total =
+        typeof item.totalAmount === 'object' &&
+        item.totalAmount !== null &&
+        'toNumber' in item.totalAmount
+          ? item.totalAmount.toNumber()
+          : Number(item.totalAmount);
       return `₹${total.toLocaleString('en-IN')}`;
     default:
       return '';
@@ -154,7 +165,7 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
   try {
     // Handle absolute and relative paths
     let fullPath = imagePath;
-    
+
     // Handle paths starting with /app/public (container absolute) or /public (repo root)
     if (imagePath.startsWith('/app/public/')) {
       fullPath = imagePath;
@@ -240,7 +251,10 @@ export async function buildTableData(
                   }
                 }
               } catch (error) {
-                console.warn(`Failed to convert product image to base64: ${value}`, error);
+                console.warn(
+                  `Failed to convert product image to base64: ${value}`,
+                  error,
+                );
                 value = '';
               }
             } else if (isImage && !value) {
@@ -271,4 +285,3 @@ export async function buildTableData(
 
   return { headers, rows };
 }
-

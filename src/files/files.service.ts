@@ -34,24 +34,29 @@ export class FilesService {
     // Validate file size
     if (file.size > this.maxFileSize) {
       throw new BadRequestException(
-        `File size exceeds maximum allowed size of ${this.maxFileSize / 1024 / 1024}MB`
+        `File size exceeds maximum allowed size of ${this.maxFileSize / 1024 / 1024}MB`,
       );
     }
 
     // Validate MIME type
     if (!this.allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException(
-        `File type ${file.mimetype} is not allowed. Allowed types: ${this.allowedMimeTypes.join(', ')}`
+        `File type ${file.mimetype} is not allowed. Allowed types: ${this.allowedMimeTypes.join(', ')}`,
       );
     }
   }
 
-  async saveFile(file: Express.Multer.File, subfolder?: string): Promise<string> {
+  async saveFile(
+    file: Express.Multer.File,
+    subfolder?: string,
+  ): Promise<string> {
     // Validate file
     this.validateFile(file);
 
-    const folder = subfolder ? path.join(this.uploadPath, subfolder) : this.uploadPath;
-    
+    const folder = subfolder
+      ? path.join(this.uploadPath, subfolder)
+      : this.uploadPath;
+
     if (!fs.existsSync(folder)) {
       fs.mkdirSync(folder, { recursive: true });
     }
@@ -64,7 +69,9 @@ export class FilesService {
     fs.writeFileSync(filepath, file.buffer);
 
     // Return relative path for storage in database
-    return subfolder ? `uploads/${subfolder}/${filename}` : `uploads/${filename}`;
+    return subfolder
+      ? `uploads/${subfolder}/${filename}`
+      : `uploads/${filename}`;
   }
 
   async deleteFile(filepath: string): Promise<void> {
@@ -78,4 +85,3 @@ export class FilesService {
     return path.join(process.cwd(), relativePath);
   }
 }
-

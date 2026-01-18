@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { LeadsService } from './leads.service';
 import { CreateLeadDto, LeadStatus } from './dto/create-lead.dto';
 
@@ -43,7 +59,15 @@ export class LeadsController {
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update lead status' })
   @ApiParam({ name: 'id', description: 'Lead UUID' })
-  @ApiBody({ schema: { type: 'object', properties: { status: { enum: Object.values(LeadStatus) }, notes: { type: 'string' } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { enum: Object.values(LeadStatus) },
+        notes: { type: 'string' },
+      },
+    },
+  })
   updateStatus(
     @Param('id') id: string,
     @Body('status') status: LeadStatus,
@@ -59,5 +83,3 @@ export class LeadsController {
     return this.leadsService.remove(id);
   }
 }
-
-

@@ -1,5 +1,12 @@
 import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBody,
+} from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 
 // TODO: Define BookingStatus enum when Booking model is added to Prisma schema
@@ -29,9 +36,15 @@ export class BookingsController {
   }
 
   @Get('allocation/:productId')
-  @ApiOperation({ summary: 'Get booking allocation details for a specific product' })
+  @ApiOperation({
+    summary: 'Get booking allocation details for a specific product',
+  })
   @ApiParam({ name: 'productId', description: 'Product UUID' })
-  @ApiQuery({ name: 'selectedDate', required: true, description: 'Date in YYYY-MM-DD format' })
+  @ApiQuery({
+    name: 'selectedDate',
+    required: true,
+    description: 'Date in YYYY-MM-DD format',
+  })
   @ApiResponse({ status: 200, description: 'Booking allocation details' })
   @ApiResponse({ status: 404, description: 'Product not found' })
   getBookingAllocation(
@@ -58,7 +71,14 @@ export class BookingsController {
         stateCode: { type: 'string' },
         city: { type: 'string' },
       },
-      required: ['quotationId', 'quotationItemId', 'productId', 'quoteNumber', 'dispatchDate', 'quantity'],
+      required: [
+        'quotationId',
+        'quotationItemId',
+        'productId',
+        'quoteNumber',
+        'dispatchDate',
+        'quantity',
+      ],
     },
   })
   @ApiResponse({ status: 201, description: 'Booking successfully created' })
@@ -84,5 +104,3 @@ export class BookingsController {
     return this.bookingsService.getFilterOptions();
   }
 }
-
-

@@ -8,5 +8,4 @@ import { QRCodeService } from './qr-code.service';
   providers: [ProductsService, QRCodeService],
   exports: [ProductsService],
 })
-export class ProductsModule { }
-
+export class ProductsModule {}

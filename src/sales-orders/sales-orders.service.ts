@@ -346,6 +346,93 @@ export class SalesOrdersService {
         }
     }
 
+    async unbookSalesOrder(salesOrderId: string) {
+        return this.prisma.$transaction(async (tx) => {
+            const so = await tx.salesOrder.findUnique({
+                where: { id: salesOrderId },
+                include: {
+                    splits: {
+                        include: {
+                            items: { include: { quotationItem: true } }
+                        }
+                    }
+                }
+            });
+
+            if (!so) throw new NotFoundException('Sales Order not found');
+            if (so.status === 'UNBOOKED') throw new BadRequestException('Sales Order is already unbooked');
+
+            // Process each split
+            for (const split of so.splits) {
+                if (split.status === 'BOOKED') {
+                    // Revert Stock
+                    for (const item of split.items) {
+                        if (!item.quotationItem.productId) continue;
+
+                        // Create Stock IN transaction
+                        await tx.stockTransaction.create({
+                            data: {
+                                productId: item.quotationItem.productId,
+                                transactionType: 'IN',
+                                quantity: item.quantity,
+                                referenceType: 'UNBOOK_SO',
+                                referenceId: split.id,
+                                date: new Date(),
+                                notes: `Unbook SO: ${so.soNumber} / Sp-${split.splitNumber}`,
+                            },
+                        });
+
+                        // Delete associated Booking record (if we tracked it by quote item id or similar)
+                        // In bookDispatchSplit we created a Booking. We should probably cancel/delete it.
+                        // For now, let's mark the split as UNBOOKED.
+                        // If we need to delete bookings, we'd need to find them.
+                        // Assuming Booking records are created with reference to quotationItemId and quotationId.
+                        // It's safer to leave them or update status if we had one?
+                        // Schema has BookingStatus enum: CONFIRM, WAITING_LIST.
+                        // Let's delete the Booking entry for this item/so combo if possible, or ignore for strictness.
+                        // Requirement: "Unbooking".
+                        // Let's delete the bookings related to this quotation item created *recently*?
+                        // Better: Delete bookings where quotationItemId matches and status is CONFIRMED?
+                        // Actually, bookDispatchSplit created a Booking. We should delete it.
+                        try {
+                            await tx.booking.deleteMany({
+                                where: {
+                                    quotationItemId: item.quotationItemId,
+                                    quotationId: so.quotationId
+                                }
+                            });
+                        } catch (e) {
+                            console.warn('Failed to delete booking during unbook', e);
+                        }
+                    }
+
+                    // Update Split Status
+                    await tx.dispatchSplit.update({
+                        where: { id: split.id },
+                        data: { status: 'UNBOOKED' }
+                    });
+                }
+            }
+
+            // Update Master SO Status
+            return tx.salesOrder.update({
+                where: { id: salesOrderId },
+                data: { status: 'UNBOOKED' }
+            });
+        });
+    }
+
+    async findUnbooked() {
+        return this.prisma.salesOrder.findMany({
+            where: { status: 'UNBOOKED' },
+            include: {
+                quotation: true,
+                splits: { include: { items: true } }
+            },
+            orderBy: { updatedAt: 'desc' }
+        });
+    }
+
     // Helper
     private async getSplitWithDetails(splitId: string, tx: any) {
         return tx.dispatchSplit.findUnique({

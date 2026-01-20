@@ -48,6 +48,18 @@ export class SalesOrdersController {
     return this.salesOrdersService.deleteDispatchSplit(splitId);
   }
 
+  @Get('unbooked')
+  @ApiOperation({ summary: 'Get unbooked Sales Orders' })
+  findUnbooked() {
+    return this.salesOrdersService.findUnbooked();
+  }
+
+  @Post(':id/unbook')
+  @ApiOperation({ summary: 'Unbook entire Sales Order' })
+  unbookSalesOrder(@Param('id') id: string) {
+    return this.salesOrdersService.unbookSalesOrder(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all Sales Orders' })
   findAll() {

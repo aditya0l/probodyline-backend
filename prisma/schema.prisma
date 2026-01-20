@@ -13,41 +13,41 @@ datasource db {
 // Phase 1 Models
 // Organization is a singleton - stores company information for Probodyline Fitness
 model Organization {
-  id                String   @id @default(uuid())
-  name              String
-  address           String
-  gst               String
-  phone             String
-  email             String
-  website           String
-  contactPerson     String
-  logo              String?  // URL/path
-  bankDetails       String?  @db.Text
-  termsAndConditions String? @db.Text
-  warrantyInfo      String? @db.Text
-  defaultGstRate    Decimal  @default(18) @db.Decimal(5, 2)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String
+  address            String
+  gst                String
+  phone              String
+  email              String
+  website            String
+  contactPerson      String
+  logo               String? // URL/path
+  bankDetails        String?  @db.Text
+  termsAndConditions String?  @db.Text
+  warrantyInfo       String?  @db.Text
+  defaultGstRate     Decimal  @default(18) @db.Decimal(5, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   // Relations (optional - for users only)
-  users      User[]
+  users User[]
 
   @@map("organizations")
 }
 
 model Category {
-  id            String   @id @default(uuid())
-  name          String
-  parentId      String?
-  description   String?  @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  deletedAt     DateTime?
+  id          String    @id @default(uuid())
+  name        String
+  parentId    String?
+  description String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
   // Relations
-  parent        Category?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children      Category[]     @relation("CategoryHierarchy")
-  products      Product[]
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
 
   @@unique([name])
   @@map("categories")
@@ -55,46 +55,46 @@ model Category {
 
 // Phase 2 Models
 model Product {
-  id                    String   @id @default(uuid())
-  srNo                   Int      // Auto-increment globally
-  priority               Int      @default(1)
-  name                   String?  // Optional - model number is the primary identifier
-  modelNumber            String   @unique // Required, unique, immutable
-  qrCode                 String?  // Auto-generated QR code path
-  image                  String?  // URL/path
-  images                 String[] // Array of URLs (max 5)
-  price                  Decimal? @db.Decimal(12, 2)
-  productType            String?  // Can be FK to Category later
-  categoryId             String?
-  seriesName             String?
-  packagingDescription   String[] // JSON array
-  keyword                String[] // JSON array
-  todaysStock            Int?     @default(0)
-  stockPlus360Days       Int?     @default(0)
-  dateSelectStock        DateTime?
-  stockByDate            Json?    // Key-value: date -> stock
-  mrpStickers            String[] // JSON array of URLs
-  customDeclarations      String[] // JSON array of URLs
-  cartonLabel            String?  // URL
-  machineArtwork         String?  // URL
-  brochure               String[] // JSON array of URLs
-  thumbnail              String?  // URL
-  cousinMachine          String[] // Array of model numbers
-  orderTogether          String[] // Array of model numbers
-  swapMachine            String[] // Array of model numbers
-  brand                  String?
-  warranty               String?
-  notes                  String?  @db.Text
-  isDormant              Boolean  @default(false) // Hide from quote application when true
-  createdAt              DateTime  @default(now())
-  updatedAt              DateTime  @updatedAt
-  deletedAt              DateTime?
+  id                   String    @id @default(uuid())
+  srNo                 Int // Auto-increment globally
+  priority             Int       @default(1)
+  name                 String? // Optional - model number is the primary identifier
+  modelNumber          String    @unique // Required, unique, immutable
+  qrCode               String? // Auto-generated QR code path
+  image                String? // URL/path
+  images               String[] // Array of URLs (max 5)
+  price                Decimal?  @db.Decimal(12, 2)
+  productType          String? // Can be FK to Category later
+  categoryId           String?
+  seriesName           String?
+  packagingDescription String[] // JSON array
+  keyword              String[] // JSON array
+  todaysStock          Int?      @default(0)
+  stockPlus360Days     Int?      @default(0)
+  dateSelectStock      DateTime?
+  stockByDate          Json? // Key-value: date -> stock
+  mrpStickers          String[] // JSON array of URLs
+  customDeclarations   String[] // JSON array of URLs
+  cartonLabel          String? // URL
+  machineArtwork       String? // URL
+  brochure             String[] // JSON array of URLs
+  thumbnail            String? // URL
+  cousinMachine        String[] // Array of model numbers
+  orderTogether        String[] // Array of model numbers
+  swapMachine          String[] // Array of model numbers
+  brand                String?
+  warranty             String?
+  notes                String?   @db.Text
+  isDormant            Boolean   @default(false) // Hide from quote application when true
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt            DateTime?
 
   // Relations
-  category               Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  quotationItems         QuotationItem[]
-  stockTransactions      StockTransaction[]
-  bookings               Booking[]
+  category          Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  quotationItems    QuotationItem[]
+  stockTransactions StockTransaction[]
+  bookings          Booking[]
 
   @@index([name])
   @@index([modelNumber])
@@ -107,7 +107,7 @@ model Product {
 }
 
 model Customer {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   name          String
   gymName       String?
   address       String?
@@ -117,72 +117,72 @@ model Customer {
   phone         String?
   email         String?
   contactPerson String?
-  notes         String?  @db.Text
+  notes         String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
 
   // Relations
-  quotations    Quotation[]
+  quotations Quotation[]
 
   @@index([name])
   @@map("customers")
 }
 
 model Quotation {
-  id                    String   @id @default(uuid())
-  quoteNumber           String   @unique // Format: Q-YYYYMMDD-XXX
-  status                String   @default("draft") // enum: draft, sent, approved, rejected, converted
-  customerId            String?
-  
+  id          String  @id @default(uuid())
+  quoteNumber String  @unique // Format: Q-YYYYMMDD-XXX
+  status      String  @default("draft") // enum: draft, sent, approved, rejected, converted
+  customerId  String?
+
   // Company info (denormalized for historical accuracy)
-  companyName           String
-  companyAddress        String
-  companyLogo           String?
-  companyGST            String
-  companyPhone           String
-  companyEmail           String
-  companyWebsite         String
-  companyContactPerson   String
-  
+  companyName          String
+  companyAddress       String
+  companyLogo          String?
+  companyGST           String
+  companyPhone         String
+  companyEmail         String
+  companyWebsite       String
+  companyContactPerson String
+
   // Client info
-  clientName            String?
-  clientAddress         String?
-  clientCity            String?
-  gymName               String?
-  gymArea               String?
-  clientGST             String?
-  deliveryDate          DateTime?
-  leadName              String?
-  
+  clientName    String?
+  clientAddress String?
+  clientCity    String?
+  gymName       String?
+  gymArea       String?
+  clientGST     String?
+  deliveryDate  DateTime?
+  leadName      String?
+
   // Additional dates
-  bookingDate           DateTime?
-  dispatchDate          DateTime?
-  installationDate      DateTime?
-  inaugurationDate      DateTime?
-  
+  bookingDate      DateTime?
+  dispatchDate     DateTime?
+  installationDate DateTime?
+  inaugurationDate DateTime?
+
   // Financial
-  subtotal              Decimal  @db.Decimal(12, 2)
-  gstRate               Decimal  @default(18) @db.Decimal(5, 2)
-  gstAmount             Decimal  @db.Decimal(12, 2)
-  grandTotal            Decimal  @db.Decimal(12, 2)
-  
+  subtotal   Decimal @db.Decimal(12, 2)
+  gstRate    Decimal @default(18) @db.Decimal(5, 2)
+  gstAmount  Decimal @db.Decimal(12, 2)
+  grandTotal Decimal @db.Decimal(12, 2)
+
   // Additional
-  bankDetails           String?  @db.Text
-  termsAndConditions    String?  @db.Text
-  warrantyInfo          String?  @db.Text
-  
+  bankDetails        String? @db.Text
+  termsAndConditions String? @db.Text
+  warrantyInfo       String? @db.Text
+
   // Metadata
-  visibleColumns        Json?    // Column visibility settings
-  template              String   @default("default") // enum: default, wholesale, retail, loading, price-list
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  deletedAt             DateTime?
+  visibleColumns Json? // Column visibility settings
+  template       String    @default("default") // enum: default, wholesale, retail, loading, price-list
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
   // Relations
-  customer              Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  items                 QuotationItem[]
-  salesOrders           SalesOrder[]
+  customer    Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items       QuotationItem[]
+  salesOrders SalesOrder[]
 
   @@index([status])
   @@index([createdAt])
@@ -192,85 +192,117 @@ model Quotation {
 }
 
 model QuotationItem {
-  id                    String   @id @default(uuid())
-  quotationId           String
-  salesOrderId          String?
-  srNo                  Int
-  productId             String?
-  
+  id          String @id @default(uuid())
+  quotationId String
+
+  srNo      Int
+  productId String?
+
   // Denormalized product data (for historical accuracy)
-  productName           String
-  productImage          String?
-  modelNumber           String?
-  rate                  Decimal  @db.Decimal(12, 2)
-  quantity              Int
-  totalAmount           Decimal  @db.Decimal(12, 2)
-  
+  productName  String
+  productImage String?
+  modelNumber  String?
+  rate         Decimal @db.Decimal(12, 2)
+  quantity     Int
+  totalAmount  Decimal @db.Decimal(12, 2)
+
   // All product fields (denormalized)
-  priority              Int?
-  productType           String?
-  seriesName            String?
-  packagingDescription  String[] // JSON array
-  keyword               String[] // JSON array
-  todaysStock           Int?
-  stockPlus360Days      Int?
-  cousinMachine         String?
-  orderTogether         String?
-  swapMachine           String?
-  category              String?
-  brand                 String?
-  warranty              String?
-  notes                 String?  @db.Text
-  
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  priority             Int?
+  productType          String?
+  seriesName           String?
+  packagingDescription String[] // JSON array
+  keyword              String[] // JSON array
+  todaysStock          Int?
+  stockPlus360Days     Int?
+  cousinMachine        String?
+  orderTogether        String?
+  swapMachine          String?
+  category             String?
+  brand                String?
+  warranty             String?
+  notes                String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  quotation             Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  product               Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
-  salesOrder            SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  quotation          Quotation           @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  product            Product?            @relation(fields: [productId], references: [id], onDelete: SetNull)
+  dispatchSplitItems DispatchSplitItem[]
 
   @@index([quotationId])
   @@index([productId])
-  @@index([salesOrderId])
   @@map("quotation_items")
 }
 
 model SalesOrder {
-  id              String   @id @default(uuid())
-  quotationId     String
-  soNumber        String   @unique // e.g., SO22064_03_01
-  dispatchDate    DateTime?
-  status          String   @default("DRAFT") // DRAFT, SAVED, BOOKED
-  
-  // Financial (Snapshot for this SO)
-  subtotal        Decimal  @db.Decimal(12, 2) @default(0)
-  gstAmount       Decimal  @db.Decimal(12, 2) @default(0)
-  grandTotal      Decimal  @db.Decimal(12, 2) @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  bookedAt        DateTime?
+  id          String @id @default(uuid())
+  quotationId String @unique // 1-to-1 with Quotation now
+  soNumber    String @unique // e.g., SO_22064
+  status      String @default("DRAFT") // DRAFT, COMPLETED (when all items booked)
+
+  // Financial (Snapshot for this SO - usually same as Quote)
+  subtotal   Decimal @default(0) @db.Decimal(12, 2)
+  gstAmount  Decimal @default(0) @db.Decimal(12, 2)
+  grandTotal Decimal @default(0) @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  items           QuotationItem[]
+  quotation Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  splits    DispatchSplit[]
 
   @@index([quotationId])
   @@index([status])
   @@map("sales_orders")
 }
 
+model DispatchSplit {
+  id           String    @id @default(uuid())
+  salesOrderId String
+  splitNumber  Int // 1, 2, 3...
+  dispatchDate DateTime?
+  status       String    @default("DRAFT") // DRAFT, BOOKED
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookedAt  DateTime?
+
+  // Relations
+  salesOrder SalesOrder          @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  items      DispatchSplitItem[]
+
+  @@unique([salesOrderId, splitNumber])
+  @@index([salesOrderId])
+  @@map("dispatch_splits")
+}
+
+model DispatchSplitItem {
+  id              String @id @default(uuid())
+  dispatchSplitId String
+  quotationItemId String
+  quantity        Int // Allocated quantity for this split
+
+  // Relations
+  dispatchSplit DispatchSplit @relation(fields: [dispatchSplitId], references: [id], onDelete: Cascade)
+  quotationItem QuotationItem @relation(fields: [quotationItemId], references: [id], onDelete: Cascade)
+
+  @@index([dispatchSplitId])
+  @@index([quotationItemId])
+  @@map("dispatch_split_items")
+}
+
 // Phase 3 Models
 model Vendor {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   name          String
   address       String?
   contactPerson String?
   phone         String?
   email         String?
   gst           String?
-  notes         String?  @db.Text
+  notes         String?   @db.Text
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -287,19 +319,19 @@ enum StockTransactionType {
 }
 
 model StockTransaction {
-  id              String              @id @default(uuid())
+  id              String               @id @default(uuid())
   productId       String
   transactionType StockTransactionType
-  quantity        Int                 // Positive for in, negative for out
-  referenceType   String?             // e.g., 'quotation', 'purchase_order'
-  referenceId     String?             // UUID of reference
+  quantity        Int // Positive for in, negative for out
+  referenceType   String? // e.g., 'quotation', 'purchase_order'
+  referenceId     String? // UUID of reference
   date            DateTime
-  notes           String?             @db.Text
-  createdAt       DateTime            @default(now())
-  createdBy       String?             // FK to User (future)
+  notes           String?              @db.Text
+  createdAt       DateTime             @default(now())
+  createdBy       String? // FK to User (future)
 
   // Relations
-  product         Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, date])
   @@index([date])
@@ -308,21 +340,21 @@ model StockTransaction {
 
 // Client Management Models
 model Client {
-  id            String   @id @default(uuid())
-  clientCode    String   @unique // Auto-generated, immutable
-  tokenDate     DateTime? // Business token/contract date, immutable
-  stateCode     String?
-  city          String?
-  clientName    String?
-  salesInitial  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  id           String    @id @default(uuid())
+  clientCode   String    @unique // Auto-generated, immutable
+  tokenDate    DateTime? // Business token/contract date, immutable
+  stateCode    String?
+  city         String?
+  clientName   String?
+  salesInitial String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
   // Relations
-  gyms          ClientGym[]
-  leads         ClientLead[]
-  partners      ClientPartner[]
-  
+  gyms     ClientGym[]
+  leads    ClientLead[]
+  partners ClientPartner[]
+
   @@index([clientCode])
   @@index([stateCode, city])
   @@index([salesInitial])
@@ -330,66 +362,66 @@ model Client {
 }
 
 model ClientGym {
-  id         String   @id @default(uuid())
-  clientId   String
-  gymId      String
-  linkedOn   DateTime @default(now())
-  
-  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  gym        Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  
+  id       String   @id @default(uuid())
+  clientId String
+  gymId    String
+  linkedOn DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  gym    Gym    @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
   @@unique([clientId, gymId])
   @@map("client_gyms")
 }
 
 model ClientLead {
-  id         String   @id @default(uuid())
-  clientId   String
-  leadId     String
-  linkedOn   DateTime @default(now())
-  
-  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  
+  id       String   @id @default(uuid())
+  clientId String
+  leadId   String
+  linkedOn DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
   @@unique([clientId, leadId])
   @@map("client_leads")
 }
 
 model ClientPartner {
-  id            String   @id @default(uuid())
-  clientId      String
-  partnerType   String   // 'CLIENT' | 'LEAD'
-  partnerRefId  String
-  linkedOn      DateTime @default(now())
-  
-  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(uuid())
+  clientId     String
+  partnerType  String // 'CLIENT' | 'LEAD'
+  partnerRefId String
+  linkedOn     DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
   @@map("client_partners")
 }
 
 // Gym Management Models
 model Gym {
-  id                String   @id @default(uuid())
-  gymCode           String   @unique // Auto-generated, immutable
-  installationDate  DateTime
-  stateCode         String
-  city              String
-  gymName           String
-  branchCode        Float
-  branchTitle       String
-  salesInitial      String
-  instagramLink     String?
-  locationLink      String?
-  locationQR        String? // Auto-generated from locationLink
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  id               String   @id @default(uuid())
+  gymCode          String   @unique // Auto-generated, immutable
+  installationDate DateTime
+  stateCode        String
+  city             String
+  gymName          String
+  branchCode       Float
+  branchTitle      String
+  salesInitial     String
+  instagramLink    String?
+  locationLink     String?
+  locationQR       String? // Auto-generated from locationLink
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
   // Relations
-  clients           ClientGym[]
-  technicians       GymTechnician[]
-  media             GymMedia[]
-  inaugurations     InaugurationCommitment[]
-  
+  clients       ClientGym[]
+  technicians   GymTechnician[]
+  media         GymMedia[]
+  inaugurations InaugurationCommitment[]
+
   @@index([gymCode])
   @@index([stateCode, city])
   @@index([salesInitial])
@@ -397,78 +429,78 @@ model Gym {
 }
 
 model InaugurationCommitment {
-  id            String   @id @default(uuid())
-  gymId         String
-  committedOn   DateTime @default(now())
-  committedFor  DateTime
-  source        String   // 'SYSTEM' | 'USER'
-  note          String?
-  createdBy     String?
-  createdAt     DateTime @default(now())
-  
-  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(uuid())
+  gymId        String
+  committedOn  DateTime @default(now())
+  committedFor DateTime
+  source       String // 'SYSTEM' | 'USER'
+  note         String?
+  createdBy    String?
+  createdAt    DateTime @default(now())
+
+  gym Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
   @@map("inauguration_commitments")
 }
 
 model GymTechnician {
-  id            String   @id @default(uuid())
-  gymId         String
-  technicianId  String
-  linkedOn      DateTime @default(now())
-  
-  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(uuid())
+  gymId        String
+  technicianId String
+  linkedOn     DateTime @default(now())
+
+  gym Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
   @@unique([gymId, technicianId])
   @@map("gym_technicians")
 }
 
 model GymMedia {
-  id          String   @id @default(uuid())
-  gymId       String
-  mediaType   String   // 'IMAGE' | 'VIDEO'
-  url         String
-  uploadedBy  String?
-  uploadedAt  DateTime @default(now())
-  
-  gym         Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
-  
+  id         String   @id @default(uuid())
+  gymId      String
+  mediaType  String // 'IMAGE' | 'VIDEO'
+  url        String
+  uploadedBy String?
+  uploadedAt DateTime @default(now())
+
+  gym Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
   @@map("gym_media")
 }
 
 // Lead Management Models
 model Lead {
-  id            String   @id @default(uuid())
-  leadNumber    String   @unique
-  name          String
-  phone         String?
-  email         String?
-  source        String?
-  status        String   @default("NEW")
-  notes         String?  @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  deletedAt     DateTime?
-  
+  id         String    @id @default(uuid())
+  leadNumber String    @unique
+  name       String
+  phone      String?
+  email      String?
+  source     String?
+  status     String    @default("NEW")
+  notes      String?   @db.Text
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
   // Relations
   clients       ClientLead[]
   statusHistory LeadStatusHistory[]
-  
+
   @@index([leadNumber])
   @@index([status])
   @@map("leads")
 }
 
 model LeadStatusHistory {
-  id          String   @id @default(uuid())
-  leadId      String
-  status      String
-  changedAt   DateTime @default(now())
-  changedBy   String?
-  note        String?  @db.Text
-  
-  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(uuid())
+  leadId    String
+  status    String
+  changedAt DateTime @default(now())
+  changedBy String?
+  note      String?  @db.Text
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
   @@map("lead_status_history")
 }
 
@@ -479,28 +511,28 @@ enum BookingStatus {
 }
 
 model Booking {
-  id                  String        @id @default(uuid())
-  quotationId         String
-  quotationItemId     String
-  quoteNumber         String
-  productId           String
-  productName         String
-  productThumbnail    String?
-  modelNumber         String?
-  dispatchDate        DateTime
-  bookedOn            DateTime
-  customerName        String?
-  gymName             String?
-  requiredQuantity    Int
-  status              BookingStatus @default(CONFIRM)
-  waitingQuantity     Int           @default(0)
-  stateCode           String?
-  city                String?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  
-  product             Product       @relation(fields: [productId], references: [id])
-  
+  id               String        @id @default(uuid())
+  quotationId      String
+  quotationItemId  String
+  quoteNumber      String
+  productId        String
+  productName      String
+  productThumbnail String?
+  modelNumber      String?
+  dispatchDate     DateTime
+  bookedOn         DateTime
+  customerName     String?
+  gymName          String?
+  requiredQuantity Int
+  status           BookingStatus @default(CONFIRM)
+  waitingQuantity  Int           @default(0)
+  stateCode        String?
+  city             String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
   @@index([productId, dispatchDate])
   @@index([quotationId])
   @@index([dispatchDate])
@@ -509,14 +541,14 @@ model Booking {
 
 // Audit Trail
 model AuditLog {
-  id          String   @id @default(uuid())
-  entityType  String   // 'Client', 'Gym', 'Product', etc.
-  entityId    String
-  action      String   // 'CREATE', 'UPDATE', 'DELETE'
-  changes     Json?    // Old and new values
-  userId      String?
-  timestamp   DateTime @default(now())
-  
+  id         String   @id @default(uuid())
+  entityType String // 'Client', 'Gym', 'Product', etc.
+  entityId   String
+  action     String // 'CREATE', 'UPDATE', 'DELETE'
+  changes    Json? // Old and new values
+  userId     String?
+  timestamp  DateTime @default(now())
+
   @@index([entityType, entityId])
   @@index([timestamp])
   @@map("audit_logs")
@@ -530,19 +562,19 @@ enum UserRole {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  organizationId String?  // Optional - for future flexibility
-  email         String   @unique
-  password      String   // Hashed password
-  name          String
-  role          UserRole @default(USER)
-  isActive      Boolean  @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String    @id @default(uuid())
+  organizationId String? // Optional - for future flexibility
+  email          String    @unique
+  password       String // Hashed password
+  name           String
+  role           UserRole  @default(USER)
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   // Relations
-  organization  Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([email])
   @@index([organizationId])

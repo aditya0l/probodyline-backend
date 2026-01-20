@@ -4,26 +4,28 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class SalesOrdersService {
     constructor(private prisma: PrismaService) { }
 
     // 1. Ensure Master Sales Order exists (Commercial Entity)
-    async ensureMasterSO(quotationId: string) {
-        let so = await this.prisma.salesOrder.findUnique({
+    async ensureMasterSO(quotationId: string, tx?: Prisma.TransactionClient) {
+        const db = tx || this.prisma;
+        let so = await db.salesOrder.findUnique({
             where: { quotationId },
         });
 
         if (!so) {
-            const quotation = await this.prisma.quotation.findUnique({
+            const quotation = await db.quotation.findUnique({
                 where: { id: quotationId },
             });
             if (!quotation) throw new NotFoundException('Quotation not found');
 
             const soNumber = quotation.quoteNumber.replace('QO', 'SO').replace('Q', 'SO'); // Handle both old and new formats
 
-            so = await this.prisma.salesOrder.create({
+            so = await db.salesOrder.create({
                 data: {
                     quotationId,
                     soNumber,
@@ -36,7 +38,7 @@ export class SalesOrdersService {
 
 
         // Return with FULL details
-        return this.prisma.salesOrder.findUnique({
+        return db.salesOrder.findUnique({
             where: { id: so.id },
             include: {
                 quotation: { include: { items: true } },
@@ -297,9 +299,9 @@ export class SalesOrdersService {
     }
 
     // 5. Auto-create BOOKED split from PI (for legacy/simple flow compatibility)
-    async createAutoBookedSplitFromQuotation(quotationId: string) {
-        // First ensure Master SO exists
-        const so = await this.ensureMasterSO(quotationId);
+    async createAutoBookedSplitFromQuotation(quotationId: string, tx?: Prisma.TransactionClient) {
+        // First ensure Master SO exists (pass tx!)
+        const so = await this.ensureMasterSO(quotationId, tx);
         if (!so) throw new Error('Failed to ensure Sales Order');
 
         // Check if any splits exist
@@ -307,9 +309,9 @@ export class SalesOrdersService {
             return so; // Already has splits, don't auto-create
         }
 
-        return this.prisma.$transaction(async (tx) => {
+        const executeLogic = async (paramTx: Prisma.TransactionClient) => {
             // Create Split
-            const split = await tx.dispatchSplit.create({
+            const split = await paramTx.dispatchSplit.create({
                 data: {
                     salesOrderId: so.id,
                     splitNumber: 1,
@@ -327,13 +329,21 @@ export class SalesOrdersService {
             }));
 
             if (splitItemsInfo.length > 0) {
-                await tx.dispatchSplitItem.createMany({
+                await paramTx.dispatchSplitItem.createMany({
                     data: splitItemsInfo,
                 });
             }
 
-            return this.getSplitWithDetails(split.id, tx);
-        });
+            return this.getSplitWithDetails(split.id, paramTx);
+        };
+
+        if (tx) {
+            return executeLogic(tx);
+        } else {
+            return this.prisma.$transaction(async (newTx) => {
+                return executeLogic(newTx);
+            });
+        }
     }
 
     // Helper

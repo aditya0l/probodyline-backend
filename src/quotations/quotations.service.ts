@@ -830,20 +830,11 @@ export class QuotationsService {
       // However, ensureMasterSO is designed to read the quotation.
       // Let's call it after the transaction block returns to be safe and ensure data consistency.
 
+
+      // Automatically create Sales Order record within the SAME transaction
+      await this.salesOrdersService.createAutoBookedSplitFromQuotation(id, tx);
+
       return confirmedQuotation;
     });
-
-    // Post-transaction: Create Sales Order
-    try {
-      await this.salesOrdersService.createAutoBookedSplitFromQuotation(id);
-    } catch (e) {
-      console.error('Failed to auto-create Sales Order after PI confirmation', e);
-      // We don't throw here to avoid failing the user request if the main action succeeded.
-    }
-
-    // Is there a way to return the updated object?
-    // We can just return the confirmedQuotation from above.
-    return this.prisma.quotation.findUnique({ where: { id } }) as Promise<Quotation>;
-
   }
 }

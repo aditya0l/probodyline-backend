@@ -296,6 +296,46 @@ export class SalesOrdersService {
         });
     }
 
+    // 5. Auto-create BOOKED split from PI (for legacy/simple flow compatibility)
+    async createAutoBookedSplitFromQuotation(quotationId: string) {
+        // First ensure Master SO exists
+        const so = await this.ensureMasterSO(quotationId);
+        if (!so) throw new Error('Failed to ensure Sales Order');
+
+        // Check if any splits exist
+        if (so.splits && so.splits.length > 0) {
+            return so; // Already has splits, don't auto-create
+        }
+
+        return this.prisma.$transaction(async (tx) => {
+            // Create Split
+            const split = await tx.dispatchSplit.create({
+                data: {
+                    salesOrderId: so.id,
+                    splitNumber: 1,
+                    status: 'BOOKED',
+                    dispatchDate: so.quotation.dispatchDate || new Date(),
+                    bookedAt: new Date(),
+                },
+            });
+
+            // Create Split Items with full quantity
+            const splitItemsInfo = so.quotation.items.map((qItem) => ({
+                dispatchSplitId: split.id,
+                quotationItemId: qItem.id,
+                quantity: qItem.quantity, // Auto-allocate full quantity
+            }));
+
+            if (splitItemsInfo.length > 0) {
+                await tx.dispatchSplitItem.createMany({
+                    data: splitItemsInfo,
+                });
+            }
+
+            return this.getSplitWithDetails(split.id, tx);
+        });
+    }
+
     // Helper
     private async getSplitWithDetails(splitId: string, tx: any) {
         return tx.dispatchSplit.findUnique({

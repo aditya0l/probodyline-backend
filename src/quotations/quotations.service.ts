@@ -835,7 +835,7 @@ export class QuotationsService {
 
     // Post-transaction: Create Sales Order
     try {
-      await this.salesOrdersService.ensureMasterSO(id);
+      await this.salesOrdersService.createAutoBookedSplitFromQuotation(id);
     } catch (e) {
       console.error('Failed to auto-create Sales Order after PI confirmation', e);
       // We don't throw here to avoid failing the user request if the main action succeeded.

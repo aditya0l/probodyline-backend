@@ -10,10 +10,14 @@ import { UpdateQuotationDto } from './dto/update-quotation.dto';
 import { CreateQuotationItemDto } from './dto/create-quotation-item.dto';
 import { UpdateQuotationItemDto } from './dto/update-quotation-item.dto';
 import { Quotation, Prisma, StockTransactionType } from '@prisma/client';
+import { SalesOrdersService } from '../sales-orders/sales-orders.service';
 
 @Injectable()
 export class QuotationsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private salesOrdersService: SalesOrdersService
+  ) { }
 
   async generateQuoteNumber(): Promise<string> {
     const date = new Date();
@@ -795,17 +799,6 @@ export class QuotationsService {
       await Promise.all(dispatchDatePromises);
 
       // Update PI status to CONFIRMED
-      const confirmedQuotation = await tx.quotation.update({
-        where: { id },
-        data: {
-          status: 'CONFIRMED',
-        },
-        include: {
-          items: true,
-          customer: true,
-        },
-      });
-
       // SYNC: Update 'todaysStock' on the Product model for all affected products
       // We do this after creating transactions to ensure strict consistency
       for (const item of itemsWithProducts) {
@@ -820,7 +813,37 @@ export class QuotationsService {
         });
       }
 
+      const confirmedQuotation = await tx.quotation.update({
+        where: { id },
+        data: {
+          status: 'CONFIRMED', // Confirmed PI is essentially "Booked"
+        },
+      });
+
+      // Automatically create Sales Order record
+      // We do this AFTER the transaction so that if ensureMasterSO uses a separate transaction or needs committed data, it works.
+      // However, ideally this should be part of the same transaction or idempotent.
+      // salesOrdersService.ensureMasterSO handles its own logic.
+      // Since we are inside a transaction here, calling an external service method that uses prisma might be tricky if it expects data to be visible.
+      // BUT, ensureMasterSO primarily reads 'Quotation' which IS updated in this transaction?
+      // Wait, ensureMasterSO reads using `this.prisma`. If we are in a transaction `tx`, `this.prisma` outside might not see the update yet if isolation level is high.
+      // However, ensureMasterSO is designed to read the quotation.
+      // Let's call it after the transaction block returns to be safe and ensure data consistency.
+
       return confirmedQuotation;
     });
+
+    // Post-transaction: Create Sales Order
+    try {
+      await this.salesOrdersService.ensureMasterSO(id);
+    } catch (e) {
+      console.error('Failed to auto-create Sales Order after PI confirmation', e);
+      // We don't throw here to avoid failing the user request if the main action succeeded.
+    }
+
+    // Is there a way to return the updated object?
+    // We can just return the confirmedQuotation from above.
+    return this.prisma.quotation.findUnique({ where: { id } }) as Promise<Quotation>;
+
   }
 }

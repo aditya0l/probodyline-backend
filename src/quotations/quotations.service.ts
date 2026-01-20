@@ -34,7 +34,7 @@ export class QuotationsService {
           const lastQuote = await tx.quotation.findFirst({
             where: {
               quoteNumber: {
-                startsWith: `Q-${datePrefix}-`,
+                startsWith: `QO-${datePrefix}-`,
               },
             },
             orderBy: {
@@ -54,7 +54,7 @@ export class QuotationsService {
           }
 
           const sequenceStr = String(sequence).padStart(3, '0');
-          const quoteNumber = `Q-${datePrefix}-${sequenceStr}`;
+          const quoteNumber = `QO-${datePrefix}-${sequenceStr}`;
 
           // Verify uniqueness (atomic check)
           const existing = await tx.quotation.findUnique({
@@ -66,7 +66,7 @@ export class QuotationsService {
             // If exists, increment and retry
             sequence++;
             const newSequenceStr = String(sequence).padStart(3, '0');
-            return `Q-${datePrefix}-${newSequenceStr}`;
+            return `QO-${datePrefix}-${newSequenceStr}`;
           }
 
           return quoteNumber;

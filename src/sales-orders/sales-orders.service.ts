@@ -21,7 +21,7 @@ export class SalesOrdersService {
             });
             if (!quotation) throw new NotFoundException('Quotation not found');
 
-            const soNumber = `SO_${quotation.quoteNumber}`; // Simple mapping
+            const soNumber = quotation.quoteNumber.replace('QO', 'SO').replace('Q', 'SO'); // Handle both old and new formats
 
             so = await this.prisma.salesOrder.create({
                 data: {

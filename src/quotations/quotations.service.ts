@@ -119,7 +119,7 @@ export class QuotationsService {
           },
         },
         salesOrders: {
-          include: { items: true },
+
           orderBy: { soNumber: 'asc' },
         },
       },

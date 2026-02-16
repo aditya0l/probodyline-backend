@@ -403,13 +403,13 @@ model ClientPartner {
 model Gym {
   id               String   @id @default(uuid())
   gymCode          String   @unique // Auto-generated, immutable
-  installationDate DateTime
-  stateCode        String
-  city             String
-  gymName          String
-  branchCode       Float
-  branchTitle      String
-  salesInitial     String
+  installationDate DateTime?
+  stateCode        String?
+  city             String?
+  gymName          String?
+  branchCode       Float?
+  branchTitle      String?
+  salesInitial     String?
   instagramLink    String?
   locationLink     String?
   locationQR       String? // Auto-generated from locationLink

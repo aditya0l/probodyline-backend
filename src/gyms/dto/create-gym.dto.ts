@@ -1,59 +1,58 @@
 import {
   IsString,
   IsDateString,
-  IsNotEmpty,
   IsOptional,
   IsNumber,
   Min,
   Max,
 } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class CreateGymDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Installation date (YYYY-MM-DD)',
     example: '2024-01-15',
   })
+  @IsOptional()
   @IsDateString()
-  @IsNotEmpty()
-  installationDate: string;
+  installationDate?: string;
 
-  @ApiProperty({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+  @ApiPropertyOptional({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  stateCode: string;
+  stateCode?: string;
 
-  @ApiProperty({ description: 'City name', example: 'Mumbai' })
+  @ApiPropertyOptional({ description: 'City name', example: 'Mumbai' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  city: string;
+  city?: string;
 
-  @ApiProperty({ description: 'Gym name', example: 'Helion Fitness' })
+  @ApiPropertyOptional({ description: 'Gym name', example: 'Helion Fitness' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  gymName: string;
+  gymName?: string;
 
-  @ApiProperty({ description: 'Branch code (1.0 to 99.0)', example: 1.0 })
+  @ApiPropertyOptional({ description: 'Branch code (1.0 to 99.0)', example: 1.0 })
+  @IsOptional()
   @IsNumber()
   @Type(() => Number)
   @Min(1.0)
   @Max(99.0)
-  @IsNotEmpty()
-  branchCode: number;
+  branchCode?: number;
 
-  @ApiProperty({ description: 'Branch title', example: 'Iconic' })
+  @ApiPropertyOptional({ description: 'Branch title', example: 'Iconic' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  branchTitle: string;
+  branchTitle?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Sales initial (code identifier)',
     example: 'RK',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  salesInitial: string;
+  salesInitial?: string;
 
   @ApiPropertyOptional({
     description: 'Instagram link',

@@ -12,7 +12,7 @@ import { generateGymCode } from '../common/utils/gym-code.util';
 
 @Injectable()
 export class GymsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   private async generateLocationQR(locationLink: string): Promise<string> {
     try {
@@ -124,7 +124,7 @@ export class GymsService {
     const gym = await this.prisma.gym.create({
       data: {
         gymCode,
-        installationDate: new Date(data.installationDate),
+        installationDate: data.installationDate ? new Date(data.installationDate) : undefined,
         stateCode: data.stateCode,
         city: data.city,
         gymName: data.gymName,
@@ -134,7 +134,7 @@ export class GymsService {
         instagramLink: data.instagramLink,
         locationLink: data.locationLink,
         locationQR,
-      },
+      } as any,
     });
 
     return gym;

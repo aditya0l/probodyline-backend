@@ -410,6 +410,7 @@ model Gym {
   branchCode       Float?
   branchTitle      String?
   salesInitial     String?
+  callSign         String?
   instagramLink    String?
   locationLink     String?
   locationQR       String? // Auto-generated from locationLink

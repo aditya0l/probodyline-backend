@@ -200,28 +200,34 @@ export class CreateProductDto {
   thumbnail?: string;
 
   @ApiPropertyOptional({
-    description: 'Related cousin machine product name',
-    example: 'Treadmill Pro 3000',
+    description: 'Related cousin machine model numbers',
+    type: [String],
+    example: ['TM_PRO_3000'],
   })
   @IsOptional()
-  @IsString()
-  cousinMachine?: string;
+  @IsArray()
+  @IsString({ each: true })
+  cousinMachine?: string[];
 
   @ApiPropertyOptional({
-    description: 'Products to order together',
-    example: 'Dumbbell Set',
+    description: 'Products to order together (model numbers)',
+    type: [String],
+    example: ['DB_SET_001'],
   })
   @IsOptional()
-  @IsString()
-  orderTogether?: string;
+  @IsArray()
+  @IsString({ each: true })
+  orderTogether?: string[];
 
   @ApiPropertyOptional({
-    description: 'Swap machine product name',
-    example: 'Treadmill Pro 6000',
+    description: 'Swap machine model numbers',
+    type: [String],
+    example: ['TM_PRO_6000'],
   })
   @IsOptional()
-  @IsString()
-  swapMachine?: string;
+  @IsArray()
+  @IsString({ each: true })
+  swapMachine?: string[];
 
   @ApiPropertyOptional({ description: 'Brand name', example: 'ProBodyline' })
   @IsOptional()

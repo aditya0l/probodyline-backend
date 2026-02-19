@@ -54,6 +54,11 @@ export class CreateGymDto {
   @IsString()
   salesInitial?: string;
 
+  @ApiPropertyOptional({ description: 'Call sign for branch', example: 'ALPHA' })
+  @IsOptional()
+  @IsString()
+  callSign?: string;
+
   @ApiPropertyOptional({
     description: 'Instagram link',
     example: 'https://instagram.com/helion_fitness',

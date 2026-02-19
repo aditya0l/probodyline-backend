@@ -157,10 +157,32 @@ export class GymsService {
       locationQR = await this.generateLocationQR(data.locationLink);
     }
 
+    // Regenerate gym code using merged data (existing + updated fields)
+    const mergedInstallationDate = data.installationDate !== undefined
+      ? data.installationDate
+      : (gym.installationDate ? gym.installationDate.toISOString().split('T')[0] : undefined);
+    const mergedStateCode = (data.stateCode !== undefined ? data.stateCode : gym.stateCode) ?? undefined;
+    const mergedCity = (data.city !== undefined ? data.city : gym.city) ?? undefined;
+    const mergedGymName = (data.gymName !== undefined ? data.gymName : gym.gymName) ?? undefined;
+    const mergedBranchCode = (data.branchCode !== undefined ? data.branchCode : gym.branchCode) ?? undefined;
+    const mergedBranchTitle = (data.branchTitle !== undefined ? data.branchTitle : gym.branchTitle) ?? undefined;
+    const mergedSalesInitial = (data.salesInitial !== undefined ? data.salesInitial : gym.salesInitial) ?? undefined;
+
+    const newGymCode = generateGymCode({
+      installationDate: mergedInstallationDate,
+      stateCode: mergedStateCode,
+      city: mergedCity,
+      gymName: mergedGymName,
+      branchCode: mergedBranchCode,
+      branchTitle: mergedBranchTitle,
+      salesInitial: mergedSalesInitial,
+    });
+
     // Update gym
     const updated = await this.prisma.gym.update({
       where: { id },
       data: {
+        gymCode: newGymCode,
         installationDate: data.installationDate
           ? new Date(data.installationDate)
           : undefined,

@@ -39,10 +39,10 @@ export function generateGymCode(data: GymCodeData): string {
   // Normalize components (use "-" placeholder for missing values)
   const normalizedDate = installationDate ? installationDate.split('T')[0] : '-';
   const normalizedState = stateCode ? stateCode.toUpperCase().trim() : '-';
-  const normalizedCity = city ? city.trim().replace(/\s+/g, '_') : '-';
-  const normalizedGymName = gymName ? gymName.trim().replace(/\s+/g, '_') : '-';
+  const normalizedCity = city ? city.toUpperCase().trim().replace(/\s+/g, '_') : '-';
+  const normalizedGymName = gymName ? gymName.toUpperCase().trim().replace(/\s+/g, '_') : '-';
   const normalizedBranchCode = branchCode !== undefined && branchCode !== null ? branchCode.toString() : '-';
-  const normalizedBranchTitle = branchTitle ? branchTitle.trim().replace(/\s+/g, '_') : '-';
+  const normalizedBranchTitle = branchTitle ? branchTitle.toUpperCase().trim().replace(/\s+/g, '_') : '-';
   const normalizedSalesInitial = salesInitial ? salesInitial.toUpperCase().trim() : '-';
 
   // Build gym code

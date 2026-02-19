@@ -15,7 +15,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private qrCodeService: QRCodeService,
-  ) {}
+  ) { }
 
   async findAll(filters?: {
     search?: string;
@@ -142,6 +142,9 @@ export class ProductsService {
       ...data,
       srNo,
       priority: data.priority || 1,
+      cousinMachine: data.cousinMachine || [],
+      orderTogether: data.orderTogether || [],
+      swapMachine: data.swapMachine || [],
     };
 
     console.log('[ProductsService.create] Creating product with data:', {

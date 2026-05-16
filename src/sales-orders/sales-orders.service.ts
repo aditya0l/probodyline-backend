@@ -109,14 +109,30 @@ export class SalesOrdersService {
                 where: { id: splitId },
             });
             if (!split) throw new NotFoundException('Split not found');
-            if (split.status === 'BOOKED')
-                throw new BadRequestException('Cannot edit a BOOKED split');
-
             if (updates.dispatchDate) {
+                const newDispatchDate = new Date(updates.dispatchDate);
                 await tx.dispatchSplit.update({
                     where: { id: splitId },
-                    data: { dispatchDate: new Date(updates.dispatchDate) },
+                    data: { dispatchDate: newDispatchDate },
                 });
+
+                // If it's already BOOKED, sync associated records
+                if (split.status === 'BOOKED') {
+                    // Sync Stock Transactions
+                    await tx.stockTransaction.updateMany({
+                        where: {
+                            referenceId: splitId,
+                            referenceType: 'DISPATCH_SPLIT'
+                        },
+                        data: { date: newDispatchDate }
+                    });
+
+                    // Sync Bookings
+                    await tx.booking.updateMany({
+                        where: { dispatchSplitId: splitId },
+                        data: { dispatchDate: newDispatchDate }
+                    });
+                }
             }
 
             if (updates.items) {
@@ -239,7 +255,8 @@ export class SalesOrdersService {
                         waitingQuantity: 0,
                         customerName: split.salesOrder.quotation.clientName,
                         gymName: split.salesOrder.quotation.gymName,
-                        city: split.salesOrder.quotation.clientCity
+                        city: split.salesOrder.quotation.clientCity,
+                        dispatchSplitId: splitId
                     }
                 });
             }
@@ -430,6 +447,58 @@ export class SalesOrdersService {
                 splits: { include: { items: true } }
             },
             orderBy: { updatedAt: 'desc' }
+        });
+    }
+
+    // 6. Update Master Sales Order Date (Quotation Date)
+    async updateMasterDispatchDate(salesOrderId: string, dispatchDate: string) {
+        return this.prisma.$transaction(async (tx) => {
+            const so = await tx.salesOrder.findUnique({
+                where: { id: salesOrderId },
+                include: { quotation: true }
+            });
+
+            if (!so) throw new NotFoundException('Sales Order not found');
+
+            const newDispatchDate = new Date(dispatchDate);
+
+            // A. Update Master Quotation
+            await tx.quotation.update({
+                where: { id: so.quotationId },
+                data: { dispatchDate: newDispatchDate }
+            });
+
+            // B. Sync Stock Transactions (Confirmed PIs or Quote-linked)
+            await tx.stockTransaction.updateMany({
+                where: {
+                    referenceId: so.quotationId,
+                    transactionType: 'OUT',
+                    referenceType: { in: ['QUOTATION', 'PI_BOOKING'] }
+                },
+                data: { date: newDispatchDate }
+            });
+
+            // C. Sync Bookings
+            await tx.booking.updateMany({
+                where: { quotationId: so.quotationId },
+                data: { dispatchDate: newDispatchDate }
+            });
+
+            return tx.salesOrder.findUnique({
+                where: { id: salesOrderId },
+                include: {
+                    quotation: { include: { items: true } },
+                    splits: {
+                        include: {
+                            items: {
+                                include: { quotationItem: true },
+                                orderBy: { quotationItem: { srNo: 'asc' } }
+                            }
+                        },
+                        orderBy: { splitNumber: 'asc' }
+                    }
+                }
+            });
         });
     }
 

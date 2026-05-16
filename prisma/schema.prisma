@@ -272,6 +272,7 @@ model DispatchSplit {
   // Relations
   salesOrder SalesOrder          @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   items      DispatchSplitItem[]
+  bookings   Booking[]
 
   @@unique([salesOrderId, splitNumber])
   @@index([salesOrderId])
@@ -531,6 +532,9 @@ model Booking {
   city             String?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+
+  dispatchSplitId  String?
+  dispatchSplit    DispatchSplit? @relation(fields: [dispatchSplitId], references: [id], onDelete: SetNull)
 
   product Product @relation(fields: [productId], references: [id])
 

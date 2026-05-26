@@ -66,6 +66,12 @@ export class SalesOrdersController {
     return this.salesOrdersService.findAll();
   }
 
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a single Master Sales Order with Splits' })
+  findOne(@Param('id') id: string) {
+    return this.salesOrdersService.findOne(id);
+  }
+
   @Patch(':id/master-date')
   @ApiOperation({ summary: 'Update Master Sales Order Dispatch Date' })
   updateMasterDate(

@@ -507,7 +507,7 @@ export class SalesOrdersService {
                 data: { dispatchDate: newDispatchDate }
             });
 
-            const updatedSO = await tx.salesOrder.findUnique({
+            return tx.salesOrder.findUnique({
                 where: { id: salesOrderId },
                 include: {
                     quotation: { include: { items: true } },
@@ -522,9 +522,6 @@ export class SalesOrdersService {
                     }
                 }
             });
-
-            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
-            return updatedSO;
         });
     }
 

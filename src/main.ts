@@ -5,27 +5,10 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
-import * as fs from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  // #region agent log
-  try {
-    const logPath = '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
-    fs.appendFileSync(
-      logPath,
-      JSON.stringify({
-        location: 'main.ts:11',
-        message: 'NestFactory.create completed',
-        data: { appCreated: !!app },
-        timestamp: Date.now(),
-        sessionId: 'debug-session',
-        runId: 'run1',
-        hypothesisId: 'H2',
-      }) + '\n',
-    );
-  } catch (e) {}
-  // #endregion
+
 
   // Security headers with Helmet
   app.use(
@@ -123,7 +106,13 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
+  const server = await app.listen(port);
+
+  // Fix AWS NLB idle connection drops — keepAlive must exceed ALB/NLB idle timeout (350s)
+  // headersTimeout must be > keepAliveTimeout to avoid race conditions
+  server.keepAliveTimeout = 61000; // 61 seconds
+  server.headersTimeout = 62000;   // 62 seconds
+
   console.log(`🚀 Backend server running on http://localhost:${port}`);
   console.log(
     `📚 API Documentation available at http://localhost:${port}/api/docs`,
@@ -140,24 +129,7 @@ async function bootstrap() {
   // Verify modules are loaded
   try {
     const httpAdapter = app.getHttpAdapter();
-    // #region agent log
-    try {
-      const logPath =
-        '/Users/adityajaif/Desktop/PRo-Bodyline/.cursor/debug.log';
-      fs.appendFileSync(
-        logPath,
-        JSON.stringify({
-          location: 'main.ts:120',
-          message: 'App initialization complete, checking route registration',
-          data: { hasHttpAdapter: !!httpAdapter },
-          timestamp: Date.now(),
-          sessionId: 'debug-session',
-          runId: 'run1',
-          hypothesisId: 'H2',
-        }) + '\n',
-      );
-    } catch (e) {}
-    // #endregion
+
     console.log('✅ Application initialized successfully');
     console.log(
       '✅ All modules loaded (including GymsModule and ClientsModule)',

@@ -587,10 +587,19 @@ export class StockService {
       orderBy: { date: 'asc' },
     });
 
-    // todaysPhysicalStock = currentStock (the DB field already reflects all
-    // transactions up to and including today, since the stock field is updated
-    // whenever a transaction is saved for today or past dates)
-    const todaysPhysicalStock = currentStock;
+    // Calculate Today's Real Physical Stock (Total - Future Changes)
+    let futureSum = 0;
+    futureTransactions.forEach((tx) => {
+      const change =
+        tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE'
+          ? tx.quantity
+          : tx.transactionType === 'OUT' || tx.transactionType === 'SALE'
+            ? -Math.abs(tx.quantity)
+            : tx.quantity;
+      futureSum += change;
+    });
+
+    const todaysPhysicalStock = currentStock - futureSum;
 
     // 3. Helper to calculate MINIMUM Projected Balance starting from a specific date (Available to Promise)
     // Matches logic in stockDetailClient.tsx (findMinBalance)

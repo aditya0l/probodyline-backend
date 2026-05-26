@@ -572,36 +572,25 @@ export class StockService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // 2. Fetch ALL future transactions from Today onwards
-    // We need to simulate the running balance starting from 'currentStock' (which is EOD today)
+    // 2. Fetch ALL transactions from Today (midnight) onwards
+    // These are transactions that affect stock from today forward
+    const tomorrowMidnight = new Date(today);
+    tomorrowMidnight.setDate(tomorrowMidnight.getDate() + 1);
+
     const futureTransactions = await this.prisma.stockTransaction.findMany({
       where: {
         productId,
         date: {
-          gt: today, // Strictly greater than today (tomorrow onwards)
+          gte: tomorrowMidnight, // Strictly tomorrow midnight onwards
         },
       },
-      orderBy: { date: 'asc' }, // Order by date ascending to simulate timeline
+      orderBy: { date: 'asc' },
     });
 
-    // Calculate Today's Real Physical Stock (Total - Future Changes)
-    let futureSum = 0;
-    futureTransactions.forEach((tx) => {
-      // Logic: If Sum = Past + Future. Past = Sum - Future.
-      // But we need to subract the 'change'.
-      // IN adds to stock. OUT subtracts.
-      // So FutureNetChange = Sum(IN) - Sum(OUT).
-      // TodayStock = CurrentStock - FutureNetChange.
-      const change =
-        tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE'
-          ? tx.quantity
-          : tx.transactionType === 'OUT' || tx.transactionType === 'SALE'
-            ? -Math.abs(tx.quantity)
-            : tx.quantity;
-      futureSum += change;
-    });
-
-    const todaysPhysicalStock = currentStock - futureSum;
+    // todaysPhysicalStock = currentStock (the DB field already reflects all
+    // transactions up to and including today, since the stock field is updated
+    // whenever a transaction is saved for today or past dates)
+    const todaysPhysicalStock = currentStock;
 
     // 3. Helper to calculate MINIMUM Projected Balance starting from a specific date (Available to Promise)
     // Matches logic in stockDetailClient.tsx (findMinBalance)
@@ -610,15 +599,15 @@ export class StockService {
       lookAheadDays: number = 365,
     ): number => {
       const startDate = new Date(startDateStr);
-      startDate.setHours(23, 59, 59, 999); // Start checking from end of this day
+      startDate.setHours(23, 59, 59, 999); // End of the start day
 
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + lookAheadDays);
 
-      // First, get balance AT the start date
+      // Start from today's physical stock and advance to startDate
       let currentBalance = todaysPhysicalStock;
 
-      // Advance to start date
+      // Advance to start date by applying all transactions up to and including startDate
       for (const tx of futureTransactions) {
         const txDate = new Date(tx.date);
         if (txDate > startDate) break;
@@ -637,8 +626,6 @@ export class StockService {
       let minBalance = currentBalance;
       let runningBalance = currentBalance;
 
-      // Find index of first transaction after startDate
-      // Optimization: we could track index in previous loop, but this is fine for now
       for (const tx of futureTransactions) {
         const txDate = new Date(tx.date);
         if (txDate <= startDate) continue; // Already processed

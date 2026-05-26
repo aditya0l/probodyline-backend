@@ -537,7 +537,7 @@ export class SalesOrdersService {
                     });
 
                     await tx.booking.updateMany({
-                        where: { splitId: split.id },
+                        where: { dispatchSplitId: split.id },
                         data: { dispatchDate: newDispatchDate }
                     });
                 }

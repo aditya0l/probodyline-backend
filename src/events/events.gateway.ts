@@ -12,7 +12,7 @@ import { Server, Socket } from 'socket.io';
   cors: {
     origin: [
       'https://your-custom-domain.com',
-      'https://your-app.vercel.app',
+      'https://probodyline-dashboard.vercel.app',
       /\.vercel\.app$/, // Allow Vercel preview deployments
       'http://localhost:3000',
       'http://localhost:3001',

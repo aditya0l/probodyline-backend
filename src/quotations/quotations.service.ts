@@ -711,6 +711,10 @@ export class QuotationsService {
         throw new BadRequestException('Only DRAFT PI can be confirmed');
       }
 
+      if (!quotation.dispatchDate) {
+        throw new BadRequestException('Dispatch Date is required before booking');
+      }
+
       // Get all items with products and positive quantity (skip 0 quantity items)
       const itemsWithProducts = quotation.items.filter(
         (item) => item.productId && item.quantity > 0,

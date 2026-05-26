@@ -516,6 +516,33 @@ export class SalesOrdersService {
                 data: { dispatchDate: newDispatchDate }
             });
 
+            // D. Sync Dispatch Splits
+            const splits = await tx.dispatchSplit.findMany({
+                where: { salesOrderId }
+            });
+
+            for (const split of splits) {
+                await tx.dispatchSplit.update({
+                    where: { id: split.id },
+                    data: { dispatchDate: newDispatchDate }
+                });
+
+                if (split.status === 'BOOKED') {
+                    await tx.stockTransaction.updateMany({
+                        where: {
+                            referenceId: split.id,
+                            referenceType: 'DISPATCH_SPLIT'
+                        },
+                        data: { date: newDispatchDate }
+                    });
+
+                    await tx.booking.updateMany({
+                        where: { splitId: split.id },
+                        data: { dispatchDate: newDispatchDate }
+                    });
+                }
+            }
+
             const updatedSO = await tx.salesOrder.findUnique({
                 where: { id: salesOrderId },
                 include: {

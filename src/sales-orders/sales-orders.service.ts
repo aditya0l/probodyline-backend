@@ -6,9 +6,14 @@ import {
 import { PrismaService } from '../common/prisma.service';
 import { Prisma } from '@prisma/client';
 
+import { EventsGateway } from '../events/events.gateway';
+
 @Injectable()
 export class SalesOrdersService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private eventsGateway: EventsGateway,
+    ) { }
 
     // 1. Ensure Master Sales Order exists (Commercial Entity)
     async ensureMasterSO(quotationId: string, tx?: Prisma.TransactionClient) {
@@ -144,7 +149,9 @@ export class SalesOrdersService {
                 }
             }
 
-            return this.getSplitWithDetails(splitId, tx);
+            const result = await this.getSplitWithDetails(splitId, tx);
+            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', split.salesOrderId);
+            return result;
         });
     }
 
@@ -270,7 +277,14 @@ export class SalesOrdersService {
                 },
             });
 
-            return this.getSplitWithDetails(splitId, tx);
+            const result = await this.getSplitWithDetails(splitId, tx);
+            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', split.salesOrderId);
+            for (const item of finalItems) {
+                if (item.quotationItem.productId) {
+                    this.eventsGateway.broadcastEntityUpdate('STOCK', item.quotationItem.productId);
+                }
+            }
+            return result;
         });
     }
 
@@ -432,10 +446,19 @@ export class SalesOrdersService {
             }
 
             // Update Master SO Status
-            return tx.salesOrder.update({
+            const result = await tx.salesOrder.update({
                 where: { id: salesOrderId },
                 data: { status: 'UNBOOKED' }
             });
+            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+            for (const split of so.splits) {
+                for (const item of split.items) {
+                    if (item.quotationItem.productId) {
+                        this.eventsGateway.broadcastEntityUpdate('STOCK', item.quotationItem.productId);
+                    }
+                }
+            }
+            return result;
         });
     }
 

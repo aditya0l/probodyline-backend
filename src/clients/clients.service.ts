@@ -9,9 +9,14 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { generateClientCode } from '../common/utils/client-code.util';
 
+import { EventsGateway } from '../events/events.gateway';
+
 @Injectable()
 export class ClientsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private eventsGateway: EventsGateway,
+  ) {}
 
   async findAll(filters?: {
     search?: string;
@@ -134,6 +139,7 @@ export class ClientsService {
       } as any,
     });
 
+    this.eventsGateway.broadcastEntityUpdate('CLIENT', client.id);
     return client;
   }
 
@@ -158,6 +164,7 @@ export class ClientsService {
       },
     });
 
+    this.eventsGateway.broadcastEntityUpdate('CLIENT', id);
     return updated;
   }
 
@@ -176,6 +183,7 @@ export class ClientsService {
       where: { id },
     });
 
+    this.eventsGateway.broadcastEntityUpdate('CLIENT', id);
     return { message: 'Client deleted successfully' };
   }
 

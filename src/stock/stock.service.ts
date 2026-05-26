@@ -7,10 +7,14 @@ import { PrismaService } from '../common/prisma.service';
 import { CreateStockTransactionDto } from './dto/create-stock-transaction.dto';
 import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
 import { StockTransaction, Prisma, StockTransactionType } from '@prisma/client';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class StockService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private eventsGateway: EventsGateway,
+  ) {}
 
   async createTransaction(
     data: CreateStockTransactionDto,
@@ -93,6 +97,9 @@ export class StockService {
       where: { id: data.productId },
       data: { todaysStock: currentStock },
     });
+
+    // Broadcast stock update globally
+    this.eventsGateway.broadcastEntityUpdate('STOCK', data.productId);
 
     return transaction;
   }
@@ -666,7 +673,7 @@ export class StockService {
     plus15Date.setDate(plus15Date.getDate() + 15);
     const plus30Date = new Date(selectedDateObj);
     plus30Date.setDate(plus30Date.getDate() + 30);
-    const plus360Date = new Date(selectedDateObj);
+    const plus360Date = new Date(today);
     plus360Date.setDate(plus360Date.getDate() + 360);
 
     // Calculate Available Stock (Min Projected)

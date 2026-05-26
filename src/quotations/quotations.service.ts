@@ -11,12 +11,14 @@ import { CreateQuotationItemDto } from './dto/create-quotation-item.dto';
 import { UpdateQuotationItemDto } from './dto/update-quotation-item.dto';
 import { Quotation, Prisma, StockTransactionType } from '@prisma/client';
 import { SalesOrdersService } from '../sales-orders/sales-orders.service';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class QuotationsService {
   constructor(
     private prisma: PrismaService,
-    private salesOrdersService: SalesOrdersService
+    private salesOrdersService: SalesOrdersService,
+    private eventsGateway: EventsGateway,
   ) { }
 
   async generateQuoteNumber(): Promise<string> {
@@ -308,6 +310,7 @@ export class QuotationsService {
         },
       });
 
+      this.eventsGateway.broadcastEntityUpdate('QUOTATION', quotation.id);
       return quotation;
     });
   }
@@ -463,15 +466,18 @@ export class QuotationsService {
       });
     }
 
+    this.eventsGateway.broadcastEntityUpdate('QUOTATION', id);
     return result;
   }
 
   async remove(id: string): Promise<Quotation> {
     // Soft delete
-    return this.prisma.quotation.update({
+    const result = await this.prisma.quotation.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
+    this.eventsGateway.broadcastEntityUpdate('QUOTATION', id);
+    return result;
   }
 
   async findDeleted(): Promise<Quotation[]> {
@@ -644,10 +650,12 @@ export class QuotationsService {
     }
 
     // Update quotation status (no stock transactions here - only in confirmPI)
-    return this.prisma.quotation.update({
+    const result = await this.prisma.quotation.update({
       where: { id },
       data: { status: status as any },
     });
+    this.eventsGateway.broadcastEntityUpdate('QUOTATION', id);
+    return result;
   }
 
   /**
@@ -669,12 +677,14 @@ export class QuotationsService {
       }
 
       // Update quotation status to DRAFT (PI status)
-      return tx.quotation.update({
+      const result = await tx.quotation.update({
         where: { id },
         data: {
           status: 'DRAFT', // PI starts as DRAFT
         },
       });
+      this.eventsGateway.broadcastEntityUpdate('QUOTATION', id);
+      return result;
     });
   }
 
@@ -834,6 +844,7 @@ export class QuotationsService {
       // Automatically create Sales Order record within the SAME transaction
       await this.salesOrdersService.createAutoBookedSplitFromQuotation(id, tx);
 
+      this.eventsGateway.broadcastEntityUpdate('QUOTATION', id);
       return confirmedQuotation;
     });
   }

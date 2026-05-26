@@ -10,9 +10,14 @@ import { UpdateGymDto } from './dto/update-gym.dto';
 import { CreateInaugurationCommitmentDto } from './dto/create-inauguration-commitment.dto';
 import { generateGymCode } from '../common/utils/gym-code.util';
 
+import { EventsGateway } from '../events/events.gateway';
+
 @Injectable()
 export class GymsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(
+    private prisma: PrismaService,
+    private eventsGateway: EventsGateway,
+  ) { }
 
   private async generateLocationQR(locationLink: string): Promise<string> {
     try {
@@ -121,24 +126,29 @@ export class GymsService {
     }
 
     // Create gym
-    const gym = await this.prisma.gym.create({
+    const createdGym = await this.prisma.gym.create({
       data: {
         gymCode,
-        installationDate: data.installationDate ? new Date(data.installationDate) : undefined,
-        stateCode: data.stateCode ? data.stateCode.toUpperCase() : data.stateCode,
-        city: data.city ? data.city.toUpperCase() : data.city,
+        installationDate: data.installationDate
+          ? new Date(data.installationDate)
+          : undefined,
+        stateCode: data.stateCode ? data.stateCode.toUpperCase() : null,
+        city: data.city ? data.city.toUpperCase() : null,
         gymName: data.gymName ? data.gymName.toUpperCase() : data.gymName,
-        branchCode: data.branchCode,
-        branchTitle: data.branchTitle ? data.branchTitle.toUpperCase() : data.branchTitle,
-        salesInitial: data.salesInitial ? data.salesInitial.toUpperCase() : data.salesInitial,
-        callSign: data.callSign ? data.callSign.toUpperCase() : data.callSign,
-        instagramLink: data.instagramLink,
-        locationLink: data.locationLink,
-        locationQR,
+        branchCode: data.branchCode || null,
+        branchTitle: data.branchTitle ? data.branchTitle.toUpperCase() : null,
+        salesInitial: data.salesInitial
+          ? data.salesInitial.toUpperCase()
+          : null,
+        callSign: data.callSign ? data.callSign.toUpperCase() : null,
+        instagramLink: data.instagramLink || null,
+        locationLink: data.locationLink || null,
+        locationQR: locationQR || null,
       } as any,
     });
 
-    return gym;
+    this.eventsGateway.broadcastEntityUpdate('GYM', createdGym.id);
+    return createdGym;
   }
 
   async update(id: string, data: UpdateGymDto): Promise<any> {
@@ -199,6 +209,7 @@ export class GymsService {
       } as any,
     });
 
+    this.eventsGateway.broadcastEntityUpdate('GYM', id);
     return updated;
   }
 
@@ -217,6 +228,7 @@ export class GymsService {
       where: { id },
     });
 
+    this.eventsGateway.broadcastEntityUpdate('GYM', id);
     return { message: 'Gym deleted successfully' };
   }
 

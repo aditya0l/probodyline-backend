@@ -175,6 +175,7 @@ export class StockController {
   }
 
   @Post('projected')
+  @Throttle({ default: { limit: 1000, ttl: 60000 } })
   @ApiOperation({ summary: 'Get bulk stock projection for products' })
   @ApiBody({
     schema: {

@@ -684,11 +684,19 @@ export class StockService {
       plus360Date.toISOString().split('T')[0],
     );
 
-    // 4. Next In Date Logic
-    // Find first IN transaction > Today
-    const nextInTx = futureTransactions.find(
-      (tx) => tx.transactionType === 'IN' || tx.transactionType === 'PURCHASE',
-    );
+    // 4. Next In Date Logic (Relative to selectedDate or today)
+    const targetNextInDate = selectedDate ? new Date(selectedDate) : today;
+    targetNextInDate.setHours(0, 0, 0, 0);
+
+    const nextInTx = await this.prisma.stockTransaction.findFirst({
+      where: {
+        productId,
+        date: { gt: targetNextInDate },
+        transactionType: { in: ['IN', 'PURCHASE'] }
+      },
+      orderBy: { date: 'asc' }
+    });
+
     const nextInInfo = nextInTx
       ? {
         date: new Date(nextInTx.date).toISOString().split('T')[0],

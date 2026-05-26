@@ -450,6 +450,15 @@ export class SalesOrdersService {
                 where: { id: salesOrderId },
                 data: { status: 'UNBOOKED' }
             });
+            
+            // Revert Quotation status to DRAFT so it can be confirmed again
+            if (so.quotationId) {
+                await tx.quotation.update({
+                    where: { id: so.quotationId },
+                    data: { status: 'DRAFT' }
+                });
+                this.eventsGateway.broadcastEntityUpdate('QUOTATION', so.quotationId);
+            }
             this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
             for (const split of so.splits) {
                 for (const item of split.items) {

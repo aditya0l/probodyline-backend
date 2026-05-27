@@ -58,6 +58,10 @@ export class CreateServiceCardDto {
   @IsOptional() @IsNumber() netCtc?: number;
 
   @IsOptional() @IsString() salesOrderId?: string;
+  
+  @IsOptional() @IsString() status?: string; // STARTED, PENDING, COMPLETE
+  
+  @IsOptional() productNotes?: any; // JSON Object for product specific notes
 }
 
 export class UpdateServiceCardDto extends CreateServiceCardDto {}

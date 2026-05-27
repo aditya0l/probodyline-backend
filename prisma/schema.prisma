@@ -628,7 +628,7 @@ model ServiceCard {
   expenseLog                 Json?     // [{ type, date, time, expenses, amount }]
   endDate                    DateTime?
   endTime                    String?
-  pendingWork                Boolean?  // true = YES, false = NO
+  pendingWork                Boolean   @default(false)
   waitingTimeOnClientRequest String?
   engineerSign               String?   @db.Text
 
@@ -641,6 +641,8 @@ model ServiceCard {
 
   // Attached Sales Order
   salesOrderId               String?
+  status                     ServiceCardStatus @default(STARTED)
+  productNotes               Json?    // Stores notes specific to products for this service card
 
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
@@ -654,3 +656,11 @@ model ServiceCard {
   @@index([salesOrderId])
   @@map("service_cards")
 }
+
+
+enum ServiceCardStatus {
+  STARTED
+  PENDING
+  COMPLETE
+}
+

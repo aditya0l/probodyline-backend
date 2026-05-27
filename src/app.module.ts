@@ -25,6 +25,7 @@ import { LeadsModule } from './leads/leads.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { SalesOrdersModule } from './sales-orders/sales-orders.module';
 import { EventsModule } from './events/events.module';
+import { ServiceCardsModule } from './service-cards/service-cards.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
@@ -82,6 +83,7 @@ import { configValidationSchema } from './config/config.schema';
     BookingsModule,
     SalesOrdersModule,
     EventsModule,
+    ServiceCardsModule,
   ],
   controllers: [AppController],
   providers: [

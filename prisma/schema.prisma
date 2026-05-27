@@ -252,6 +252,7 @@ model SalesOrder {
   // Relations
   quotation Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   splits    DispatchSplit[]
+  serviceCards ServiceCard[]
 
   @@index([quotationId])
   @@index([status])
@@ -423,6 +424,7 @@ model Gym {
   technicians   GymTechnician[]
   media         GymMedia[]
   inaugurations InaugurationCommitment[]
+  serviceCards  ServiceCard[]
 
   @@index([gymCode])
   @@index([stateCode, city])
@@ -584,4 +586,71 @@ model User {
   @@index([email])
   @@index([organizationId])
   @@map("users")
+}
+
+model ServiceCard {
+  id               String   @id @default(uuid())
+  serialNumber     Int      @unique @default(autoincrement()) // Auto-incrementing S. No.
+  filledOnDate     DateTime @default(now())
+  
+  // General Form Fields
+  installationDate DateTime?
+  stateCode        String?
+  city             String?
+  gymId            String?
+  gymName          String?
+  branchCode       Float?
+  branchTitle      String?
+  salesInitial     String?
+  contactAtGym     String?
+  contactNo        String?
+  engineers        Json?    // Array of engineer names
+  landmark         String?
+  locationQR       String?
+
+  // Visit Type
+  visitType        String?  // INSTALLATION, SERVICE, REPAIR, RE_INSTALL
+
+  // Charges
+  installationAndServiceCharges Float?
+  estimatedExpense              Float?
+
+  // Technical Dept
+  techEngineerName           String?
+  reimbursementTravel        Float?
+  reimbursementHotel         Float?
+  reimbursementFood          Float?
+  reimbursementOilSpray      Float?
+  reimbursementSpare         Float?
+  startDate                  DateTime?
+  startTime                  String?
+  techActualExpense          Float?
+  expenseLog                 Json?     // [{ type, date, time, expenses, amount }]
+  endDate                    DateTime?
+  endTime                    String?
+  pendingWork                Boolean?  // true = YES, false = NO
+  waitingTimeOnClientRequest String?
+  engineerSign               String?   @db.Text
+
+  // Accounts Dept
+  sAmount                    Float?
+  otAmount                   Float?
+  accountsActualExpense      Float?
+  accountsReimbursement      Float?
+  netCtc                     Float?
+
+  // Attached Sales Order
+  salesOrderId               String?
+
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  // Relations
+  gym                        Gym?        @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  salesOrder                 SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+
+  @@index([serialNumber])
+  @@index([gymId])
+  @@index([salesOrderId])
+  @@map("service_cards")
 }

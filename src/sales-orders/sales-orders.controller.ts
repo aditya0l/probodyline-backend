@@ -42,6 +42,12 @@ export class SalesOrdersController {
     return this.salesOrdersService.bookDispatchSplit(splitId);
   }
 
+  @Put(':id/splits/matrix')
+  @ApiOperation({ summary: 'Update Matrix Splits' })
+  updateMatrixSplits(@Param('id') id: string, @Body() splitsData: any[]) {
+    return this.salesOrdersService.updateMatrixSplits(id, splitsData);
+  }
+
   @Delete('dispatch-split/:splitId')
   @ApiOperation({ summary: 'Delete a Dispatch Split' })
   deleteDispatchSplit(@Param('splitId') splitId: string) {

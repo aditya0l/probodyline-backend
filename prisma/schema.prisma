@@ -95,6 +95,7 @@ model Product {
   quotationItems    QuotationItem[]
   stockTransactions StockTransaction[]
   bookings          Booking[]
+  purchaseOrderItems PurchaseOrderItem[]
 
   @@index([name])
   @@index([modelNumber])
@@ -264,6 +265,7 @@ model DispatchSplit {
   salesOrderId String
   splitNumber  Int // 1, 2, 3...
   dispatchDate DateTime?
+  label        String? // Custom matrix header like "12-14 MAR 2026 1HQ"
   status       String    @default("DRAFT") // DRAFT, BOOKED
 
   createdAt DateTime  @default(now())
@@ -296,6 +298,92 @@ model DispatchSplitItem {
 }
 
 // Phase 3 Models
+model PurchaseOrder {
+  id                  String    @id @default(uuid())
+  poNumber            String    @unique // Auto-generated
+  supplierName        String
+  bookedOn            DateTime  @default(now())
+  jaipurArrival       DateTime?
+  jaipurArrivalManual Boolean   @default(false)
+  piNo                String?
+  approvedOn          DateTime?
+  status              String    @default("DRAFT") // DRAFT, COMPLETED
+  notes               String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  items  PurchaseOrderItem[]
+  splits PurchaseOrderSplit[]
+
+  @@index([poNumber])
+  @@index([status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String @id @default(uuid())
+  purchaseOrderId String
+  productId       String?
+
+  // Denormalized product data
+  productName  String
+  productImage String?
+  modelNumber  String?
+  rate         Decimal @db.Decimal(12, 2)
+  quantity     Int
+  amount       Decimal @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  purchaseOrder PurchaseOrder            @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product?                 @relation(fields: [productId], references: [id], onDelete: SetNull)
+  splitItems    PurchaseOrderSplitItem[]
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@map("purchase_order_items")
+}
+
+model PurchaseOrderSplit {
+  id              String    @id @default(uuid())
+  purchaseOrderId String
+  splitNumber     Int // 1, 2, 3...
+  jaipurArrival   DateTime?
+  label           String? // e.g., "JAIPUR DATE 24-26 JUNE 1HQ"
+  status          String    @default("DRAFT")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  purchaseOrder PurchaseOrder            @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  items         PurchaseOrderSplitItem[]
+
+  @@unique([purchaseOrderId, splitNumber])
+  @@index([purchaseOrderId])
+  @@map("purchase_order_splits")
+}
+
+model PurchaseOrderSplitItem {
+  id                   String @id @default(uuid())
+  purchaseOrderSplitId String
+  purchaseOrderItemId  String
+  quantity             Int // Allocated quantity for this split
+
+  // Relations
+  split             PurchaseOrderSplit @relation(fields: [purchaseOrderSplitId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem  @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderSplitId])
+  @@index([purchaseOrderItemId])
+  @@map("purchase_order_split_items")
+}
+
+// Phase 4 Models
 model Vendor {
   id            String    @id @default(uuid())
   name          String

@@ -471,6 +471,153 @@ export class SalesOrdersService {
         });
     }
 
+    async updateMatrixSplits(id: string, splitsData: any[]) {
+        return this.prisma.$transaction(async (tx) => {
+            const so = await tx.salesOrder.findUnique({
+                where: { id },
+                include: { 
+                    quotation: { include: { items: true } }, 
+                    splits: { include: { items: true } } 
+                }
+            });
+            if (!so) throw new NotFoundException('Sales Order not found');
+
+            // Revert all existing stock OUT transactions for these splits
+            const oldSplitIds = so.splits.map(s => s.id);
+            if (oldSplitIds.length > 0) {
+                // Return stock IN to undo the OUTs
+                for (const oldSplit of so.splits) {
+                    if (oldSplit.status === 'BOOKED') {
+                        for (const item of oldSplit.items) {
+                            if (item.quantity > 0) {
+                                // Find the product
+                                const qItem = so.quotation.items.find(qi => qi.id === item.quotationItemId);
+                                if (qItem && qItem.productId) {
+                                    await tx.stockTransaction.create({
+                                        data: {
+                                            productId: qItem.productId,
+                                            transactionType: 'IN', // Revert OUT
+                                            quantity: item.quantity,
+                                            referenceType: 'REVERT_DISPATCH_SPLIT',
+                                            referenceId: oldSplit.id,
+                                            date: new Date(),
+                                            notes: `Revert Disp: ${so.soNumber} / Sp-${oldSplit.splitNumber}`,
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                        
+                        // Try to delete bookings
+                        try {
+                            await tx.booking.deleteMany({
+                                where: { dispatchSplitId: oldSplit.id }
+                            });
+                        } catch (e) {
+                            console.warn('Failed to delete booking during matrix update', e);
+                        }
+                    }
+                }
+
+                // Now delete splits and items
+                await tx.dispatchSplitItem.deleteMany({
+                    where: { dispatchSplitId: { in: oldSplitIds } }
+                });
+                await tx.dispatchSplit.deleteMany({
+                    where: { id: { in: oldSplitIds } }
+                });
+            }
+
+            // Re-create new splits from matrix
+            for (let i = 0; i < splitsData.length; i++) {
+                const splitInput = splitsData[i];
+                
+                const split = await tx.dispatchSplit.create({
+                    data: {
+                        salesOrderId: id,
+                        splitNumber: i + 1,
+                        dispatchDate: splitInput.dispatchDate ? new Date(splitInput.dispatchDate) : null,
+                        label: splitInput.label,
+                        status: 'BOOKED', // Matrix directly creates booked splits
+                        bookedAt: new Date(),
+                    }
+                });
+
+                if (splitInput.items && splitInput.items.length > 0) {
+                    const itemsToCreate = splitInput.items.map(item => ({
+                        dispatchSplitId: split.id,
+                        quotationItemId: item.quotationItemId,
+                        quantity: item.quantity
+                    })).filter(i => i.quantity > 0);
+
+                    if (itemsToCreate.length > 0) {
+                        await tx.dispatchSplitItem.createMany({
+                            data: itemsToCreate
+                        });
+
+                        // Create Stock Transactions (OUT) and Bookings
+                        for (const splitItem of itemsToCreate) {
+                            const qItem = so.quotation.items.find(qi => qi.id === splitItem.quotationItemId);
+                            if (qItem && qItem.productId) {
+                                await tx.stockTransaction.create({
+                                    data: {
+                                        productId: qItem.productId,
+                                        transactionType: 'OUT',
+                                        quantity: -splitItem.quantity,
+                                        referenceType: 'DISPATCH_SPLIT',
+                                        referenceId: split.id,
+                                        date: split.dispatchDate || so.quotation.dispatchDate || new Date(),
+                                        notes: `Disp: ${so.soNumber} / Sp-${split.splitNumber} / ${split.label || ''}`,
+                                    }
+                                });
+
+                                await tx.booking.create({
+                                    data: {
+                                        quotationId: so.quotationId,
+                                        quotationItemId: qItem.id,
+                                        quoteNumber: so.quotation.quoteNumber,
+                                        productId: qItem.productId,
+                                        productName: qItem.productName,
+                                        modelNumber: qItem.modelNumber,
+                                        dispatchDate: split.dispatchDate || so.quotation.dispatchDate || new Date(),
+                                        bookedOn: new Date(),
+                                        requiredQuantity: splitItem.quantity,
+                                        status: 'CONFIRM',
+                                        waitingQuantity: 0,
+                                        customerName: so.quotation.clientName,
+                                        gymName: so.quotation.gymName,
+                                        city: so.quotation.clientCity,
+                                        dispatchSplitId: split.id
+                                    }
+                                });
+                                
+                                this.eventsGateway.broadcastEntityUpdate('STOCK', qItem.productId);
+                            }
+                        }
+                    }
+                }
+            }
+
+            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', id);
+            
+            return tx.salesOrder.findUnique({
+                where: { id },
+                include: {
+                    quotation: { include: { items: true } },
+                    splits: {
+                        include: {
+                            items: {
+                                include: { quotationItem: true },
+                                orderBy: { quotationItem: { srNo: 'asc' } }
+                            }
+                        },
+                        orderBy: { splitNumber: 'asc' }
+                    }
+                }
+            });
+        });
+    }
+
     async findUnbooked() {
         return this.prisma.salesOrder.findMany({
             where: { status: 'UNBOOKED' },

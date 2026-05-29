@@ -29,6 +29,7 @@ import { ServiceCardsModule } from './service-cards/service-cards.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { configValidationSchema } from './config/config.schema';
     SalesOrdersModule,
     EventsModule,
     ServiceCardsModule,
+    PurchaseOrdersModule,
   ],
   controllers: [AppController],
   providers: [

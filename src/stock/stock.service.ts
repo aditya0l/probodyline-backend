@@ -152,7 +152,41 @@ export class StockService {
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    return { data, total };
+    // Enrich with split details
+    const enrichedData = await Promise.all(data.map(async (tx) => {
+      let extraData: any = {};
+      if (tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId) {
+        const split = await this.prisma.dispatchSplit.findUnique({
+          where: { id: tx.referenceId },
+          include: { salesOrder: { include: { quotation: true } } }
+        });
+        if (split) {
+          extraData = {
+            splitNumber: split.splitNumber,
+            splitLabel: split.label,
+            orderNumber: split.salesOrder.soNumber,
+            clientName: split.salesOrder.quotation.clientName,
+            gymName: split.salesOrder.quotation.gymName,
+          };
+        }
+      } else if (tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.referenceId) {
+        const split = await this.prisma.purchaseOrderSplit.findUnique({
+          where: { id: tx.referenceId },
+          include: { purchaseOrder: true }
+        });
+        if (split) {
+          extraData = {
+            splitNumber: split.splitNumber,
+            splitLabel: split.label,
+            orderNumber: split.purchaseOrder.poNumber,
+            supplierName: split.purchaseOrder.supplierName,
+          };
+        }
+      }
+      return { ...tx, ...extraData };
+    }));
+
+    return { data: enrichedData, total };
   }
 
   async findOne(id: string): Promise<StockTransaction | null> {
@@ -229,7 +263,7 @@ export class StockService {
       }),
     };
 
-    return this.prisma.stockTransaction.findMany({
+    const transactions = await this.prisma.stockTransaction.findMany({
       where,
       orderBy: { date: 'desc' },
       include: {
@@ -238,6 +272,41 @@ export class StockService {
         },
       },
     });
+
+    const enrichedData = await Promise.all(transactions.map(async (tx) => {
+      let extraData: any = {};
+      if (tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId) {
+        const split = await this.prisma.dispatchSplit.findUnique({
+          where: { id: tx.referenceId },
+          include: { salesOrder: { include: { quotation: true } } }
+        });
+        if (split) {
+          extraData = {
+            splitNumber: split.splitNumber,
+            splitLabel: split.label,
+            orderNumber: split.salesOrder.soNumber,
+            clientName: split.salesOrder.quotation.clientName,
+            gymName: split.salesOrder.quotation.gymName,
+          };
+        }
+      } else if (tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.referenceId) {
+        const split = await this.prisma.purchaseOrderSplit.findUnique({
+          where: { id: tx.referenceId },
+          include: { purchaseOrder: true }
+        });
+        if (split) {
+          extraData = {
+            splitNumber: split.splitNumber,
+            splitLabel: split.label,
+            orderNumber: split.purchaseOrder.poNumber,
+            supplierName: split.purchaseOrder.supplierName,
+          };
+        }
+      }
+      return { ...tx, ...extraData };
+    }));
+
+    return enrichedData;
   }
 
   async update(

@@ -254,6 +254,7 @@ model SalesOrder {
   quotation Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   splits    DispatchSplit[]
   serviceCards ServiceCard[]
+  challans  Challan[]
 
   @@index([quotationId])
   @@index([status])
@@ -752,3 +753,52 @@ enum ServiceCardStatus {
   COMPLETE
 }
 
+
+// Challan Cum Goods Outward Note
+model Challan {
+  id              String   @id @default(uuid())
+  chnNumber       String   @unique // Auto-generated: CHN 00001
+  date            DateTime @default(now())
+  
+  // Recipient details
+  recipientName   String?
+  address         String?  @db.Text
+  
+  // Attached Sales Order
+  salesOrderId    String?
+  
+  // Dispatch Footer Section
+  goodsDispatchedBy String?
+  checkedBy         String?
+  grNo              String?
+  vehicleNo         String?
+  driverName        String?
+  mobNo             String?
+  vehicleType       String?
+  freightAmt        String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  salesOrder      SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  items           ChallanItem[]
+
+  @@index([chnNumber])
+  @@index([salesOrderId])
+  @@map("challans")
+}
+
+model ChallanItem {
+  id          String  @id @default(uuid())
+  challanId   String
+  description String? // General Physical Exercise Equipment...
+  modelNos    String?
+  packages    String? // String to allow text or numbers
+  quantity    Int?
+  
+  challan     Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+
+  @@index([challanId])
+  @@map("challan_items")
+}

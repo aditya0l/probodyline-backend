@@ -30,6 +30,7 @@ import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { ChallansModule } from './challans/challans.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
     EventsModule,
     ServiceCardsModule,
     PurchaseOrdersModule,
+    ChallansModule,
   ],
   controllers: [AppController],
   providers: [

@@ -151,7 +151,7 @@ export class PurchaseOrdersService {
             }
 
             // 2. Re-create splits
-            const newSplits = [];
+            const newSplits: any[] = [];
             for (let i = 0; i < splitsData.length; i++) {
                 const splitInput = splitsData[i];
                 

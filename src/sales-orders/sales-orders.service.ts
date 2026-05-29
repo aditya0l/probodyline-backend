@@ -312,7 +312,7 @@ export class SalesOrdersService {
   async findAll() {
     return this.prisma.salesOrder.findMany({
       include: {
-        quotation: true,
+        quotation: { include: { items: true } },
         splits: {
           include: { items: true },
         },
@@ -656,7 +656,7 @@ export class SalesOrdersService {
     return this.prisma.salesOrder.findMany({
       where: { status: 'UNBOOKED' },
       include: {
-        quotation: true,
+        quotation: { include: { items: true } },
         splits: { include: { items: true } },
       },
       orderBy: { updatedAt: 'desc' },

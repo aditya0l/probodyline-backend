@@ -568,7 +568,7 @@ export class SalesOrdersService {
           const itemsToCreate = splitInput.items
             .map((item) => ({
               dispatchSplitId: split.id,
-              quotationItemId: item.quotationItemId,
+              quotationItemId: item.itemId || item.quotationItemId,
               quantity: item.quantity,
             }))
             .filter((i) => i.quantity > 0);

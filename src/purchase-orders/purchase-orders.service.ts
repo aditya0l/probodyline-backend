@@ -207,7 +207,7 @@ export class PurchaseOrdersService {
           const itemsToCreate = splitInput.items
             .map((item) => ({
               purchaseOrderSplitId: split.id,
-              purchaseOrderItemId: item.purchaseOrderItemId,
+              purchaseOrderItemId: item.itemId || item.purchaseOrderItemId,
               quantity: item.quantity,
             }))
             .filter((i) => i.quantity > 0);

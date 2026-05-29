@@ -14,6 +14,9 @@ git pull origin main
 echo "📦 Installing dependencies..."
 npm install --legacy-peer-deps
 
+echo "🗄 Syncing database schema..."
+npx prisma db push
+
 echo "🏗 Building project..."
 npm run build
 

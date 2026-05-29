@@ -30,7 +30,9 @@ export class LoggerMiddleware implements NestMiddleware {
             hypothesisId: 'H5',
           }) + '\n',
         );
-      } catch (e) {}
+      } catch (e) {
+        // ignore error
+      }
     }
     // #endregion
 

@@ -14,7 +14,7 @@ import { SalesOrdersService } from './sales-orders.service';
 @ApiTags('sales-orders')
 @Controller('sales-orders')
 export class SalesOrdersController {
-  constructor(private readonly salesOrdersService: SalesOrdersService) { }
+  constructor(private readonly salesOrdersService: SalesOrdersService) {}
 
   @Post('master')
   @ApiOperation({ summary: 'Ensure Master Sales Order exists for Quotation' })
@@ -32,7 +32,8 @@ export class SalesOrdersController {
   @ApiOperation({ summary: 'Update Dispatch Split (Quantity/Date)' })
   updateDispatchSplit(
     @Param('splitId') splitId: string,
-    @Body() body: { dispatchDate?: string; items?: { id: string; quantity: number }[] },
+    @Body()
+    body: { dispatchDate?: string; items?: { id: string; quantity: number }[] },
   ) {
     return this.salesOrdersService.updateDispatchSplit(splitId, body);
   }
@@ -85,6 +86,9 @@ export class SalesOrdersController {
     @Param('id') id: string,
     @Body() body: { dispatchDate: string },
   ) {
-    return this.salesOrdersService.updateMasterDispatchDate(id, body.dispatchDate);
+    return this.salesOrdersService.updateMasterDispatchDate(
+      id,
+      body.dispatchDate,
+    );
   }
 }

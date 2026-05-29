@@ -9,7 +9,6 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-
   // Security headers with Helmet
   app.use(
     helmet({
@@ -22,7 +21,7 @@ async function bootstrap() {
         },
       },
       crossOriginEmbedderPolicy: false,
-      crossOriginResourcePolicy: { policy: "cross-origin" },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
     }),
   );
 
@@ -112,7 +111,7 @@ async function bootstrap() {
   // Fix AWS NLB idle connection drops — keepAlive must exceed ALB/NLB idle timeout (350s)
   // headersTimeout must be > keepAliveTimeout to avoid race conditions
   server.keepAliveTimeout = 61000; // 61 seconds
-  server.headersTimeout = 62000;   // 62 seconds
+  server.headersTimeout = 62000; // 62 seconds
 
   console.log(`🚀 Backend server running on http://localhost:${port}`);
   console.log(

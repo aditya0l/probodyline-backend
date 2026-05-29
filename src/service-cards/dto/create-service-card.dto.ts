@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, ValidateNested, IsDateString } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsDateString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ExpenseLogItemDto {
@@ -38,7 +46,7 @@ export class CreateServiceCardDto {
   @IsOptional() @IsDateString() startDate?: string;
   @IsOptional() @IsString() startTime?: string;
   @IsOptional() @IsNumber() techActualExpense?: number;
-  
+
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
@@ -58,9 +66,9 @@ export class CreateServiceCardDto {
   @IsOptional() @IsNumber() netCtc?: number;
 
   @IsOptional() @IsString() salesOrderId?: string;
-  
+
   @IsOptional() @IsString() status?: string; // STARTED, PENDING, COMPLETE
-  
+
   @IsOptional() productNotes?: any; // JSON Object for product specific notes
 }
 

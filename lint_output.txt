@@ -1,0 +1,180 @@
+
+> pro-bodyline-backend@0.0.1 lint
+> eslint "{src,apps,libs,test}/**/*.ts" --fix
+
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/analytics/analytics.service.ts
+  12:11  warning  'startOfYear' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/auth/auth.service.spec.ts
+  12:7  warning  'prisma' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  13:7  warning  'jwtService' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/auth/strategies/jwt.strategy.ts
+  23:54  warning  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/bookings/bookings.controller.ts
+  13:6  warning  'BookingStatus' is defined but never used                                                  @typescript-eslint/no-unused-vars
+  87:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+  88:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+  89:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+  90:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+  91:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                     @typescript-eslint/no-unsafe-argument
+  92:7  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                     @typescript-eslint/no-unsafe-argument
+  93:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string | null | undefined`  @typescript-eslint/no-unsafe-argument
+  94:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string | null | undefined`  @typescript-eslint/no-unsafe-argument
+  95:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string | null | undefined`  @typescript-eslint/no-unsafe-argument
+  96:7  warning  Unsafe argument of type `any` assigned to a parameter of type `string | null | undefined`  @typescript-eslint/no-unsafe-argument
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/bookings/bookings.service.ts
+    4:3   warning  'BadRequestException' is defined but never used                                                                 @typescript-eslint/no-unused-vars
+   29:35  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                          @typescript-eslint/no-unsafe-argument
+   30:51  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                          @typescript-eslint/no-unsafe-argument
+  160:55  warning  Unsafe argument of type `any` assigned to a parameter of type `{ [s: string]: unknown; } | ArrayLike<unknown>`  @typescript-eslint/no-unsafe-argument
+  240:22  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`                          @typescript-eslint/no-unsafe-argument
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/categories/categories.controller.ts
+   9:3  warning  'Query' is defined but never used     @typescript-eslint/no-unused-vars
+  16:3  warning  'ApiQuery' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/categories/categories.service.ts
+  9:20  warning  'Prisma' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/clients/clients.controller.ts
+   46:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+   46:17  error    Empty block statement          no-empty
+  128:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  128:17  error    Empty block statement          no-empty
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/clients/clients.module.ts
+  33:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  33:17  error    Empty block statement          no-empty
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/clients/clients.service.ts
+  4:3  warning  'BadRequestException' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/clients/dto/create-client.dto.ts
+  4:3   warning  'IsNotEmpty' is defined but never used   @typescript-eslint/no-unused-vars
+  7:10  warning  'ApiProperty' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/common/filters/http-exception.filter.ts
+  68:41  error  Invalid type "unknown" of template literal expression  @typescript-eslint/restrict-template-expressions
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/common/middleware/logger.middleware.ts
+  33:16  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  33:19  error    Empty block statement          no-empty
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/common/prisma-health.service.ts
+  14:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  32:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/customers/customers.controller.ts
+   9:3  warning  'Query' is defined but never used     @typescript-eslint/no-unused-vars
+  16:3  warning  'ApiQuery' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/customers/customers.service.ts
+  9:20  warning  'Prisma' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/customers/dto/create-customer.dto.ts
+  1:32  warning  'IsUUID' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/events/events.gateway.ts
+  29:13  warning  'server' is defined but never used  @typescript-eslint/no-unused-vars
+  33:39  warning  'args' is defined but never used    @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/gyms/gyms.controller.ts
+   49:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+  125:14  warning  'e' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/gyms/gyms.module.ts
+   5:13  warning  'path' is defined but never used  @typescript-eslint/no-unused-vars
+  34:14  warning  'e' is defined but never used     @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/gyms/gyms.service.ts
+  4:3  warning  'BadRequestException' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/leads/leads.service.ts
+   7:25  warning  'LeadStatus' is defined but never used  @typescript-eslint/no-unused-vars
+  22:17  warning  'filters' is defined but never used     @typescript-eslint/no-unused-vars
+  33:17  warning  'id' is defined but never used          @typescript-eslint/no-unused-vars
+  38:16  warning  'data' is defined but never used        @typescript-eslint/no-unused-vars
+  45:22  warning  'id' is defined but never used          @typescript-eslint/no-unused-vars
+  45:34  warning  'status' is defined but never used      @typescript-eslint/no-unused-vars
+  45:50  warning  'notes' is defined but never used       @typescript-eslint/no-unused-vars
+  52:16  warning  'id' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/main.ts
+   40:33  warning  Unsafe argument of type `any` assigned to a parameter of type `string | undefined`                                                                                  @typescript-eslint/no-unsafe-argument
+  131:11  warning  'httpAdapter' is assigned a value but never used                                                                                                                    @typescript-eslint/no-unused-vars
+  142:1   warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/organizations/organizations.service.ts
+  5:24  warning  'Prisma' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/pdf/pdf-template-engine-helpers.ts
+  4:29  warning  'PDFTemplateData' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/pdf/pdf-template-engine.ts
+  285:64  warning  Unsafe argument of type `any` assigned to a parameter of type `number | undefined`  @typescript-eslint/no-unsafe-argument
+  289:17  warning  Unsafe argument of type `any` assigned to a parameter of type `number`              @typescript-eslint/no-unsafe-argument
+  294:40  warning  'nestedIndex' is defined but never used                                             @typescript-eslint/no-unused-vars
+  465:42  warning  Unsafe argument of type `any` assigned to a parameter of type `number | undefined`  @typescript-eslint/no-unsafe-argument
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/products/dto/create-product.dto.ts
+   7:3   warning  'ValidateNested' is defined but never used  @typescript-eslint/no-unused-vars
+   9:3   warning  'Max' is defined but never used             @typescript-eslint/no-unused-vars
+  17:10  warning  'Type' is defined but never used            @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/products/products.service.spec.ts
+  4:29  warning  'ConflictException' is defined but never used  @typescript-eslint/no-unused-vars
+  8:7   warning  'prisma' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/products/products.service.ts
+  274:11  warning  '_' is assigned a value but never used      @typescript-eslint/no-unused-vars
+  275:13  warning  '__' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  276:18  warning  '___' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  277:18  warning  '____' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  278:18  warning  '_____' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/purchase-orders/purchase-orders.service.ts
+    4:3   warning  'BadRequestException' is defined but never used                                         @typescript-eslint/no-unused-vars
+    7:10  warning  'Prisma' is defined but never used                                                      @typescript-eslint/no-unused-vars
+   27:46  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+   29:24  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+   33:50  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+   95:52  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+   98:26  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+  108:28  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+  198:26  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/quotations/quotations.controller.ts
+   9:3  warning  'Query' is defined but never used     @typescript-eslint/no-unused-vars
+  16:3  warning  'ApiQuery' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/quotations/quotations.service.ts
+    5:3   warning  'ConflictException' is defined but never used     @typescript-eslint/no-unused-vars
+   12:29  warning  'StockTransactionType' is defined but never used  @typescript-eslint/no-unused-vars
+   80:16  warning  'error' is defined but never used                 @typescript-eslint/no-unused-vars
+  414:7   warning  'items' is assigned a value but never used        @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/sales-orders/sales-orders.service.ts
+  287:9   warning  Unsafe argument of type `any` assigned to a parameter of type `string`                  @typescript-eslint/no-unsafe-argument
+  293:13  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                  @typescript-eslint/no-unsafe-argument
+  559:26  warning  Unsafe argument of type `any` assigned to a parameter of type `string | number | Date`  @typescript-eslint/no-unsafe-argument
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/stock/stock.service.ts
+  609:18  warning  'e' is defined but never used                  @typescript-eslint/no-unused-vars
+  740:11  warning  'minBal30' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/vendors/dto/create-vendor.dto.ts
+  1:32  warning  'IsUUID' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/vendors/vendors.controller.ts
+   9:3  warning  'Query' is defined but never used     @typescript-eslint/no-unused-vars
+  16:3  warning  'ApiQuery' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/adityajaif/Desktop/pro-bodyline-backend/src/vendors/vendors.service.ts
+  9:18  warning  'Prisma' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 99 problems (5 errors, 94 warnings)
+

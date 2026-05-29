@@ -18,7 +18,10 @@ export class CreateGymDto {
   @IsDateString()
   installationDate?: string;
 
-  @ApiPropertyOptional({ description: 'State code (e.g., MH, DL, KA)', example: 'MH' })
+  @ApiPropertyOptional({
+    description: 'State code (e.g., MH, DL, KA)',
+    example: 'MH',
+  })
   @IsOptional()
   @IsString()
   stateCode?: string;
@@ -33,7 +36,10 @@ export class CreateGymDto {
   @IsString()
   gymName?: string;
 
-  @ApiPropertyOptional({ description: 'Branch code (1.0 to 99.0)', example: 1.0 })
+  @ApiPropertyOptional({
+    description: 'Branch code (1.0 to 99.0)',
+    example: 1.0,
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
@@ -54,7 +60,10 @@ export class CreateGymDto {
   @IsString()
   salesInitial?: string;
 
-  @ApiPropertyOptional({ description: 'Call sign for branch', example: 'ALPHA' })
+  @ApiPropertyOptional({
+    description: 'Call sign for branch',
+    example: 'ALPHA',
+  })
   @IsOptional()
   @IsString()
   callSign?: string;

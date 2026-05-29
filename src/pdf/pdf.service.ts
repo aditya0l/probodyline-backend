@@ -216,7 +216,7 @@ export class PdfService {
         ];
         break;
       case 'default':
-      default:
+      default: {
         titleText = 'PROFORMA INVOICE';
         // ONLY for default template: use user's saved columns if available
         let userSelectedColumns: QuotationColumnId[] | null = null;
@@ -242,6 +242,7 @@ export class PdfService {
         ];
         useLandscape = visibleColumns.length >= 13;
         break;
+      }
     }
 
     const { headers: tableHeaders, rows: productsTableRows } =

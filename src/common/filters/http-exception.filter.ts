@@ -65,7 +65,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         case 'P2002':
           errorCode = ErrorCode.UNIQUE_CONSTRAINT_VIOLATION;
           message = 'Unique constraint violation';
-          error = `A record with this ${exception.meta?.target} already exists`;
+          error = `A record with this ${String(exception.meta?.target)} already exists`;
           break;
         case 'P2025':
           errorCode = ErrorCode.NOT_FOUND;

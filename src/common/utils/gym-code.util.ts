@@ -32,18 +32,35 @@ export function generateGymCode(data: GymCodeData): string {
   } = data;
 
   // Validate branch code range if provided
-  if (branchCode !== undefined && branchCode !== null && (branchCode < 1.0 || branchCode > 99.0)) {
+  if (
+    branchCode !== undefined &&
+    branchCode !== null &&
+    (branchCode < 1.0 || branchCode > 99.0)
+  ) {
     throw new Error('Branch code must be between 1.0 and 99.0');
   }
 
   // Normalize components (use "-" placeholder for missing values)
-  const normalizedDate = installationDate ? installationDate.split('T')[0] : '-';
+  const normalizedDate = installationDate
+    ? installationDate.split('T')[0]
+    : '-';
   const normalizedState = stateCode ? stateCode.toUpperCase().trim() : '-';
-  const normalizedCity = city ? city.toUpperCase().trim().replace(/\s+/g, '_') : '-';
-  const normalizedGymName = gymName ? gymName.toUpperCase().trim().replace(/\s+/g, '_') : '-';
-  const normalizedBranchCode = branchCode !== undefined && branchCode !== null ? branchCode.toString() : '-';
-  const normalizedBranchTitle = branchTitle ? branchTitle.toUpperCase().trim().replace(/\s+/g, '_') : '-';
-  const normalizedSalesInitial = salesInitial ? salesInitial.toUpperCase().trim() : '-';
+  const normalizedCity = city
+    ? city.toUpperCase().trim().replace(/\s+/g, '_')
+    : '-';
+  const normalizedGymName = gymName
+    ? gymName.toUpperCase().trim().replace(/\s+/g, '_')
+    : '-';
+  const normalizedBranchCode =
+    branchCode !== undefined && branchCode !== null
+      ? branchCode.toString()
+      : '-';
+  const normalizedBranchTitle = branchTitle
+    ? branchTitle.toUpperCase().trim().replace(/\s+/g, '_')
+    : '-';
+  const normalizedSalesInitial = salesInitial
+    ? salesInitial.toUpperCase().trim()
+    : '-';
 
   // Build gym code
   const parts = [

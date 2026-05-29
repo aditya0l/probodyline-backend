@@ -24,7 +24,7 @@ import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
 @ApiTags('stock')
 @Controller('stock')
 export class StockController {
-  constructor(private readonly stockService: StockService) { }
+  constructor(private readonly stockService: StockService) {}
 
   @Post('transactions')
   @ApiOperation({ summary: 'Create a new stock transaction' })
@@ -190,9 +190,7 @@ export class StockController {
     status: 200,
     description: 'Bulk stock projection data',
   })
-  getBulkProjectedStock(
-    @Body() body: { productIds: string[]; date: string },
-  ) {
+  getBulkProjectedStock(@Body() body: { productIds: string[]; date: string }) {
     return this.stockService.getBulkProjectedStock(body.productIds, body.date);
   }
 

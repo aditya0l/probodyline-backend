@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
-import { CreateServiceCardDto, UpdateServiceCardDto } from './dto/create-service-card.dto';
+import {
+  CreateServiceCardDto,
+  UpdateServiceCardDto,
+} from './dto/create-service-card.dto';
 import { Prisma } from '@prisma/client';
 
 @Injectable()
@@ -9,7 +12,9 @@ export class ServiceCardsService {
 
   async create(createDto: CreateServiceCardDto) {
     const data: Prisma.ServiceCardCreateInput = {
-      installationDate: createDto.installationDate ? new Date(createDto.installationDate) : undefined,
+      installationDate: createDto.installationDate
+        ? new Date(createDto.installationDate)
+        : undefined,
       stateCode: createDto.stateCode,
       city: createDto.city,
       gymName: createDto.gymName,
@@ -30,7 +35,9 @@ export class ServiceCardsService {
       reimbursementFood: createDto.reimbursementFood,
       reimbursementOilSpray: createDto.reimbursementOilSpray,
       reimbursementSpare: createDto.reimbursementSpare,
-      startDate: createDto.startDate ? new Date(createDto.startDate) : undefined,
+      startDate: createDto.startDate
+        ? new Date(createDto.startDate)
+        : undefined,
       startTime: createDto.startTime,
       techActualExpense: createDto.techActualExpense,
       expenseLog: createDto.expenseLog as unknown as Prisma.InputJsonValue,
@@ -78,10 +85,10 @@ export class ServiceCardsService {
             quotation: {
               include: {
                 items: true,
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       },
     });
 
@@ -93,7 +100,9 @@ export class ServiceCardsService {
 
   async update(id: string, updateDto: UpdateServiceCardDto) {
     const data: Prisma.ServiceCardUpdateInput = {
-      installationDate: updateDto.installationDate ? new Date(updateDto.installationDate) : undefined,
+      installationDate: updateDto.installationDate
+        ? new Date(updateDto.installationDate)
+        : undefined,
       stateCode: updateDto.stateCode,
       city: updateDto.city,
       gymName: updateDto.gymName,
@@ -114,7 +123,9 @@ export class ServiceCardsService {
       reimbursementFood: updateDto.reimbursementFood,
       reimbursementOilSpray: updateDto.reimbursementOilSpray,
       reimbursementSpare: updateDto.reimbursementSpare,
-      startDate: updateDto.startDate ? new Date(updateDto.startDate) : undefined,
+      startDate: updateDto.startDate
+        ? new Date(updateDto.startDate)
+        : undefined,
       startTime: updateDto.startTime,
       techActualExpense: updateDto.techActualExpense,
       expenseLog: updateDto.expenseLog as unknown as Prisma.InputJsonValue,

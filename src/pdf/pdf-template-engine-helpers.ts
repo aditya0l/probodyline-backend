@@ -138,7 +138,7 @@ export function getCellValue(
       return item.warranty || '';
     case 'notes':
       return item.notes || '';
-    case 'rate':
+    case 'rate': {
       const rate =
         typeof item.rate === 'object' &&
         item.rate !== null &&
@@ -146,9 +146,10 @@ export function getCellValue(
           ? item.rate.toNumber()
           : Number(item.rate);
       return `₹${rate.toLocaleString('en-IN')}`;
+    }
     case 'quantity':
       return String(item.quantity);
-    case 'totalAmount':
+    case 'totalAmount': {
       const total =
         typeof item.totalAmount === 'object' &&
         item.totalAmount !== null &&
@@ -156,6 +157,7 @@ export function getCellValue(
           ? item.totalAmount.toNumber()
           : Number(item.totalAmount);
       return `₹${total.toLocaleString('en-IN')}`;
+    }
     default:
       return '';
   }

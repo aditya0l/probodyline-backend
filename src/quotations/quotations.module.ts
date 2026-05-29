@@ -10,4 +10,4 @@ import { CommonModule } from '../common/common.module';
   providers: [QuotationsService],
   exports: [QuotationsService],
 })
-export class QuotationsModule { }
+export class QuotationsModule {}

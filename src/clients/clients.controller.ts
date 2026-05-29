@@ -43,7 +43,9 @@ export class ClientsController {
           hypothesisId: 'H1',
         }) + '\n',
       );
-    } catch (e) {}
+    } catch (e) {
+      // ignore error
+    }
     // #endregion
     console.log('✅ ClientsController instantiated');
   }
@@ -125,7 +127,9 @@ export class ClientsController {
           hypothesisId: 'H4',
         }) + '\n',
       );
-    } catch (e) {}
+    } catch (e) {
+      // ignore error
+    }
     // #endregion
     console.log('📞 ClientsController.findAll called with:', {
       search,

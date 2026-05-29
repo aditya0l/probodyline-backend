@@ -15,7 +15,7 @@ export class ProductsService {
   constructor(
     private prisma: PrismaService,
     private qrCodeService: QRCodeService,
-  ) { }
+  ) {}
 
   async findAll(filters?: {
     search?: string;

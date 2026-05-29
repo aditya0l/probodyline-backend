@@ -25,7 +25,7 @@ import { UpdateQuotationItemDto } from './dto/update-quotation-item.dto';
 @ApiTags('quotations')
 @Controller('quotations')
 export class QuotationsController {
-  constructor(private readonly quotationsService: QuotationsService) { }
+  constructor(private readonly quotationsService: QuotationsService) {}
 
   @Get(':quoteNumber/history')
   @ApiOperation({ summary: 'Get history of a quotation' })

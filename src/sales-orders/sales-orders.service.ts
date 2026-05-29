@@ -1,7 +1,7 @@
 import {
-    Injectable,
-    NotFoundException,
-    BadRequestException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -10,717 +10,751 @@ import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class SalesOrdersService {
-    constructor(
-        private prisma: PrismaService,
-        private eventsGateway: EventsGateway,
-    ) { }
+  constructor(
+    private prisma: PrismaService,
+    private eventsGateway: EventsGateway,
+  ) {}
 
-    // 1. Ensure Master Sales Order exists (Commercial Entity)
-    async ensureMasterSO(quotationId: string, tx?: Prisma.TransactionClient) {
-        const db = tx || this.prisma;
-        let so = await db.salesOrder.findUnique({
-            where: { quotationId },
+  // 1. Ensure Master Sales Order exists (Commercial Entity)
+  async ensureMasterSO(quotationId: string, tx?: Prisma.TransactionClient) {
+    const db = tx || this.prisma;
+    let so = await db.salesOrder.findUnique({
+      where: { quotationId },
+    });
+
+    if (!so) {
+      const quotation = await db.quotation.findUnique({
+        where: { id: quotationId },
+      });
+      if (!quotation) throw new NotFoundException('Quotation not found');
+
+      const soNumber = quotation.quoteNumber
+        .replace('QO', 'SO')
+        .replace('Q', 'SO'); // Handle both old and new formats
+
+      so = await db.salesOrder.create({
+        data: {
+          quotationId,
+          soNumber,
+          subtotal: quotation.subtotal,
+          gstAmount: quotation.gstAmount,
+          grandTotal: quotation.grandTotal,
+        },
+      });
+    }
+
+    // Return with FULL details
+    return db.salesOrder.findUnique({
+      where: { id: so.id },
+      include: {
+        quotation: { include: { items: true } },
+        splits: {
+          include: {
+            items: {
+              include: { quotationItem: true },
+              orderBy: { quotationItem: { srNo: 'asc' } },
+            },
+          },
+          orderBy: { splitNumber: 'asc' },
+        },
+      },
+    });
+  }
+
+  // 2. Create a new Operational Dispatch Split
+  async createDispatchSplit(salesOrderId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const so = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: { quotation: { include: { items: true } } },
+      });
+      if (!so) throw new NotFoundException('Sales Order not found');
+
+      // Find next split number
+      const count = await tx.dispatchSplit.count({
+        where: { salesOrderId },
+      });
+      const splitNumber = count + 1;
+
+      // Create Split
+      const split = await tx.dispatchSplit.create({
+        data: {
+          salesOrderId,
+          splitNumber,
+          status: 'DRAFT',
+        },
+      });
+
+      // Initialize all items with 0 quantity
+      const splitItemsInfo = so.quotation.items.map((qItem) => ({
+        dispatchSplitId: split.id,
+        quotationItemId: qItem.id,
+        quantity: 0,
+      }));
+
+      if (splitItemsInfo.length > 0) {
+        await tx.dispatchSplitItem.createMany({
+          data: splitItemsInfo,
+        });
+      }
+
+      return this.getSplitWithDetails(split.id, tx);
+    });
+  }
+
+  // 3. Update Dispatch Split (Quantities & Date)
+  async updateDispatchSplit(
+    splitId: string,
+    updates: {
+      dispatchDate?: string;
+      items?: { id: string; quantity: number }[]; // id is dispatchSplitItemId
+    },
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const split = await tx.dispatchSplit.findUnique({
+        where: { id: splitId },
+      });
+      if (!split) throw new NotFoundException('Split not found');
+      if (updates.dispatchDate) {
+        const newDispatchDate = new Date(updates.dispatchDate);
+        await tx.dispatchSplit.update({
+          where: { id: splitId },
+          data: { dispatchDate: newDispatchDate },
         });
 
-        if (!so) {
-            const quotation = await db.quotation.findUnique({
-                where: { id: quotationId },
+        // If it's already BOOKED, sync associated records
+        if (split.status === 'BOOKED') {
+          // Sync Stock Transactions
+          await tx.stockTransaction.updateMany({
+            where: {
+              referenceId: splitId,
+              referenceType: 'DISPATCH_SPLIT',
+            },
+            data: { date: newDispatchDate },
+          });
+
+          // Sync Bookings
+          await tx.booking.updateMany({
+            where: { dispatchSplitId: splitId },
+            data: { dispatchDate: newDispatchDate },
+          });
+        }
+      }
+
+      if (updates.items) {
+        for (const item of updates.items) {
+          await tx.dispatchSplitItem.update({
+            where: { id: item.id },
+            data: { quantity: item.quantity },
+          });
+        }
+      }
+
+      const result = await this.getSplitWithDetails(splitId, tx);
+      this.eventsGateway.broadcastEntityUpdate(
+        'SALES_ORDER',
+        split.salesOrderId,
+      );
+      return result;
+    });
+  }
+
+  // 4. Book Dispatch Split
+  async bookDispatchSplit(splitId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const split = await this.getSplitWithDetails(splitId, tx);
+      if (!split) throw new NotFoundException('Split not found');
+
+      if (!split.dispatchDate)
+        throw new BadRequestException('Dispatch Date is required');
+
+      if (split.status === 'BOOKED')
+        throw new BadRequestException('Split is already BOOKED');
+
+      // A. Validate Quantities
+      // Need to check specific item limits (Total Ordered vs Total Booked so far + Current)
+
+      // Get all OTHER booked splits for this SO
+      const otherBookedSplits = await tx.dispatchSplit.findMany({
+        where: {
+          salesOrderId: split.salesOrderId,
+          status: 'BOOKED',
+          id: { not: splitId },
+        },
+        include: { items: true },
+      });
+
+      // Iterate through current items
+      let hasPositiveQty = false;
+
+      for (const item of split.items) {
+        if (item.quantity > 0) {
+          hasPositiveQty = true;
+          const orderedQty = item.quotationItem.quantity;
+
+          // Sum from other booked splits
+          let alreadyBooked = 0;
+          for (const otherSplit of otherBookedSplits) {
+            const otherItem = otherSplit.items.find(
+              (i) => i.quotationItemId === item.quotationItemId,
+            );
+            if (otherItem) alreadyBooked += otherItem.quantity;
+          }
+
+          if (alreadyBooked + item.quantity > orderedQty) {
+            throw new BadRequestException(
+              `Cannot book. Item ${item.quotationItem.modelNumber} exceeds ordered quantity. Ordered: ${orderedQty}, Booked: ${alreadyBooked}, Attempting: ${item.quantity}`,
+            );
+          }
+        }
+      }
+
+      if (!hasPositiveQty)
+        throw new BadRequestException('Cannot book with 0 total quantity');
+
+      // B. Delete 0-quantity rows
+      await tx.dispatchSplitItem.deleteMany({
+        where: {
+          dispatchSplitId: splitId,
+          quantity: 0,
+        },
+      });
+
+      // C. Stock Deduction & Booking (Operational)
+      // Re-fetch items after deletion? Or just filter from memory
+      const finalItems = split.items.filter((i) => i.quantity > 0);
+
+      for (const item of finalItems) {
+        if (!item.quotationItem.productId) continue;
+
+        // Stock OUT
+        await tx.stockTransaction.create({
+          data: {
+            productId: item.quotationItem.productId,
+            transactionType: 'OUT',
+            quantity: -item.quantity,
+            referenceType: 'DISPATCH_SPLIT',
+            referenceId: split.id,
+            date: split.dispatchDate!,
+            notes: `Disp: ${split.salesOrder.soNumber} / Sp-${split.splitNumber}`,
+          },
+        });
+
+        // We do NOT create a 'booking' record here because the commercial booking
+        // logic is separate. BUT, if the user expects "Booking Status" to update,
+        // we might need to track it.
+        // For now, adhering to instruction: "Start simple, no new Booking record".
+        // But wait, the prompt says "Create Booking records" in section 8.
+        // "Create Booking records"
+        // "Dispatch Splits ... Roll up to the SAME Booking"
+
+        // If we create a booking record, it might duplicate the "demand".
+        // Let's assume we create a Booking record to track the specific dispatch timeline for the Dashboard.
+
+        await tx.booking.create({
+          data: {
+            quotationId: split.salesOrder.quotationId,
+            quotationItemId: item.quotationItemId,
+            quoteNumber: split.salesOrder.quotation.quoteNumber,
+            productId: item.quotationItem.productId!,
+            productName: item.quotationItem.productName,
+            modelNumber: item.quotationItem.modelNumber,
+            dispatchDate: split.dispatchDate!,
+            bookedOn: new Date(),
+            requiredQuantity: item.quantity,
+            status: 'CONFIRM',
+            waitingQuantity: 0,
+            customerName: split.salesOrder.quotation.clientName,
+            gymName: split.salesOrder.quotation.gymName,
+            city: split.salesOrder.quotation.clientCity,
+            dispatchSplitId: splitId,
+          },
+        });
+      }
+
+      // D. Lock Split
+      await tx.dispatchSplit.update({
+        where: { id: splitId },
+        data: {
+          status: 'BOOKED',
+          bookedAt: new Date(),
+        },
+      });
+
+      const result = await this.getSplitWithDetails(splitId, tx);
+      this.eventsGateway.broadcastEntityUpdate(
+        'SALES_ORDER',
+        String(split.salesOrderId),
+      );
+      for (const item of finalItems) {
+        if (item.quotationItem.productId) {
+          this.eventsGateway.broadcastEntityUpdate(
+            'STOCK',
+            String(item.quotationItem.productId),
+          );
+        }
+      }
+      return result;
+    });
+  }
+
+  async deleteDispatchSplit(splitId: string) {
+    const split = await this.prisma.dispatchSplit.findUnique({
+      where: { id: splitId },
+    });
+    if (!split) throw new NotFoundException('Split not found');
+    if (split.status === 'BOOKED')
+      throw new BadRequestException('Cannot delete a BOOKED split');
+
+    return this.prisma.dispatchSplit.delete({ where: { id: splitId } });
+  }
+
+  async findAll() {
+    return this.prisma.salesOrder.findMany({
+      include: {
+        quotation: true,
+        splits: {
+          include: { items: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOne(id: string) {
+    return this.prisma.salesOrder.findUnique({
+      where: { id },
+      include: {
+        quotation: { include: { items: true } },
+        splits: {
+          include: {
+            items: {
+              include: { quotationItem: true },
+              orderBy: { quotationItem: { srNo: 'asc' } },
+            },
+          },
+          orderBy: { splitNumber: 'asc' },
+        },
+      },
+    });
+  }
+
+  // 5. Auto-create BOOKED split from PI (for legacy/simple flow compatibility)
+  async createAutoBookedSplitFromQuotation(
+    quotationId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    // First ensure Master SO exists (pass tx!)
+    const so = await this.ensureMasterSO(quotationId, tx);
+    if (!so) throw new Error('Failed to ensure Sales Order');
+
+    // Check if any splits exist
+    if (so.splits && so.splits.length > 0) {
+      return so; // Already has splits, don't auto-create
+    }
+
+    const executeLogic = async (paramTx: Prisma.TransactionClient) => {
+      // Create Split
+      const split = await paramTx.dispatchSplit.create({
+        data: {
+          salesOrderId: so.id,
+          splitNumber: 1,
+          status: 'BOOKED',
+          dispatchDate: so.quotation.dispatchDate || new Date(),
+          bookedAt: new Date(),
+        },
+      });
+
+      // Create Split Items with full quantity
+      const splitItemsInfo = so.quotation.items.map((qItem) => ({
+        dispatchSplitId: split.id,
+        quotationItemId: qItem.id,
+        quantity: qItem.quantity, // Auto-allocate full quantity
+      }));
+
+      if (splitItemsInfo.length > 0) {
+        await paramTx.dispatchSplitItem.createMany({
+          data: splitItemsInfo,
+        });
+      }
+
+      return this.getSplitWithDetails(split.id, paramTx);
+    };
+
+    if (tx) {
+      return executeLogic(tx);
+    } else {
+      return this.prisma.$transaction(async (newTx) => {
+        return executeLogic(newTx);
+      });
+    }
+  }
+
+  async unbookSalesOrder(salesOrderId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const so = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: {
+          splits: {
+            include: {
+              items: { include: { quotationItem: true } },
+            },
+          },
+        },
+      });
+
+      if (!so) throw new NotFoundException('Sales Order not found');
+      if (so.status === 'UNBOOKED')
+        throw new BadRequestException('Sales Order is already unbooked');
+
+      // Process each split
+      for (const split of so.splits) {
+        if (split.status === 'BOOKED') {
+          // Revert Stock
+          for (const item of split.items) {
+            if (!item.quotationItem.productId) continue;
+
+            // Create Stock IN transaction
+            await tx.stockTransaction.create({
+              data: {
+                productId: item.quotationItem.productId,
+                transactionType: 'IN',
+                quantity: item.quantity,
+                referenceType: 'UNBOOK_SO',
+                referenceId: split.id,
+                date: new Date(),
+                notes: `Unbook SO: ${so.soNumber} / Sp-${split.splitNumber}`,
+              },
             });
-            if (!quotation) throw new NotFoundException('Quotation not found');
 
-            const soNumber = quotation.quoteNumber.replace('QO', 'SO').replace('Q', 'SO'); // Handle both old and new formats
-
-            so = await db.salesOrder.create({
-                data: {
-                    quotationId,
-                    soNumber,
-                    subtotal: quotation.subtotal,
-                    gstAmount: quotation.gstAmount,
-                    grandTotal: quotation.grandTotal,
+            // Delete associated Booking record (if we tracked it by quote item id or similar)
+            // In bookDispatchSplit we created a Booking. We should probably cancel/delete it.
+            // For now, let's mark the split as UNBOOKED.
+            // If we need to delete bookings, we'd need to find them.
+            // Assuming Booking records are created with reference to quotationItemId and quotationId.
+            // It's safer to leave them or update status if we had one?
+            // Schema has BookingStatus enum: CONFIRM, WAITING_LIST.
+            // Let's delete the Booking entry for this item/so combo if possible, or ignore for strictness.
+            // Requirement: "Unbooking".
+            // Let's delete the bookings related to this quotation item created *recently*?
+            // Better: Delete bookings where quotationItemId matches and status is CONFIRMED?
+            // Actually, bookDispatchSplit created a Booking. We should delete it.
+            try {
+              await tx.booking.deleteMany({
+                where: {
+                  quotationItemId: item.quotationItemId,
+                  quotationId: so.quotationId,
                 },
-            });
+              });
+            } catch (e) {
+              console.warn('Failed to delete booking during unbook', e);
+            }
+          }
+
+          // Update Split Status
+          await tx.dispatchSplit.update({
+            where: { id: split.id },
+            data: { status: 'UNBOOKED' },
+          });
+        }
+      }
+
+      // Update Master SO Status
+      const result = await tx.salesOrder.update({
+        where: { id: salesOrderId },
+        data: { status: 'UNBOOKED' },
+      });
+
+      // Revert Quotation status to DRAFT so it can be confirmed again
+      if (so.quotationId) {
+        await tx.quotation.update({
+          where: { id: so.quotationId },
+          data: { status: 'DRAFT' },
+        });
+        this.eventsGateway.broadcastEntityUpdate('QUOTATION', so.quotationId);
+      }
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+      for (const split of so.splits) {
+        for (const item of split.items) {
+          if (item.quotationItem.productId) {
+            this.eventsGateway.broadcastEntityUpdate(
+              'STOCK',
+              item.quotationItem.productId,
+            );
+          }
+        }
+      }
+      return result;
+    });
+  }
+
+  async updateMatrixSplits(id: string, splitsData: any[]) {
+    return this.prisma.$transaction(async (tx) => {
+      const so = await tx.salesOrder.findUnique({
+        where: { id },
+        include: {
+          quotation: { include: { items: true } },
+          splits: { include: { items: true } },
+        },
+      });
+      if (!so) throw new NotFoundException('Sales Order not found');
+
+      // Revert all existing stock OUT transactions for these splits
+      const oldSplitIds = so.splits.map((s) => s.id);
+      if (oldSplitIds.length > 0) {
+        // Return stock IN to undo the OUTs
+        for (const oldSplit of so.splits) {
+          if (oldSplit.status === 'BOOKED') {
+            for (const item of oldSplit.items) {
+              if (item.quantity > 0) {
+                // Find the product
+                const qItem = so.quotation.items.find(
+                  (qi) => qi.id === item.quotationItemId,
+                );
+                if (qItem && qItem.productId) {
+                  await tx.stockTransaction.create({
+                    data: {
+                      productId: qItem.productId,
+                      transactionType: 'IN', // Revert OUT
+                      quantity: item.quantity,
+                      referenceType: 'REVERT_DISPATCH_SPLIT',
+                      referenceId: oldSplit.id,
+                      date: new Date(),
+                      notes: `Revert Disp: ${so.soNumber} / Sp-${oldSplit.splitNumber}`,
+                    },
+                  });
+                }
+              }
+            }
+
+            // Try to delete bookings
+            try {
+              await tx.booking.deleteMany({
+                where: { dispatchSplitId: oldSplit.id },
+              });
+            } catch (e) {
+              console.warn('Failed to delete booking during matrix update', e);
+            }
+          }
         }
 
-
-        // Return with FULL details
-        return db.salesOrder.findUnique({
-            where: { id: so.id },
-            include: {
-                quotation: { include: { items: true } },
-                splits: {
-                    include: {
-                        items: {
-                            include: { quotationItem: true },
-                            orderBy: { quotationItem: { srNo: 'asc' } }
-                        }
-                    },
-                    orderBy: { splitNumber: 'asc' }
-                }
-            }
+        // Now delete splits and items
+        await tx.dispatchSplitItem.deleteMany({
+          where: { dispatchSplitId: { in: oldSplitIds } },
         });
-    }
-
-    // 2. Create a new Operational Dispatch Split
-    async createDispatchSplit(salesOrderId: string) {
-        return this.prisma.$transaction(async (tx) => {
-            const so = await tx.salesOrder.findUnique({
-                where: { id: salesOrderId },
-                include: { quotation: { include: { items: true } } },
-            });
-            if (!so) throw new NotFoundException('Sales Order not found');
-
-            // Find next split number
-            const count = await tx.dispatchSplit.count({
-                where: { salesOrderId },
-            });
-            const splitNumber = count + 1;
-
-            // Create Split
-            const split = await tx.dispatchSplit.create({
-                data: {
-                    salesOrderId,
-                    splitNumber,
-                    status: 'DRAFT',
-                },
-            });
-
-            // Initialize all items with 0 quantity
-            const splitItemsInfo = so.quotation.items.map((qItem) => ({
-                dispatchSplitId: split.id,
-                quotationItemId: qItem.id,
-                quantity: 0,
-            }));
-
-            if (splitItemsInfo.length > 0) {
-                await tx.dispatchSplitItem.createMany({
-                    data: splitItemsInfo,
-                });
-            }
-
-            return this.getSplitWithDetails(split.id, tx);
+        await tx.dispatchSplit.deleteMany({
+          where: { id: { in: oldSplitIds } },
         });
-    }
+      }
 
-    // 3. Update Dispatch Split (Quantities & Date)
-    async updateDispatchSplit(
-        splitId: string,
-        updates: {
-            dispatchDate?: string;
-            items?: { id: string; quantity: number }[]; // id is dispatchSplitItemId
-        },
-    ) {
-        return this.prisma.$transaction(async (tx) => {
-            const split = await tx.dispatchSplit.findUnique({
-                where: { id: splitId },
-            });
-            if (!split) throw new NotFoundException('Split not found');
-            if (updates.dispatchDate) {
-                const newDispatchDate = new Date(updates.dispatchDate);
-                await tx.dispatchSplit.update({
-                    where: { id: splitId },
-                    data: { dispatchDate: newDispatchDate },
-                });
+      // Re-create new splits from matrix
+      for (let i = 0; i < splitsData.length; i++) {
+        const splitInput = splitsData[i];
 
-                // If it's already BOOKED, sync associated records
-                if (split.status === 'BOOKED') {
-                    // Sync Stock Transactions
-                    await tx.stockTransaction.updateMany({
-                        where: {
-                            referenceId: splitId,
-                            referenceType: 'DISPATCH_SPLIT'
-                        },
-                        data: { date: newDispatchDate }
-                    });
-
-                    // Sync Bookings
-                    await tx.booking.updateMany({
-                        where: { dispatchSplitId: splitId },
-                        data: { dispatchDate: newDispatchDate }
-                    });
-                }
-            }
-
-            if (updates.items) {
-                for (const item of updates.items) {
-                    await tx.dispatchSplitItem.update({
-                        where: { id: item.id },
-                        data: { quantity: item.quantity },
-                    });
-                }
-            }
-
-            const result = await this.getSplitWithDetails(splitId, tx);
-            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', split.salesOrderId);
-            return result;
+        const split = await tx.dispatchSplit.create({
+          data: {
+            salesOrderId: id,
+            splitNumber: i + 1,
+            dispatchDate: splitInput.dispatchDate
+              ? new Date(String(splitInput.dispatchDate))
+              : null,
+            label: splitInput.label,
+            status: 'BOOKED', // Matrix directly creates booked splits
+            bookedAt: new Date(),
+          },
         });
-    }
 
-    // 4. Book Dispatch Split
-    async bookDispatchSplit(splitId: string) {
-        return this.prisma.$transaction(async (tx) => {
-            const split = await this.getSplitWithDetails(splitId, tx);
-            if (!split) throw new NotFoundException('Split not found');
+        if (splitInput.items && splitInput.items.length > 0) {
+          const itemsToCreate = splitInput.items
+            .map((item) => ({
+              dispatchSplitId: split.id,
+              quotationItemId: item.quotationItemId,
+              quantity: item.quantity,
+            }))
+            .filter((i) => i.quantity > 0);
 
-            if (!split.dispatchDate)
-                throw new BadRequestException('Dispatch Date is required');
-
-            if (split.status === 'BOOKED')
-                throw new BadRequestException('Split is already BOOKED');
-
-            // A. Validate Quantities
-            // Need to check specific item limits (Total Ordered vs Total Booked so far + Current)
-
-            // Get all OTHER booked splits for this SO
-            const otherBookedSplits = await tx.dispatchSplit.findMany({
-                where: {
-                    salesOrderId: split.salesOrderId,
-                    status: 'BOOKED',
-                    id: { not: splitId },
-                },
-                include: { items: true },
+          if (itemsToCreate.length > 0) {
+            await tx.dispatchSplitItem.createMany({
+              data: itemsToCreate,
             });
 
-            // Iterate through current items
-            let hasPositiveQty = false;
-
-            for (const item of split.items) {
-                if (item.quantity > 0) {
-                    hasPositiveQty = true;
-                    const orderedQty = item.quotationItem.quantity;
-
-                    // Sum from other booked splits
-                    let alreadyBooked = 0;
-                    for (const otherSplit of otherBookedSplits) {
-                        const otherItem = otherSplit.items.find(
-                            (i) => i.quotationItemId === item.quotationItemId,
-                        );
-                        if (otherItem) alreadyBooked += otherItem.quantity;
-                    }
-
-                    if (alreadyBooked + item.quantity > orderedQty) {
-                        throw new BadRequestException(
-                            `Cannot book. Item ${item.quotationItem.modelNumber} exceeds ordered quantity. Ordered: ${orderedQty}, Booked: ${alreadyBooked}, Attempting: ${item.quantity}`,
-                        );
-                    }
-                }
-            }
-
-            if (!hasPositiveQty)
-                throw new BadRequestException('Cannot book with 0 total quantity');
-
-            // B. Delete 0-quantity rows
-            await tx.dispatchSplitItem.deleteMany({
-                where: {
-                    dispatchSplitId: splitId,
-                    quantity: 0,
-                },
-            });
-
-            // C. Stock Deduction & Booking (Operational)
-            // Re-fetch items after deletion? Or just filter from memory
-            const finalItems = split.items.filter(i => i.quantity > 0);
-
-            for (const item of finalItems) {
-                if (!item.quotationItem.productId) continue;
-
-                // Stock OUT
+            // Create Stock Transactions (OUT) and Bookings
+            for (const splitItem of itemsToCreate) {
+              const qItem = so.quotation.items.find(
+                (qi) => qi.id === splitItem.quotationItemId,
+              );
+              if (qItem && qItem.productId) {
                 await tx.stockTransaction.create({
-                    data: {
-                        productId: item.quotationItem.productId,
-                        transactionType: 'OUT',
-                        quantity: -item.quantity,
-                        referenceType: 'DISPATCH_SPLIT',
-                        referenceId: split.id,
-                        date: split.dispatchDate!,
-                        notes: `Disp: ${split.salesOrder.soNumber} / Sp-${split.splitNumber}`,
-                    },
+                  data: {
+                    productId: qItem.productId,
+                    transactionType: 'OUT',
+                    quantity: -splitItem.quantity,
+                    referenceType: 'DISPATCH_SPLIT',
+                    referenceId: split.id,
+                    date:
+                      split.dispatchDate ||
+                      so.quotation.dispatchDate ||
+                      new Date(),
+                    notes: `Disp: ${so.soNumber} / Sp-${split.splitNumber} / ${split.label || ''}`,
+                  },
                 });
-
-                // We do NOT create a 'booking' record here because the commercial booking
-                // logic is separate. BUT, if the user expects "Booking Status" to update,
-                // we might need to track it.
-                // For now, adhering to instruction: "Start simple, no new Booking record".
-                // But wait, the prompt says "Create Booking records" in section 8.
-                // "Create Booking records"
-                // "Dispatch Splits ... Roll up to the SAME Booking"
-
-                // If we create a booking record, it might duplicate the "demand".
-                // Let's assume we create a Booking record to track the specific dispatch timeline for the Dashboard.
 
                 await tx.booking.create({
-                    data: {
-                        quotationId: split.salesOrder.quotationId,
-                        quotationItemId: item.quotationItemId,
-                        quoteNumber: split.salesOrder.quotation.quoteNumber,
-                        productId: item.quotationItem.productId!,
-                        productName: item.quotationItem.productName,
-                        modelNumber: item.quotationItem.modelNumber,
-                        dispatchDate: split.dispatchDate!,
-                        bookedOn: new Date(),
-                        requiredQuantity: item.quantity,
-                        status: 'CONFIRM',
-                        waitingQuantity: 0,
-                        customerName: split.salesOrder.quotation.clientName,
-                        gymName: split.salesOrder.quotation.gymName,
-                        city: split.salesOrder.quotation.clientCity,
-                        dispatchSplitId: splitId
-                    }
+                  data: {
+                    quotationId: so.quotationId,
+                    quotationItemId: qItem.id,
+                    quoteNumber: so.quotation.quoteNumber,
+                    productId: qItem.productId,
+                    productName: qItem.productName,
+                    modelNumber: qItem.modelNumber,
+                    dispatchDate:
+                      split.dispatchDate ||
+                      so.quotation.dispatchDate ||
+                      new Date(),
+                    bookedOn: new Date(),
+                    requiredQuantity: splitItem.quantity,
+                    status: 'CONFIRM',
+                    waitingQuantity: 0,
+                    customerName: so.quotation.clientName,
+                    gymName: so.quotation.gymName,
+                    city: so.quotation.clientCity,
+                    dispatchSplitId: split.id,
+                  },
                 });
+
+                this.eventsGateway.broadcastEntityUpdate(
+                  'STOCK',
+                  qItem.productId,
+                );
+              }
             }
-
-            // D. Lock Split
-            await tx.dispatchSplit.update({
-                where: { id: splitId },
-                data: {
-                    status: 'BOOKED',
-                    bookedAt: new Date(),
-                },
-            });
-
-            const result = await this.getSplitWithDetails(splitId, tx);
-            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', split.salesOrderId);
-            for (const item of finalItems) {
-                if (item.quotationItem.productId) {
-                    this.eventsGateway.broadcastEntityUpdate('STOCK', item.quotationItem.productId);
-                }
-            }
-            return result;
-        });
-    }
-
-    async deleteDispatchSplit(splitId: string) {
-        const split = await this.prisma.dispatchSplit.findUnique({
-            where: { id: splitId },
-        });
-        if (!split) throw new NotFoundException('Split not found');
-        if (split.status === 'BOOKED')
-            throw new BadRequestException('Cannot delete a BOOKED split');
-
-        return this.prisma.dispatchSplit.delete({ where: { id: splitId } });
-    }
-
-    async findAll() {
-        return this.prisma.salesOrder.findMany({
-            include: {
-                quotation: true,
-                splits: {
-                    include: { items: true }
-                }
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-    }
-
-    async findOne(id: string) {
-        return this.prisma.salesOrder.findUnique({
-            where: { id },
-            include: {
-                quotation: { include: { items: true } },
-                splits: {
-                    include: {
-                        items: {
-                            include: { quotationItem: true },
-                            orderBy: { quotationItem: { srNo: 'asc' } }
-                        }
-                    },
-                    orderBy: { splitNumber: 'asc' }
-                }
-            }
-        });
-    }
-
-    // 5. Auto-create BOOKED split from PI (for legacy/simple flow compatibility)
-    async createAutoBookedSplitFromQuotation(quotationId: string, tx?: Prisma.TransactionClient) {
-        // First ensure Master SO exists (pass tx!)
-        const so = await this.ensureMasterSO(quotationId, tx);
-        if (!so) throw new Error('Failed to ensure Sales Order');
-
-        // Check if any splits exist
-        if (so.splits && so.splits.length > 0) {
-            return so; // Already has splits, don't auto-create
+          }
         }
+      }
 
-        const executeLogic = async (paramTx: Prisma.TransactionClient) => {
-            // Create Split
-            const split = await paramTx.dispatchSplit.create({
-                data: {
-                    salesOrderId: so.id,
-                    splitNumber: 1,
-                    status: 'BOOKED',
-                    dispatchDate: so.quotation.dispatchDate || new Date(),
-                    bookedAt: new Date(),
-                },
-            });
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', id);
 
-            // Create Split Items with full quantity
-            const splitItemsInfo = so.quotation.items.map((qItem) => ({
-                dispatchSplitId: split.id,
-                quotationItemId: qItem.id,
-                quantity: qItem.quantity, // Auto-allocate full quantity
-            }));
+      return tx.salesOrder.findUnique({
+        where: { id },
+        include: {
+          quotation: { include: { items: true } },
+          splits: {
+            include: {
+              items: {
+                include: { quotationItem: true },
+                orderBy: { quotationItem: { srNo: 'asc' } },
+              },
+            },
+            orderBy: { splitNumber: 'asc' },
+          },
+        },
+      });
+    });
+  }
 
-            if (splitItemsInfo.length > 0) {
-                await paramTx.dispatchSplitItem.createMany({
-                    data: splitItemsInfo,
-                });
-            }
+  async findUnbooked() {
+    return this.prisma.salesOrder.findMany({
+      where: { status: 'UNBOOKED' },
+      include: {
+        quotation: true,
+        splits: { include: { items: true } },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
 
-            return this.getSplitWithDetails(split.id, paramTx);
-        };
+  // 6. Update Master Sales Order Date (Quotation Date)
+  async updateMasterDispatchDate(salesOrderId: string, dispatchDate: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const so = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: { quotation: true },
+      });
 
-        if (tx) {
-            return executeLogic(tx);
-        } else {
-            return this.prisma.$transaction(async (newTx) => {
-                return executeLogic(newTx);
-            });
+      if (!so) throw new NotFoundException('Sales Order not found');
+
+      const newDispatchDate = new Date(dispatchDate);
+
+      // A. Update Master Quotation
+      await tx.quotation.update({
+        where: { id: so.quotationId },
+        data: { dispatchDate: newDispatchDate },
+      });
+
+      // B. Sync Stock Transactions (Confirmed PIs or Quote-linked)
+      await tx.stockTransaction.updateMany({
+        where: {
+          referenceId: so.quotationId,
+          transactionType: 'OUT',
+          referenceType: { in: ['QUOTATION', 'PI_BOOKING'] },
+        },
+        data: { date: newDispatchDate },
+      });
+
+      // C. Sync Bookings
+      await tx.booking.updateMany({
+        where: { quotationId: so.quotationId },
+        data: { dispatchDate: newDispatchDate },
+      });
+
+      // D. Sync Dispatch Splits
+      const splits = await tx.dispatchSplit.findMany({
+        where: { salesOrderId },
+      });
+
+      for (const split of splits) {
+        await tx.dispatchSplit.update({
+          where: { id: split.id },
+          data: { dispatchDate: newDispatchDate },
+        });
+
+        if (split.status === 'BOOKED') {
+          await tx.stockTransaction.updateMany({
+            where: {
+              referenceId: split.id,
+              referenceType: 'DISPATCH_SPLIT',
+            },
+            data: { date: newDispatchDate },
+          });
+
+          await tx.booking.updateMany({
+            where: { dispatchSplitId: split.id },
+            data: { dispatchDate: newDispatchDate },
+          });
         }
-    }
+      }
 
-    async unbookSalesOrder(salesOrderId: string) {
-        return this.prisma.$transaction(async (tx) => {
-            const so = await tx.salesOrder.findUnique({
-                where: { id: salesOrderId },
-                include: {
-                    splits: {
-                        include: {
-                            items: { include: { quotationItem: true } }
-                        }
-                    }
-                }
-            });
-
-            if (!so) throw new NotFoundException('Sales Order not found');
-            if (so.status === 'UNBOOKED') throw new BadRequestException('Sales Order is already unbooked');
-
-            // Process each split
-            for (const split of so.splits) {
-                if (split.status === 'BOOKED') {
-                    // Revert Stock
-                    for (const item of split.items) {
-                        if (!item.quotationItem.productId) continue;
-
-                        // Create Stock IN transaction
-                        await tx.stockTransaction.create({
-                            data: {
-                                productId: item.quotationItem.productId,
-                                transactionType: 'IN',
-                                quantity: item.quantity,
-                                referenceType: 'UNBOOK_SO',
-                                referenceId: split.id,
-                                date: new Date(),
-                                notes: `Unbook SO: ${so.soNumber} / Sp-${split.splitNumber}`,
-                            },
-                        });
-
-                        // Delete associated Booking record (if we tracked it by quote item id or similar)
-                        // In bookDispatchSplit we created a Booking. We should probably cancel/delete it.
-                        // For now, let's mark the split as UNBOOKED.
-                        // If we need to delete bookings, we'd need to find them.
-                        // Assuming Booking records are created with reference to quotationItemId and quotationId.
-                        // It's safer to leave them or update status if we had one?
-                        // Schema has BookingStatus enum: CONFIRM, WAITING_LIST.
-                        // Let's delete the Booking entry for this item/so combo if possible, or ignore for strictness.
-                        // Requirement: "Unbooking".
-                        // Let's delete the bookings related to this quotation item created *recently*?
-                        // Better: Delete bookings where quotationItemId matches and status is CONFIRMED?
-                        // Actually, bookDispatchSplit created a Booking. We should delete it.
-                        try {
-                            await tx.booking.deleteMany({
-                                where: {
-                                    quotationItemId: item.quotationItemId,
-                                    quotationId: so.quotationId
-                                }
-                            });
-                        } catch (e) {
-                            console.warn('Failed to delete booking during unbook', e);
-                        }
-                    }
-
-                    // Update Split Status
-                    await tx.dispatchSplit.update({
-                        where: { id: split.id },
-                        data: { status: 'UNBOOKED' }
-                    });
-                }
-            }
-
-            // Update Master SO Status
-            const result = await tx.salesOrder.update({
-                where: { id: salesOrderId },
-                data: { status: 'UNBOOKED' }
-            });
-            
-            // Revert Quotation status to DRAFT so it can be confirmed again
-            if (so.quotationId) {
-                await tx.quotation.update({
-                    where: { id: so.quotationId },
-                    data: { status: 'DRAFT' }
-                });
-                this.eventsGateway.broadcastEntityUpdate('QUOTATION', so.quotationId);
-            }
-            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
-            for (const split of so.splits) {
-                for (const item of split.items) {
-                    if (item.quotationItem.productId) {
-                        this.eventsGateway.broadcastEntityUpdate('STOCK', item.quotationItem.productId);
-                    }
-                }
-            }
-            return result;
-        });
-    }
-
-    async updateMatrixSplits(id: string, splitsData: any[]) {
-        return this.prisma.$transaction(async (tx) => {
-            const so = await tx.salesOrder.findUnique({
-                where: { id },
-                include: { 
-                    quotation: { include: { items: true } }, 
-                    splits: { include: { items: true } } 
-                }
-            });
-            if (!so) throw new NotFoundException('Sales Order not found');
-
-            // Revert all existing stock OUT transactions for these splits
-            const oldSplitIds = so.splits.map(s => s.id);
-            if (oldSplitIds.length > 0) {
-                // Return stock IN to undo the OUTs
-                for (const oldSplit of so.splits) {
-                    if (oldSplit.status === 'BOOKED') {
-                        for (const item of oldSplit.items) {
-                            if (item.quantity > 0) {
-                                // Find the product
-                                const qItem = so.quotation.items.find(qi => qi.id === item.quotationItemId);
-                                if (qItem && qItem.productId) {
-                                    await tx.stockTransaction.create({
-                                        data: {
-                                            productId: qItem.productId,
-                                            transactionType: 'IN', // Revert OUT
-                                            quantity: item.quantity,
-                                            referenceType: 'REVERT_DISPATCH_SPLIT',
-                                            referenceId: oldSplit.id,
-                                            date: new Date(),
-                                            notes: `Revert Disp: ${so.soNumber} / Sp-${oldSplit.splitNumber}`,
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                        
-                        // Try to delete bookings
-                        try {
-                            await tx.booking.deleteMany({
-                                where: { dispatchSplitId: oldSplit.id }
-                            });
-                        } catch (e) {
-                            console.warn('Failed to delete booking during matrix update', e);
-                        }
-                    }
-                }
-
-                // Now delete splits and items
-                await tx.dispatchSplitItem.deleteMany({
-                    where: { dispatchSplitId: { in: oldSplitIds } }
-                });
-                await tx.dispatchSplit.deleteMany({
-                    where: { id: { in: oldSplitIds } }
-                });
-            }
-
-            // Re-create new splits from matrix
-            for (let i = 0; i < splitsData.length; i++) {
-                const splitInput = splitsData[i];
-                
-                const split = await tx.dispatchSplit.create({
-                    data: {
-                        salesOrderId: id,
-                        splitNumber: i + 1,
-                        dispatchDate: splitInput.dispatchDate ? new Date(splitInput.dispatchDate) : null,
-                        label: splitInput.label,
-                        status: 'BOOKED', // Matrix directly creates booked splits
-                        bookedAt: new Date(),
-                    }
-                });
-
-                if (splitInput.items && splitInput.items.length > 0) {
-                    const itemsToCreate = splitInput.items.map(item => ({
-                        dispatchSplitId: split.id,
-                        quotationItemId: item.quotationItemId,
-                        quantity: item.quantity
-                    })).filter(i => i.quantity > 0);
-
-                    if (itemsToCreate.length > 0) {
-                        await tx.dispatchSplitItem.createMany({
-                            data: itemsToCreate
-                        });
-
-                        // Create Stock Transactions (OUT) and Bookings
-                        for (const splitItem of itemsToCreate) {
-                            const qItem = so.quotation.items.find(qi => qi.id === splitItem.quotationItemId);
-                            if (qItem && qItem.productId) {
-                                await tx.stockTransaction.create({
-                                    data: {
-                                        productId: qItem.productId,
-                                        transactionType: 'OUT',
-                                        quantity: -splitItem.quantity,
-                                        referenceType: 'DISPATCH_SPLIT',
-                                        referenceId: split.id,
-                                        date: split.dispatchDate || so.quotation.dispatchDate || new Date(),
-                                        notes: `Disp: ${so.soNumber} / Sp-${split.splitNumber} / ${split.label || ''}`,
-                                    }
-                                });
-
-                                await tx.booking.create({
-                                    data: {
-                                        quotationId: so.quotationId,
-                                        quotationItemId: qItem.id,
-                                        quoteNumber: so.quotation.quoteNumber,
-                                        productId: qItem.productId,
-                                        productName: qItem.productName,
-                                        modelNumber: qItem.modelNumber,
-                                        dispatchDate: split.dispatchDate || so.quotation.dispatchDate || new Date(),
-                                        bookedOn: new Date(),
-                                        requiredQuantity: splitItem.quantity,
-                                        status: 'CONFIRM',
-                                        waitingQuantity: 0,
-                                        customerName: so.quotation.clientName,
-                                        gymName: so.quotation.gymName,
-                                        city: so.quotation.clientCity,
-                                        dispatchSplitId: split.id
-                                    }
-                                });
-                                
-                                this.eventsGateway.broadcastEntityUpdate('STOCK', qItem.productId);
-                            }
-                        }
-                    }
-                }
-            }
-
-            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', id);
-            
-            return tx.salesOrder.findUnique({
-                where: { id },
-                include: {
-                    quotation: { include: { items: true } },
-                    splits: {
-                        include: {
-                            items: {
-                                include: { quotationItem: true },
-                                orderBy: { quotationItem: { srNo: 'asc' } }
-                            }
-                        },
-                        orderBy: { splitNumber: 'asc' }
-                    }
-                }
-            });
-        });
-    }
-
-    async findUnbooked() {
-        return this.prisma.salesOrder.findMany({
-            where: { status: 'UNBOOKED' },
+      const updatedSO = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: {
+          quotation: { include: { items: true } },
+          splits: {
             include: {
-                quotation: true,
-                splits: { include: { items: true } }
+              items: {
+                include: { quotationItem: true },
+                orderBy: { quotationItem: { srNo: 'asc' } },
+              },
             },
-            orderBy: { updatedAt: 'desc' }
-        });
-    }
+            orderBy: { splitNumber: 'asc' },
+          },
+        },
+      });
 
-    // 6. Update Master Sales Order Date (Quotation Date)
-    async updateMasterDispatchDate(salesOrderId: string, dispatchDate: string) {
-        return this.prisma.$transaction(async (tx) => {
-            const so = await tx.salesOrder.findUnique({
-                where: { id: salesOrderId },
-                include: { quotation: true }
-            });
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+      return updatedSO;
+    });
+  }
 
-            if (!so) throw new NotFoundException('Sales Order not found');
-
-            const newDispatchDate = new Date(dispatchDate);
-
-            // A. Update Master Quotation
-            await tx.quotation.update({
-                where: { id: so.quotationId },
-                data: { dispatchDate: newDispatchDate }
-            });
-
-            // B. Sync Stock Transactions (Confirmed PIs or Quote-linked)
-            await tx.stockTransaction.updateMany({
-                where: {
-                    referenceId: so.quotationId,
-                    transactionType: 'OUT',
-                    referenceType: { in: ['QUOTATION', 'PI_BOOKING'] }
-                },
-                data: { date: newDispatchDate }
-            });
-
-            // C. Sync Bookings
-            await tx.booking.updateMany({
-                where: { quotationId: so.quotationId },
-                data: { dispatchDate: newDispatchDate }
-            });
-
-            // D. Sync Dispatch Splits
-            const splits = await tx.dispatchSplit.findMany({
-                where: { salesOrderId }
-            });
-
-            for (const split of splits) {
-                await tx.dispatchSplit.update({
-                    where: { id: split.id },
-                    data: { dispatchDate: newDispatchDate }
-                });
-
-                if (split.status === 'BOOKED') {
-                    await tx.stockTransaction.updateMany({
-                        where: {
-                            referenceId: split.id,
-                            referenceType: 'DISPATCH_SPLIT'
-                        },
-                        data: { date: newDispatchDate }
-                    });
-
-                    await tx.booking.updateMany({
-                        where: { dispatchSplitId: split.id },
-                        data: { dispatchDate: newDispatchDate }
-                    });
-                }
-            }
-
-            const updatedSO = await tx.salesOrder.findUnique({
-                where: { id: salesOrderId },
-                include: {
-                    quotation: { include: { items: true } },
-                    splits: {
-                        include: {
-                            items: {
-                                include: { quotationItem: true },
-                                orderBy: { quotationItem: { srNo: 'asc' } }
-                            }
-                        },
-                        orderBy: { splitNumber: 'asc' }
-                    }
-                }
-            });
-
-            this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
-            return updatedSO;
-        });
-    }
-
-    // Helper
-    private async getSplitWithDetails(splitId: string, tx: any) {
-        return tx.dispatchSplit.findUnique({
-            where: { id: splitId },
-            include: {
-                salesOrder: { include: { quotation: true } },
-                items: {
-                    include: { quotationItem: true },
-                },
-            },
-        });
-    }
+  // Helper
+  private async getSplitWithDetails(splitId: string, tx: any) {
+    return tx.dispatchSplit.findUnique({
+      where: { id: splitId },
+      include: {
+        salesOrder: { include: { quotation: true } },
+        items: {
+          include: { quotationItem: true },
+        },
+      },
+    });
+  }
 }

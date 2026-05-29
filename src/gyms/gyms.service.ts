@@ -17,7 +17,7 @@ export class GymsService {
   constructor(
     private prisma: PrismaService,
     private eventsGateway: EventsGateway,
-  ) { }
+  ) {}
 
   private async generateLocationQR(locationLink: string): Promise<string> {
     try {
@@ -168,15 +168,29 @@ export class GymsService {
     }
 
     // Regenerate gym code using merged data (existing + updated fields)
-    const mergedInstallationDate = data.installationDate !== undefined
-      ? data.installationDate
-      : (gym.installationDate ? gym.installationDate.toISOString().split('T')[0] : undefined);
-    const mergedStateCode = (data.stateCode !== undefined ? data.stateCode : gym.stateCode) ?? undefined;
-    const mergedCity = (data.city !== undefined ? data.city : gym.city) ?? undefined;
-    const mergedGymName = (data.gymName !== undefined ? data.gymName : gym.gymName) ?? undefined;
-    const mergedBranchCode = (data.branchCode !== undefined ? data.branchCode : gym.branchCode) ?? undefined;
-    const mergedBranchTitle = (data.branchTitle !== undefined ? data.branchTitle : gym.branchTitle) ?? undefined;
-    const mergedSalesInitial = (data.salesInitial !== undefined ? data.salesInitial : gym.salesInitial) ?? undefined;
+    const mergedInstallationDate =
+      data.installationDate !== undefined
+        ? data.installationDate
+        : gym.installationDate
+          ? gym.installationDate.toISOString().split('T')[0]
+          : undefined;
+    const mergedStateCode =
+      (data.stateCode !== undefined ? data.stateCode : gym.stateCode) ??
+      undefined;
+    const mergedCity =
+      (data.city !== undefined ? data.city : gym.city) ?? undefined;
+    const mergedGymName =
+      (data.gymName !== undefined ? data.gymName : gym.gymName) ?? undefined;
+    const mergedBranchCode =
+      (data.branchCode !== undefined ? data.branchCode : gym.branchCode) ??
+      undefined;
+    const mergedBranchTitle =
+      (data.branchTitle !== undefined ? data.branchTitle : gym.branchTitle) ??
+      undefined;
+    const mergedSalesInitial =
+      (data.salesInitial !== undefined
+        ? data.salesInitial
+        : gym.salesInitial) ?? undefined;
 
     const newGymCode = generateGymCode({
       installationDate: mergedInstallationDate,
@@ -196,12 +210,18 @@ export class GymsService {
         installationDate: data.installationDate
           ? new Date(data.installationDate)
           : undefined,
-        stateCode: data.stateCode ? data.stateCode.toUpperCase() : data.stateCode,
+        stateCode: data.stateCode
+          ? data.stateCode.toUpperCase()
+          : data.stateCode,
         city: data.city ? data.city.toUpperCase() : data.city,
         gymName: data.gymName ? data.gymName.toUpperCase() : data.gymName,
         branchCode: data.branchCode,
-        branchTitle: data.branchTitle ? data.branchTitle.toUpperCase() : data.branchTitle,
-        salesInitial: data.salesInitial ? data.salesInitial.toUpperCase() : data.salesInitial,
+        branchTitle: data.branchTitle
+          ? data.branchTitle.toUpperCase()
+          : data.branchTitle,
+        salesInitial: data.salesInitial
+          ? data.salesInitial.toUpperCase()
+          : data.salesInitial,
         callSign: data.callSign ? data.callSign.toUpperCase() : data.callSign,
         instagramLink: data.instagramLink,
         locationLink: data.locationLink,

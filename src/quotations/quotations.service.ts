@@ -19,7 +19,7 @@ export class QuotationsService {
     private prisma: PrismaService,
     private salesOrdersService: SalesOrdersService,
     private eventsGateway: EventsGateway,
-  ) { }
+  ) {}
 
   async generateQuoteNumber(): Promise<string> {
     const date = new Date();
@@ -125,7 +125,6 @@ export class QuotationsService {
           },
         },
         salesOrders: {
-
           orderBy: { soNumber: 'asc' },
         },
       },
@@ -144,23 +143,25 @@ export class QuotationsService {
     // User Example: 22064 -> 22064_01 -> 22064_02
     // Base seems to be "22064".
 
-    const base = quoteNumber.includes('_') ? quoteNumber.split('_')[0] : quoteNumber;
+    const base = quoteNumber.includes('_')
+      ? quoteNumber.split('_')[0]
+      : quoteNumber;
 
     return this.prisma.quotation.findMany({
       where: {
         quoteNumber: {
-          startsWith: base
-        }
+          startsWith: base,
+        },
       },
       select: {
         id: true,
         quoteNumber: true,
         createdAt: true,
-        status: true
+        status: true,
       },
       orderBy: {
-        createdAt: 'asc'
-      }
+        createdAt: 'asc',
+      },
     });
   }
 
@@ -712,7 +713,9 @@ export class QuotationsService {
       }
 
       if (!quotation.dispatchDate) {
-        throw new BadRequestException('Dispatch Date is required before booking');
+        throw new BadRequestException(
+          'Dispatch Date is required before booking',
+        );
       }
 
       // Get all items with products and positive quantity (skip 0 quantity items)
@@ -843,7 +846,6 @@ export class QuotationsService {
       // Wait, ensureMasterSO reads using `this.prisma`. If we are in a transaction `tx`, `this.prisma` outside might not see the update yet if isolation level is high.
       // However, ensureMasterSO is designed to read the quotation.
       // Let's call it after the transaction block returns to be safe and ensure data consistency.
-
 
       // Automatically create Sales Order record within the SAME transaction
       await this.salesOrdersService.createAutoBookedSplitFromQuotation(id, tx);

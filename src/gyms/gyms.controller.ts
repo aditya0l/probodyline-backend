@@ -46,7 +46,9 @@ export class GymsController {
           hypothesisId: 'H1',
         }) + '\n',
       );
-    } catch (e) {}
+    } catch (e) {
+      // ignore error
+    }
     // #endregion
     console.log('✅ GymsController instantiated');
   }
@@ -120,7 +122,9 @@ export class GymsController {
           hypothesisId: 'H4',
         }) + '\n',
       );
-    } catch (e) {}
+    } catch (e) {
+      // ignore error
+    }
     // #endregion
     console.log('📞 GymsController.findAll called with:', {
       search,

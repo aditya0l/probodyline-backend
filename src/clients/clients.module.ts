@@ -30,7 +30,9 @@ export class ClientsModule implements OnModuleInit {
           hypothesisId: 'H3',
         }) + '\n',
       );
-    } catch (e) {}
+    } catch (e) {
+      // ignore error
+    }
     // #endregion
     console.log(
       '✅ ClientsModule initialized - controllers should be registered',

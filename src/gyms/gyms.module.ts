@@ -31,7 +31,9 @@ export class GymsModule implements OnModuleInit {
           hypothesisId: 'H3',
         }) + '\n',
       );
-    } catch (e) {}
+    } catch (e) {
+      // ignore error
+    }
     // #endregion
     console.log('✅ GymsModule initialized - controllers should be registered');
     console.log('🔵 GymsModule controllers array:', [GymsController.name]);

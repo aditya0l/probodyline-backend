@@ -35,34 +35,30 @@ export class PdfController {
     @Query('template') template: string = 'default',
     @Res() res: Response,
   ) {
-    try {
-      console.log('[PdfController.generatePDF] Request received:', {
-        quotationId,
-        template,
-        route: 'POST /api/pdf/quotations/:id/generate',
-        timestamp: new Date().toISOString(),
-      });
+    console.log('[PdfController.generatePDF] Request received:', {
+      quotationId,
+      template,
+      route: 'POST /api/pdf/quotations/:id/generate',
+      timestamp: new Date().toISOString(),
+    });
 
-      const pdfBuffer = await this.pdfService.generateQuotationPDF(
-        quotationId,
-        template,
-      );
+    const pdfBuffer = await this.pdfService.generateQuotationPDF(
+      quotationId,
+      template,
+    );
 
-      console.log('[PdfController.generatePDF] PDF generated successfully:', {
-        quotationId,
-        template,
-        pdfSize: pdfBuffer.length,
-      });
+    console.log('[PdfController.generatePDF] PDF generated successfully:', {
+      quotationId,
+      template,
+      pdfSize: pdfBuffer.length,
+    });
 
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="quotation-${quotationId}.pdf"`,
-      );
-      res.send(pdfBuffer);
-    } catch (error: any) {
-      throw error;
-    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="quotation-${quotationId}.pdf"`,
+    );
+    res.send(pdfBuffer);
   }
 
   @Get('quotations/:id/preview')

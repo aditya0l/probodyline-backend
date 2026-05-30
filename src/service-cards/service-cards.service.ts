@@ -66,8 +66,14 @@ export class ServiceCardsService {
     });
   }
 
-  async findAll() {
+  async findAll(gymId?: string) {
+    const whereClause: Prisma.ServiceCardWhereInput = {};
+    if (gymId) {
+      whereClause.gymId = gymId;
+    }
+
     return this.prisma.serviceCard.findMany({
+      where: whereClause,
       orderBy: { serialNumber: 'desc' },
       include: {
         gym: true,

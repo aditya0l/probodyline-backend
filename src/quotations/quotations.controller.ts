@@ -45,8 +45,13 @@ export class QuotationsController {
   @Get()
   @ApiOperation({ summary: 'Get all quotations' })
   @ApiResponse({ status: 200, description: 'List of quotations' })
-  findAll() {
-    return this.quotationsService.findAll();
+  @ApiQuery({ name: 'gymName', required: false, type: String })
+  @ApiQuery({ name: 'clientName', required: false, type: String })
+  findAll(
+    @Query('gymName') gymName?: string,
+    @Query('clientName') clientName?: string,
+  ) {
+    return this.quotationsService.findAll({ gymName, clientName });
   }
 
   @Get(':id')

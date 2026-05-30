@@ -6,7 +6,9 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
+import { ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ServiceCardsService } from './service-cards.service';
 import {
   CreateServiceCardDto,
@@ -23,8 +25,10 @@ export class ServiceCardsController {
   }
 
   @Get()
-  findAll() {
-    return this.serviceCardsService.findAll();
+  @ApiOperation({ summary: 'Get all Service Cards' })
+  @ApiQuery({ name: 'gymId', required: false, type: String })
+  findAll(@Query('gymId') gymId?: string) {
+    return this.serviceCardsService.findAll(gymId);
   }
 
   @Get(':id')

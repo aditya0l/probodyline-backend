@@ -309,8 +309,17 @@ export class SalesOrdersService {
     return this.prisma.dispatchSplit.delete({ where: { id: splitId } });
   }
 
-  async findAll() {
+  async findAll(filters?: { gymName?: string; clientName?: string }) {
+    const whereClause: Prisma.SalesOrderWhereInput = {};
+    
+    if (filters?.gymName || filters?.clientName) {
+      whereClause.quotation = {};
+      if (filters.gymName) whereClause.quotation.gymName = filters.gymName;
+      if (filters.clientName) whereClause.quotation.clientName = filters.clientName;
+    }
+
     return this.prisma.salesOrder.findMany({
+      where: whereClause,
       include: {
         quotation: { include: { items: true } },
         splits: {

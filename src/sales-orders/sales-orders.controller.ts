@@ -7,8 +7,9 @@ import {
   Body,
   Get,
   Delete,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { SalesOrdersService } from './sales-orders.service';
 
 @ApiTags('sales-orders')
@@ -70,8 +71,13 @@ export class SalesOrdersController {
 
   @Get()
   @ApiOperation({ summary: 'Get all Sales Orders' })
-  findAll() {
-    return this.salesOrdersService.findAll();
+  @ApiQuery({ name: 'gymName', required: false, type: String })
+  @ApiQuery({ name: 'clientName', required: false, type: String })
+  findAll(
+    @Query('gymName') gymName?: string,
+    @Query('clientName') clientName?: string,
+  ) {
+    return this.salesOrdersService.findAll({ gymName, clientName });
   }
 
   @Get(':id')

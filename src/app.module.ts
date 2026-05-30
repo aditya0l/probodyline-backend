@@ -24,6 +24,8 @@ import { GymsModule } from './gyms/gyms.module';
 import { LeadsModule } from './leads/leads.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { SalesOrdersModule } from './sales-orders/sales-orders.module';
+import { ManagersModule } from './managers/managers.module';
+import { TrainersModule } from './trainers/trainers.module';
 import { EventsModule } from './events/events.module';
 import { ServiceCardsModule } from './service-cards/service-cards.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
@@ -84,6 +86,8 @@ import { ChallansModule } from './challans/challans.module';
     LeadsModule,
     BookingsModule,
     SalesOrdersModule,
+    ManagersModule,
+    TrainersModule,
     EventsModule,
     ServiceCardsModule,
     PurchaseOrdersModule,

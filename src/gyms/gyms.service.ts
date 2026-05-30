@@ -84,6 +84,16 @@ export class GymsService {
           },
         },
         technicians: true,
+        managers: {
+          include: {
+            manager: true,
+          },
+        },
+        trainers: {
+          include: {
+            trainer: true,
+          },
+        },
         media: true,
         inaugurations: {
           orderBy: { committedOn: 'desc' },
@@ -467,6 +477,84 @@ export class GymsService {
     return gym.technicians;
   }
 
+  async linkManager(gymId: string, managerId: string): Promise<any> {
+    const gym = await this.prisma.gym.findUnique({ where: { id: gymId } });
+    if (!gym) throw new NotFoundException(`Gym with ID ${gymId} not found`);
+
+    const manager = await this.prisma.manager.findUnique({ where: { id: managerId } });
+    if (!manager) throw new NotFoundException(`Manager with ID ${managerId} not found`);
+
+    const existing = await this.prisma.gymManager.findUnique({
+      where: { gymId_managerId: { gymId, managerId } },
+    });
+
+    if (existing) throw new ConflictException('Gym and Manager are already linked');
+
+    return await this.prisma.gymManager.create({
+      data: { gymId, managerId },
+      include: { manager: true },
+    });
+  }
+
+  async unlinkManager(gymId: string, managerId: string): Promise<void> {
+    const link = await this.prisma.gymManager.findUnique({
+      where: { gymId_managerId: { gymId, managerId } },
+    });
+    if (!link) throw new NotFoundException('Gym-Manager link not found');
+
+    await this.prisma.gymManager.delete({
+      where: { gymId_managerId: { gymId, managerId } },
+    });
+  }
+
+  async getGymManagers(gymId: string): Promise<any[]> {
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+      include: { managers: { include: { manager: true } } },
+    });
+    if (!gym) throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    return gym.managers;
+  }
+
+  async linkTrainer(gymId: string, trainerId: string): Promise<any> {
+    const gym = await this.prisma.gym.findUnique({ where: { id: gymId } });
+    if (!gym) throw new NotFoundException(`Gym with ID ${gymId} not found`);
+
+    const trainer = await this.prisma.trainer.findUnique({ where: { id: trainerId } });
+    if (!trainer) throw new NotFoundException(`Trainer with ID ${trainerId} not found`);
+
+    const existing = await this.prisma.gymTrainer.findUnique({
+      where: { gymId_trainerId: { gymId, trainerId } },
+    });
+
+    if (existing) throw new ConflictException('Gym and Trainer are already linked');
+
+    return await this.prisma.gymTrainer.create({
+      data: { gymId, trainerId },
+      include: { trainer: true },
+    });
+  }
+
+  async unlinkTrainer(gymId: string, trainerId: string): Promise<void> {
+    const link = await this.prisma.gymTrainer.findUnique({
+      where: { gymId_trainerId: { gymId, trainerId } },
+    });
+    if (!link) throw new NotFoundException('Gym-Trainer link not found');
+
+    await this.prisma.gymTrainer.delete({
+      where: { gymId_trainerId: { gymId, trainerId } },
+    });
+  }
+
+  async getGymTrainers(gymId: string): Promise<any[]> {
+    const gym = await this.prisma.gym.findUnique({
+      where: { id: gymId },
+      include: { trainers: { include: { trainer: true } } },
+    });
+    if (!gym) throw new NotFoundException(`Gym with ID ${gymId} not found`);
+    return gym.trainers;
+  }
+
   async uploadGymMedia(
     gymId: string,
     file: Express.Multer.File,
@@ -539,6 +627,8 @@ export class GymsService {
       include: {
         clients: true,
         technicians: true,
+        managers: true,
+        trainers: true,
         media: true,
         inaugurations: true,
       },
@@ -552,6 +642,8 @@ export class GymsService {
     return {
       hasClient: gym.clients.length > 0,
       technicianCount: gym.technicians.length,
+      managerCount: gym.managers.length,
+      trainerCount: gym.trainers.length,
       mediaCount: gym.media.length,
       inaugurationCount: gym.inaugurations.length,
       quoteCount: 0, // TODO: Implement

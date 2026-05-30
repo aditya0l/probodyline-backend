@@ -514,6 +514,8 @@ model Gym {
   media         GymMedia[]
   inaugurations InaugurationCommitment[]
   serviceCards  ServiceCard[]
+  managers      GymManager[]
+  trainers      GymTrainer[]
 
   @@index([gymCode])
   @@index([stateCode, city])
@@ -559,6 +561,83 @@ model GymMedia {
   gym Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@map("gym_media")
+}
+
+model GymManager {
+  id        String   @id @default(uuid())
+  gymId     String
+  managerId String
+  linkedOn  DateTime @default(now())
+
+  gym     Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  manager Manager @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, managerId])
+  @@map("gym_managers")
+}
+
+model GymTrainer {
+  id        String   @id @default(uuid())
+  gymId     String
+  trainerId String
+  linkedOn  DateTime @default(now())
+
+  gym     Gym     @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  trainer Trainer @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, trainerId])
+  @@map("gym_trainers")
+}
+
+model Manager {
+  id             String   @id @default(uuid())
+  managerCode    String   @unique // Auto: MGR 00001
+  fullName       String
+  phone          String?
+  alternatePhone String?
+  email          String?
+  stateCode      String?
+  city           String?
+  address        String?  @db.Text
+  instagramLink  String?
+  profilePhoto   String?
+  locationLink   String?
+  locationQR     String?
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  gyms GymManager[]
+
+  @@index([managerCode])
+  @@index([stateCode, city])
+  @@map("managers")
+}
+
+model Trainer {
+  id             String   @id @default(uuid())
+  trainerCode    String   @unique // Auto: TRN 00001
+  fullName       String
+  phone          String?
+  alternatePhone String?
+  email          String?
+  stateCode      String?
+  city           String?
+  address        String?  @db.Text
+  specialisation String?
+  instagramLink  String?
+  profilePhoto   String?
+  locationLink   String?
+  locationQR     String?
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  gyms GymTrainer[]
+
+  @@index([trainerCode])
+  @@index([stateCode, city])
+  @@map("trainers")
 }
 
 // Lead Management Models

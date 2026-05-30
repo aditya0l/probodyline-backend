@@ -270,6 +270,62 @@ export class GymsController {
     return this.gymsService.unlinkTechnician(id, technicianId);
   }
 
+  @Get(':id/managers')
+  @ApiOperation({ summary: 'Get all managers linked to a gym' })
+  @ApiParam({ name: 'id', description: 'Gym UUID' })
+  @ApiResponse({ status: 200, description: 'List of linked managers' })
+  @ApiResponse({ status: 404, description: 'Gym not found' })
+  getGymManagers(@Param('id') id: string) {
+    return this.gymsService.getGymManagers(id);
+  }
+
+  @Post(':id/managers/:managerId')
+  @ApiOperation({ summary: 'Link a manager to a gym' })
+  @ApiParam({ name: 'id', description: 'Gym UUID' })
+  @ApiParam({ name: 'managerId', description: 'Manager UUID' })
+  @ApiResponse({ status: 201, description: 'Manager successfully linked' })
+  @ApiResponse({ status: 404, description: 'Gym not found' })
+  linkManager(@Param('id') id: string, @Param('managerId') managerId: string) {
+    return this.gymsService.linkManager(id, managerId);
+  }
+
+  @Delete(':id/managers/:managerId')
+  @ApiOperation({ summary: 'Unlink a manager from a gym' })
+  @ApiParam({ name: 'id', description: 'Gym UUID' })
+  @ApiParam({ name: 'managerId', description: 'Manager UUID' })
+  @ApiResponse({ status: 200, description: 'Manager successfully unlinked' })
+  unlinkManager(@Param('id') id: string, @Param('managerId') managerId: string) {
+    return this.gymsService.unlinkManager(id, managerId);
+  }
+
+  @Get(':id/trainers')
+  @ApiOperation({ summary: 'Get all trainers linked to a gym' })
+  @ApiParam({ name: 'id', description: 'Gym UUID' })
+  @ApiResponse({ status: 200, description: 'List of linked trainers' })
+  @ApiResponse({ status: 404, description: 'Gym not found' })
+  getGymTrainers(@Param('id') id: string) {
+    return this.gymsService.getGymTrainers(id);
+  }
+
+  @Post(':id/trainers/:trainerId')
+  @ApiOperation({ summary: 'Link a trainer to a gym' })
+  @ApiParam({ name: 'id', description: 'Gym UUID' })
+  @ApiParam({ name: 'trainerId', description: 'Trainer UUID' })
+  @ApiResponse({ status: 201, description: 'Trainer successfully linked' })
+  @ApiResponse({ status: 404, description: 'Gym not found' })
+  linkTrainer(@Param('id') id: string, @Param('trainerId') trainerId: string) {
+    return this.gymsService.linkTrainer(id, trainerId);
+  }
+
+  @Delete(':id/trainers/:trainerId')
+  @ApiOperation({ summary: 'Unlink a trainer from a gym' })
+  @ApiParam({ name: 'id', description: 'Gym UUID' })
+  @ApiParam({ name: 'trainerId', description: 'Trainer UUID' })
+  @ApiResponse({ status: 200, description: 'Trainer successfully unlinked' })
+  unlinkTrainer(@Param('id') id: string, @Param('trainerId') trainerId: string) {
+    return this.gymsService.unlinkTrainer(id, trainerId);
+  }
+
   @Post(':id/media')
   @ApiOperation({ summary: 'Upload media (image or video) to a gym' })
   @ApiParam({ name: 'id', description: 'Gym UUID' })

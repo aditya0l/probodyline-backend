@@ -50,6 +50,7 @@ export class ProductsService {
           priority: true,
           name: true,
           modelNumber: true,
+          qrCode: true,
           image: true,
           images: true,
           price: true,

@@ -94,7 +94,12 @@ export class QuotationsService {
     throw new Error('Failed to generate quote number');
   }
 
-  async findAll(filters?: { gymName?: string; clientName?: string }): Promise<Quotation[]> {
+  async findAll(filters?: {
+    gymName?: string;
+    clientName?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.QuotationWhereInput = { deletedAt: null };
     if (filters?.gymName) {
       whereClause.gymName = filters.gymName;
@@ -103,18 +108,28 @@ export class QuotationsService {
       whereClause.clientName = filters.clientName;
     }
 
-    return this.prisma.quotation.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        customer: {
-          select: { id: true, name: true, gymName: true },
+    const page = filters?.page || 0;
+    const limit = filters?.limit || 50;
+
+    const [data, total] = await Promise.all([
+      this.prisma.quotation.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip: page * limit,
+        take: limit,
+        include: {
+          customer: {
+            select: { id: true, name: true, gymName: true },
+          },
+          _count: {
+            select: { items: true },
+          },
         },
-        items: {
-          orderBy: { srNo: 'asc' },
-        },
-      },
-    });
+      }),
+      this.prisma.quotation.count({ where: whereClause }),
+    ]);
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<Quotation | null> {

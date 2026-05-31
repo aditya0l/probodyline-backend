@@ -309,7 +309,12 @@ export class SalesOrdersService {
     return this.prisma.dispatchSplit.delete({ where: { id: splitId } });
   }
 
-  async findAll(filters?: { gymName?: string; clientName?: string }) {
+  async findAll(filters?: {
+    gymName?: string;
+    clientName?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.SalesOrderWhereInput = {};
     
     if (filters?.gymName || filters?.clientName) {
@@ -318,16 +323,44 @@ export class SalesOrdersService {
       if (filters.clientName) whereClause.quotation.clientName = filters.clientName;
     }
 
-    return this.prisma.salesOrder.findMany({
-      where: whereClause,
-      include: {
-        quotation: { include: { items: true } },
-        splits: {
-          include: { items: true },
+    const page = filters?.page || 0;
+    const limit = filters?.limit || 50;
+
+    const [data, total] = await Promise.all([
+      this.prisma.salesOrder.findMany({
+        where: whereClause,
+        skip: page * limit,
+        take: limit,
+        include: {
+          quotation: {
+            select: {
+              id: true,
+              quoteNumber: true,
+              clientName: true,
+              gymName: true,
+              status: true,
+              grandTotal: true,
+              subtotal: true,
+              gstAmount: true,
+            },
+          },
+          splits: {
+            select: {
+              id: true,
+              splitNumber: true,
+              status: true,
+            },
+          },
+          _count: {
+            select: { splits: true },
+          },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.salesOrder.count({ where: whereClause }),
+    ]);
+
+    return { data, total };
   }
 
   async findOne(id: string) {

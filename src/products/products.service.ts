@@ -23,7 +23,7 @@ export class ProductsService {
     categoryId?: string;
     page?: number;
     limit?: number;
-  }): Promise<{ data: Product[]; total: number }> {
+  }): Promise<{ data: any[]; total: number }> {
     const where: Prisma.ProductWhereInput = {
       deletedAt: null,
       ...(filters?.search && {
@@ -50,7 +50,6 @@ export class ProductsService {
           priority: true,
           name: true,
           modelNumber: true,
-          qrCode: true,
           image: true,
           images: true,
           price: true,
@@ -62,19 +61,12 @@ export class ProductsService {
           todaysStock: true,
           stockPlus360Days: true,
           dateSelectStock: true,
-          stockByDate: true,
-          mrpStickers: true,
-          customDeclarations: true,
-          cartonLabel: true,
-          machineArtwork: true,
-          brochure: true,
           thumbnail: true,
           cousinMachine: true,
           orderTogether: true,
           swapMachine: true,
           brand: true,
           warranty: true,
-          notes: true,
           createdAt: true,
           updatedAt: true,
           deletedAt: true,

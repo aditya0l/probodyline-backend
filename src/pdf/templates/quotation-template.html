@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,9 +8,24 @@
     /* CSS_CONTENT */
   </style>
 </head>
-<body{{#if useLandscape}} class="landscape" {{/if}}>
+<body{{#if useLandscape}} class="landscape"{{/if}}>
   <div class="quotation-container">
-    <!-- Header Section - Two Column Layout (only for wholesale/retail) -->
+
+    <!-- Template Watermark/Label -->
+    {{#if isWholesale}}
+    <div class="template-label">WHOLESALE</div>
+    {{/if}}
+    {{#if isRetail}}
+    <div class="template-label">RETAIL</div>
+    {{/if}}
+    {{#if isPriceList}}
+    <div class="template-label" style="font-size: 14pt;">PRICE LIST — CONFIDENTIAL</div>
+    {{/if}}
+    {{#if isLoadingSlip}}
+    <div class="template-label">LOADING SLIP</div>
+    {{/if}}
+
+    <!-- Header Section -->
     {{#if showHeader}}
     <div class="header-section">
       <div class="header-left">
@@ -20,111 +34,95 @@
         {{/if}}
       </div>
       <div class="header-right">
-        <h1 class="company-name">{{companyName}}</h1>
+        <div class="company-name">{{companyName}}</div>
         {{#if companyGST}}
-        <div class="company-gst">GST No.: {{companyGST}}</div>
+        <div class="company-contact">GST No.: {{companyGST}}</div>
         {{/if}}
         {{#if companyAddress}}
-        <div class="company-address">{{{companyAddress}}}</div>
+        <div class="company-contact">{{{companyAddress}}}</div>
         {{/if}}
         {{#if companyPhone}}
-        <div class="company-contact">P: {{companyPhone}}</div>
+        <div class="company-contact">Phone: {{companyPhone}}</div>
         {{/if}}
         {{#if companyEmail}}
-        <div class="company-contact">E-Mail: {{companyEmail}}</div>
+        <div class="company-contact">Email: {{companyEmail}}</div>
         {{/if}}
         {{#if companyWebsite}}
-        <div class="company-contact">www.{{companyWebsite}}</div>
+        <div class="company-contact">Web: www.{{companyWebsite}}</div>
         {{/if}}
         {{#if companyContactPerson}}
-        <div class="company-contact">{{companyContactPerson}}</div>
+        <div class="company-contact">Contact: {{companyContactPerson}}</div>
         {{/if}}
       </div>
-    </div>
-
-    <!-- Title Section - Centered with Underline -->
-    <div class="title-section">
-      <h2 class="quotation-title">{{titleText}}</h2>
     </div>
     {{/if}}
 
-    <!-- Quotation Details Grid -->
-    <div class="quotation-details-grid">
-      <div class="detail-row">
-        <div class="detail-label">PI NUMBER:</div>
-        <div class="detail-value">{{quoteNumber}}</div>
+    <!-- Document Info Block -->
+    {{#if showClientInfo}}
+    <div class="info-block">
+      <div class="info-header">
+        <div>{{titleText}}</div>
+        <div>#{{quoteNumber}}</div>
       </div>
-      <div class="detail-row">
-        <div class="detail-label">DATE:</div>
-        <div class="detail-value">{{quoteDate}}</div>
+      <div class="info-grid">
+        <div class="info-row">
+          <div class="info-label">DATE</div>
+          <div class="info-value">{{quoteDate}}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">CLIENT NAME</div>
+          <div class="info-value">{{#if clientName}}{{clientName}}{{else}}—{{/if}}</div>
+        </div>
+        {{#if showGymName}}
+        <div class="info-row">
+          <div class="info-label">GYM NAME</div>
+          <div class="info-value">{{#if gymName}}{{gymName}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if gymArea}}
+        <div class="info-row">
+          <div class="info-label">GYM AREA</div>
+          <div class="info-value">{{gymArea}}</div>
+        </div>
+        {{/if}}
+        {{#if clientGST}}
+        <div class="info-row">
+          <div class="info-label">CLIENT GST</div>
+          <div class="info-value">{{clientGST}}</div>
+        </div>
+        {{/if}}
+        {{#if showDeliveryDate}}
+        <div class="info-row">
+          <div class="info-label">DELIVERY DATE</div>
+          <div class="info-value">{{#if deliveryDate}}{{deliveryDate}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if dispatchDate}}
+        <div class="info-row">
+          <div class="info-label">DISPATCH DATE</div>
+          <div class="info-value">{{dispatchDate}}</div>
+        </div>
+        {{/if}}
+        {{#if bookingDate}}
+        <div class="info-row">
+          <div class="info-label">BOOKING DATE</div>
+          <div class="info-value">{{bookingDate}}</div>
+        </div>
+        {{/if}}
       </div>
-      {{#if showClientInfo}}
-      {{#if bookingDate}}
-      <div class="detail-row">
-        <div class="detail-label">BOOKING DATE:</div>
-        <div class="detail-value">{{bookingDate}}</div>
-      </div>
-      {{/if}}
-      {{#if dispatchDate}}
-      <div class="detail-row">
-        <div class="detail-label">DISPATCH DATE:</div>
-        <div class="detail-value">{{dispatchDate}}</div>
-      </div>
-      {{/if}}
-      {{#if installationDate}}
-      <div class="detail-row">
-        <div class="detail-label">INSTALLATION DATE:</div>
-        <div class="detail-value">{{installationDate}}</div>
-      </div>
-      {{/if}}
-      {{#if inaugurationDate}}
-      <div class="detail-row">
-        <div class="detail-label">INAUGURATION DATE:</div>
-        <div class="detail-value">{{inaugurationDate}}</div>
-      </div>
-      {{/if}}
-      <div class="detail-row">
-        <div class="detail-label">CLIENT'S NAME:</div>
-        <div class="detail-value">{{#if clientName}}{{clientName}}{{else}}&nbsp;{{/if}}</div>
-      </div>
-      {{#if showGymName}}
-      <div class="detail-row">
-        <div class="detail-label">GYM NAME:</div>
-        <div class="detail-value">{{#if gymName}}{{gymName}}{{else}}&nbsp;{{/if}}</div>
-      </div>
-      {{/if}}
-      {{#if leadName}}
-      <div class="detail-row">
-        <div class="detail-label">LEAD NAME:</div>
-        <div class="detail-value">{{leadName}}</div>
-      </div>
-      {{/if}}
-      {{#if clientGST}}
-      <div class="detail-row">
-        <div class="detail-label">CLIENT GST:</div>
-        <div class="detail-value">{{clientGST}}</div>
-      </div>
-      {{/if}}
-      {{#if showDeliveryDate}}
-      <div class="detail-row">
-        <div class="detail-label">DELIVERY DATE:</div>
-        <div class="detail-value">{{#if deliveryDate}}{{deliveryDate}}{{else}}&nbsp;{{/if}}</div>
-      </div>
-      {{/if}}
-      {{/if}}
-      {{#if gymArea}}
-      <div class="detail-row">
-        <div class="detail-label">GYM AREA:</div>
-        <div class="detail-value">{{gymArea}}</div>
-      </div>
-      {{/if}}
     </div>
+    {{else}}
+    <!-- Minimal Header for loading slip / price list if needed -->
+    {{#if quoteNumber}}
+    <div style="margin-bottom: 5mm; text-align: right; font-weight: bold; color: var(--text-secondary); font-size: 8pt;">
+      {{titleText}} #{{quoteNumber}} | DATE: {{quoteDate}}
+    </div>
+    {{/if}}
+    {{/if}}
 
     <!-- Products Table -->
     <div class="table-section">
-      <table class="products-table" data-template="{{templateType}}" {{#if isDefaultTemplate}}
-        data-column-count="{{columnCount}}"
-        {{#if tableStyle}}style="{{tableStyle}}"{{/if}}{{/if}}>
+      <table class="products-table" data-template="{{templateType}}">
         <thead>
           <tr>
             {{#each tableHeaders}}
@@ -138,13 +136,13 @@
             {{#each this.cells}}
             <td class="{{this.className}}">
               {{#if this.isImage}}
-              {{#if this.value}}
-              <img src="{{{this.value}}}" alt="Product" class="product-image">
+                {{#if this.value}}
+                <img src="{{{this.value}}}" alt="Product" class="product-image">
+                {{else}}
+                <span class="no-image">—</span>
+                {{/if}}
               {{else}}
-              <span class="no-image">—</span>
-              {{/if}}
-              {{else}}
-              {{{this.value}}}
+                {{{this.value}}}
               {{/if}}
             </td>
             {{/each}}
@@ -154,63 +152,65 @@
       </table>
     </div>
 
-    <!-- Disclaimer -->
-    {{#if showDisclaimer}}
-    <div class="disclaimer-section">
-      <strong>NO GUARANTEE OR WARRANTY ON ABOVE MENTIONED ITEMS</strong>
-      <br>
-      <strong>GST {{gstRate}}% APPLICABLE ON ABOVE MENTIONED ON PRICE</strong>
-    </div>
-    {{/if}}
-
-    <!-- Totals Section (template-specific formats) -->
+    <!-- Totals Section -->
     {{#if showTotals}}
     <div class="totals-section">
-      {{#if showGSTBreakdown}}
-      <!-- Wholesale format: 3-row table -->
-      <table class="totals-table-wholesale">
-        <tr>
-          <td class="disclaimer-cell">NO GUARANTEE OR WARRANTY ON ABOVE MENTIONED ITEMS</td>
-          <td class="label-cell">TOTAL</td>
-          <td class="value-cell">{{subtotal}}</td>
-        </tr>
-        <tr class="gst-row-highlight">
-          <td class="total-including-gst">TOTAL INCLUDING {{gstRate}}% GST INR {{grandTotal}}/-</td>
-          <td class="label-cell">GST {{gstRate}}%</td>
-          <td class="value-cell">{{gstAmount}}</td>
-        </tr>
-        <tr>
-          <td class="amount-words-cell">{{amountInWords}}</td>
-          <td class="label-cell">G. TOTAL</td>
-          <td class="value-cell">{{grandTotal}}</td>
-        </tr>
-      </table>
+      {{#if isRetail}}
+        <!-- Retail format -->
+        <div class="totals-retail-block">
+          <div class="retail-g-total">GRAND TOTAL: INR {{grandTotal}}/-</div>
+          <div class="amount-words-container">Rupees {{amountInWords}} only</div>
+        </div>
       {{else}}
-      <!-- Retail format: 2 simple lines -->
-      <div class="totals-retail">
-        <div class="total-line">TOTAL INCLUDING {{gstRate}}% GST INR {{grandTotal}}/-</div>
-        <div class="amount-words-line">{{amountInWords}}</div>
-      </div>
+        <!-- Default & Wholesale Format -->
+        <div style="width: 100%; display: flex; justify-content: flex-end; flex-direction: column; align-items: flex-end;">
+          <table class="totals-table">
+            {{#if showSubtotalLabel}}
+            <tr>
+              <td class="totals-label">Subtotal</td>
+              <td class="totals-value">{{subtotal}}</td>
+            </tr>
+            {{/if}}
+            <tr>
+              <td class="totals-label">GST {{gstRate}}%</td>
+              <td class="totals-value">{{gstAmount}}</td>
+            </tr>
+            <tr class="g-total-row">
+              <td class="totals-label">G. TOTAL</td>
+              <td class="totals-value">{{grandTotal}}</td>
+            </tr>
+          </table>
+          <div class="amount-words-container">
+            Rupees {{amountInWords}} only
+          </div>
+        </div>
       {{/if}}
     </div>
     {{/if}}
 
-    <!-- Bank Details Section (only for wholesale/retail) -->
+    <!-- Bank Details Section -->
     {{#if showBankDetails}}
-    {{#if bankDetails}}
-    <div class="bank-details-section">
-      <div class="bank-details-title"><strong>Details Of Bank A/C:</strong></div>
-      <div class="bank-details-content">{{{bankDetails}}}</div>
-    </div>
-    {{/if}}
+      {{#if bankDetails}}
+      <div class="bank-details-section">
+        <div class="bank-details-title">Details Of Bank A/C:</div>
+        <div class="bank-details-content">{{{bankDetails}}}</div>
+      </div>
+      {{/if}}
     {{/if}}
 
-    <!-- Page Number -->
+    <!-- Disclaimer -->
+    {{#if showDisclaimer}}
+    <div class="disclaimer-section">
+      No guarantee or warranty on above mentioned items.<br/>
+      GST {{gstRate}}% applicable on above mentioned price.
+    </div>
+    {{/if}}
+
+    <!-- Page Number Footer -->
     <div class="page-number">
-      Page <span class="page-current">{{pageNumber}}</span> of <span class="page-total">{{totalPages}}</span>
+      This is a computer generated Quotation, Page <span class="page-current">{{pageNumber}}</span> of <span class="page-total">{{totalPages}}</span> for #{{quoteNumber}} — {{status}}
     </div>
+
   </div>
-  </body>
-
+</body>
 </html>
-

@@ -101,11 +101,11 @@ export function getCellValue(
     case 'srNo':
       return String(item.srNo);
     case 'productName':
-      return item.productName || '';
+      return item.productName ? `<span class="product-name-txt">${item.productName}</span>` : '';
     case 'productImage':
       return item.productImage || '';
     case 'modelNumber':
-      return item.modelNumber || '';
+      return item.modelNumber ? `<span class="model-no-txt">${item.modelNumber}</span>` : '';
     case 'priority':
       return item.priority ? String(item.priority) : '';
     case 'productType':

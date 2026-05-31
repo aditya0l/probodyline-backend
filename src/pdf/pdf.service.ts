@@ -87,10 +87,10 @@ export class PdfService {
         landscape: useLandscape,
         printBackground: true,
         margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm',
+          top: '10mm',
+          right: '10mm',
+          bottom: '12mm',
+          left: '10mm',
         },
       });
 
@@ -303,6 +303,7 @@ export class PdfService {
       gymArea: customer?.area || quotation.gymArea || undefined,
       clientGST: customer?.gst || quotation.clientGST || undefined,
       leadName: quotation.leadName || undefined,
+      status: quotation.status || 'DRAFT',
 
       // Totals
       subtotal: toNumber(quotation.subtotal).toLocaleString('en-IN'),
@@ -327,6 +328,10 @@ export class PdfService {
       showBankDetails: showBankDetails,
       showGSTBreakdown: showGSTBreakdown,
       showSubtotalLabel: showSubtotalLabel,
+      isWholesale: templateType === 'wholesale',
+      isRetail: templateType === 'retail',
+      isPriceList: templateType === 'price-list',
+      isLoadingSlip: templateType === 'loading',
       bankDetails: quotation.bankDetails || undefined,
       termsAndConditions: quotation.termsAndConditions || undefined,
       warrantyInfo: quotation.warrantyInfo || undefined,

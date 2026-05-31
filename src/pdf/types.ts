@@ -87,6 +87,11 @@ export interface PDFTemplateData {
   bankDetails?: string;
   termsAndConditions?: string;
   warrantyInfo?: string;
+  isWholesale?: boolean;
+  isRetail?: boolean;
+  isPriceList?: boolean;
+  isLoadingSlip?: boolean;
+  status?: string;
 
   // CSS content
   CSS_CONTENT: string;

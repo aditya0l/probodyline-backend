@@ -119,7 +119,7 @@ export class PdfService {
       throw new NotFoundException('Quotation not found');
     }
 
-    return await this.generateQuotationHTML(fullQuotation, template);
+    return await this.generateQuotationHTML(fullQuotation, template, true);
   }
 
   private async generateQuotationHTML(
@@ -128,6 +128,7 @@ export class PdfService {
       items: QuotationItem[];
     },
     templateType: string,
+    isPreview = false,
   ): Promise<string> {
     const customer = quotation.customer;
 
@@ -250,6 +251,7 @@ export class PdfService {
         quotation.items,
         visibleColumns,
         visibleColumns.length,
+        !isPreview,
       );
 
     // Convert company logo to base64

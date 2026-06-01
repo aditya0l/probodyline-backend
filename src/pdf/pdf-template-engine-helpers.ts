@@ -228,6 +228,7 @@ export async function buildTableData(
   items: QuotationItem[],
   visibleColumns: QuotationColumnId[],
   columnCount?: number,
+  convertToBase64 = true,
 ): Promise<{ headers: any[]; rows: any[] }> {
   const useAbbreviations = columnCount !== undefined && columnCount >= 10;
 
@@ -253,7 +254,7 @@ export async function buildTableData(
     className: getColumnClass(colId),
   }));
 
-  // Process rows and convert images to base64
+  // Process rows and convert images to base64 or absolute URLs
   const rows = await Promise.all(
     items.map(async (item) => {
       try {
@@ -262,22 +263,31 @@ export async function buildTableData(
             let value = getCellValue(item, colId);
             const isImage = colId === 'productImage';
 
-            // Convert product images to base64
+            // Convert product images
             if (isImage && value) {
               try {
-                if (value.startsWith('data:')) {
-                  // Already base64
-                } else {
+                if (value.startsWith('data:') || value.startsWith('http://') || value.startsWith('https://')) {
+                  // Already base64 or absolute web URL
+                } else if (convertToBase64) {
                   const base64Image = await imageToDataURL(value);
                   if (base64Image && base64Image.length > 0) {
                     value = base64Image;
                   } else {
                     value = '';
                   }
+                } else {
+                  // Simply use absolute web URL for the HTML Preview to save 99.9% payload size
+                  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 
+                    (process.env.NODE_ENV === 'development' 
+                      ? `http://localhost:${process.env.PORT || '3001'}/api` 
+                      : 'https://api.probodyline.co.in/api');
+                  
+                  const cleanPath = value.replace(/^\//, '');
+                  value = `${apiBaseUrl}/files/${cleanPath}`;
                 }
               } catch (error) {
                 console.warn(
-                  `Failed to convert product image to base64: ${value}`,
+                  `Failed to process product image: ${value}`,
                   error,
                 );
                 value = '';

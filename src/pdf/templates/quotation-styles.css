@@ -67,6 +67,8 @@ body.landscape .quotation-container {
   margin-bottom: 5mm;
   padding-bottom: 5mm;
   border-bottom: 1px solid var(--border);
+  page-break-before: avoid !important;
+  page-break-inside: avoid !important;
 }
 
 .header-left {
@@ -130,6 +132,8 @@ body.landscape .quotation-container {
 .info-block {
   border: 1px solid var(--border);
   margin-bottom: 6mm;
+  page-break-before: avoid !important;
+  page-break-inside: avoid !important;
 }
 
 .info-header {
@@ -184,8 +188,8 @@ body.landscape .quotation-container {
 }
 
 /* Portrait column widths (8 or fewer columns) */
-.products-table .col-srNo { width: 4%; }
-.products-table .col-productImage { width: 12%; }
+.products-table .col-srNo { width: 4%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
+.products-table .col-productImage { width: 12%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
 .products-table .col-productName { width: 32%; }
 .products-table .col-modelNumber { width: 12%; }
 .products-table .col-quantity { width: 8%; }
@@ -193,8 +197,8 @@ body.landscape .quotation-container {
 .products-table .col-totalAmount { width: 12%; }
 
 /* Landscape column widths (more than 8 columns) */
-body.landscape .products-table .col-srNo { width: 3% !important; }
-body.landscape .products-table .col-productImage { width: 8% !important; }
+body.landscape .products-table .col-srNo { width: 3% !important; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
+body.landscape .products-table .col-productImage { width: 8% !important; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
 body.landscape .products-table .col-productName { width: 20% !important; }
 body.landscape .products-table .col-modelNumber { width: 8% !important; }
 body.landscape .products-table .col-priority { width: 7% !important; }

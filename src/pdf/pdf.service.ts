@@ -75,11 +75,11 @@ export class PdfService {
       });
 
       // Determine if landscape is needed
-      const useLandscape =
-        (quotation.visibleColumns &&
-          Object.values(quotation.visibleColumns).filter(Boolean).length >=
-            13) ||
-        false;
+      let activeColumnsCount = 7;
+      if (quotation.visibleColumns && typeof quotation.visibleColumns === 'object') {
+        activeColumnsCount = Object.values(quotation.visibleColumns).filter(Boolean).length;
+      }
+      const useLandscape = template === 'default' && activeColumnsCount > 8;
 
       // Generate PDF
       const pdf = await page.pdf({
@@ -240,7 +240,7 @@ export class PdfService {
           'rate',
           'totalAmount',
         ];
-        useLandscape = visibleColumns.length >= 13;
+        useLandscape = templateType === 'default' && visibleColumns.length > 8;
         break;
       }
     }

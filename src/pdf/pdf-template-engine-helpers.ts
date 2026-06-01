@@ -80,17 +80,21 @@ const HEADER_ABBREVIATIONS: Record<string, string> = {
 };
 
 export function getColumnClass(colId: QuotationColumnId): string {
-  if (colId === 'srNo' || colId === 'priority') return 'col-center';
-  if (
+  let cls = `col-${colId}`;
+  if (colId === 'srNo' || colId === 'priority') {
+    cls += ' col-center';
+  } else if (
     colId === 'rate' ||
     colId === 'quantity' ||
     colId === 'totalAmount' ||
     colId === 'todaysStock' ||
     colId === 'stockPlus360Days'
   ) {
-    return 'col-right';
+    cls += ' col-right';
+  } else {
+    cls += ' col-left';
   }
-  return 'col-left';
+  return cls;
 }
 
 export function getCellValue(
@@ -165,21 +169,40 @@ export function getCellValue(
 
 export async function imageToDataURL(imagePath: string): Promise<string> {
   try {
-    // Handle absolute and relative paths
-    let fullPath = imagePath;
+    let cleanPath = imagePath;
 
-    // Handle paths starting with /app/public (container absolute) or /public (repo root)
-    if (imagePath.startsWith('/app/public/')) {
-      fullPath = imagePath;
-    } else if (imagePath.startsWith('/public/')) {
-      fullPath = path.join(process.cwd(), imagePath.replace(/^\//, ''));
-    } else if (!path.isAbsolute(imagePath)) {
-      // Try relative to uploads directory
-      fullPath = path.join(process.cwd(), 'uploads', imagePath);
+    // 1. If it's a web URL, try to extract the local path segment after "files/" or "uploads/"
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      const filesIdx = imagePath.indexOf('/files/');
+      if (filesIdx !== -1) {
+        cleanPath = imagePath.substring(filesIdx + 7); // e.g. "uploads/..."
+      } else {
+        const uploadsIdx = imagePath.indexOf('/uploads/');
+        if (uploadsIdx !== -1) {
+          cleanPath = imagePath.substring(uploadsIdx + 1); // e.g. "uploads/..."
+        }
+      }
+    }
+
+    // 2. Remove leading slash if any
+    cleanPath = cleanPath.replace(/^\//, '');
+
+    // 3. Construct the absolute file system path
+    let fullPath = '';
+    if (cleanPath.startsWith('app/public/')) {
+      fullPath = '/' + cleanPath;
+    } else if (cleanPath.startsWith('public/')) {
+      fullPath = path.join(process.cwd(), cleanPath);
+    } else if (cleanPath.startsWith('uploads/')) {
+      // If it already starts with uploads/, resolve it directly from process.cwd()
+      fullPath = path.join(process.cwd(), cleanPath);
+    } else {
+      // Otherwise, assume it's relative to the uploads/ directory
+      fullPath = path.join(process.cwd(), 'uploads', cleanPath);
     }
 
     if (!fs.existsSync(fullPath)) {
-      console.warn(`Image not found: ${fullPath}`);
+      console.warn(`Image not found: ${fullPath} (original: ${imagePath})`);
       return '';
     }
 

@@ -304,13 +304,21 @@ body.landscape .product-name-txt {
 
 /* Images */
 .product-image {
-  max-height: 50px; /* max-height 50px */
-  max-width: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+  width: 40px !important;
+  height: 40px !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: contain !important;
+  background-color: #FAFAFA;
+  border: 1px solid #EFEFEF;
+  border-radius: 4px;
   display: block;
   margin: 0 auto;
+}
+
+body.landscape .product-image {
+  width: 32px !important;
+  height: 32px !important;
+  aspect-ratio: 1 / 1 !important;
 }
 
 /* Small gray placeholder box when image is missing */

@@ -70,6 +70,8 @@ export class ClientsService {
           clientName: true,
           city: true,
           stateCode: true,
+          tokenDate: true,
+          salesInitial: true,
         },
       }),
       this.prisma.client.count({ where }),

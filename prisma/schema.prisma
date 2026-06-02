@@ -283,7 +283,6 @@ model DispatchSplit {
   salesOrder SalesOrder          @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   items      DispatchSplitItem[]
   bookings   Booking[]
-  stockTransactions StockTransaction[]
 
   @@unique([salesOrderId, splitNumber])
   @@index([salesOrderId])
@@ -371,7 +370,6 @@ model PurchaseOrderSplit {
   // Relations
   purchaseOrder PurchaseOrder            @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   items         PurchaseOrderSplitItem[]
-  stockTransactions StockTransaction[]
 
   @@unique([purchaseOrderId, splitNumber])
   @@index([purchaseOrderId])
@@ -432,8 +430,6 @@ model StockTransaction {
 
   // Relations
   product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
-  dispatchSplit      DispatchSplit?      @relation(fields: [referenceId], references: [id], map: "fk_dispatch_split")
-  purchaseOrderSplit PurchaseOrderSplit? @relation(fields: [referenceId], references: [id], map: "fk_po_split")
 
   @@index([productId, date])
   @@index([date])

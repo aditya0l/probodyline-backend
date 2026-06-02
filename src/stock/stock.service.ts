@@ -16,6 +16,60 @@ export class StockService {
     private eventsGateway: EventsGateway,
   ) {}
 
+  private async enrichStockTransactions(data: any[]): Promise<any[]> {
+    const dispatchSplitIds = data
+      .filter((tx) => tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId)
+      .map((tx) => tx.referenceId as string);
+
+    const poSplitIds = data
+      .filter((tx) => tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.referenceId)
+      .map((tx) => tx.referenceId as string);
+
+    const dispatchSplits = dispatchSplitIds.length > 0
+      ? await this.prisma.dispatchSplit.findMany({
+          where: { id: { in: dispatchSplitIds } },
+          include: { salesOrder: { include: { quotation: true } } },
+        })
+      : [];
+
+    const poSplits = poSplitIds.length > 0
+      ? await this.prisma.purchaseOrderSplit.findMany({
+          where: { id: { in: poSplitIds } },
+          include: { purchaseOrder: true },
+        })
+      : [];
+
+    const dispatchSplitMap = new Map(dispatchSplits.map((s) => [s.id, s]));
+    const poSplitMap = new Map(poSplits.map((s) => [s.id, s]));
+
+    return data.map((tx) => {
+      let extraData: any = {};
+      if (tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId) {
+        const split = dispatchSplitMap.get(tx.referenceId);
+        if (split) {
+          extraData = {
+            splitNumber: split.splitNumber,
+            splitLabel: split.label,
+            orderNumber: split.salesOrder?.soNumber,
+            clientName: split.salesOrder?.quotation?.clientName,
+            gymName: split.salesOrder?.quotation?.gymName,
+          };
+        }
+      } else if (tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.referenceId) {
+        const split = poSplitMap.get(tx.referenceId);
+        if (split) {
+          extraData = {
+            splitNumber: split.splitNumber,
+            splitLabel: split.label,
+            orderNumber: split.purchaseOrder?.poNumber,
+            supplierName: split.purchaseOrder?.supplierName,
+          };
+        }
+      }
+      return { ...tx, ...extraData };
+    });
+  }
+
   async createTransaction(
     data: CreateStockTransactionDto,
   ): Promise<StockTransaction> {
@@ -147,44 +201,12 @@ export class StockService {
           product: {
             select: { id: true, name: true, modelNumber: true },
           },
-          dispatchSplit: {
-            include: { salesOrder: { include: { quotation: true } } }
-          },
-          purchaseOrderSplit: {
-            include: { purchaseOrder: true }
-          }
         },
       }),
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    // Enrich with split details
-    const enrichedData = data.map((tx: any) => {
-      let extraData: any = {};
-      if (tx.referenceType === 'DISPATCH_SPLIT' && tx.dispatchSplit) {
-        const split = tx.dispatchSplit;
-        extraData = {
-          splitNumber: split.splitNumber,
-          splitLabel: split.label,
-          orderNumber: split.salesOrder?.soNumber,
-          clientName: split.salesOrder?.quotation?.clientName,
-          gymName: split.salesOrder?.quotation?.gymName,
-        };
-      } else if (tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.purchaseOrderSplit) {
-        const split = tx.purchaseOrderSplit;
-        extraData = {
-          splitNumber: split.splitNumber,
-          splitLabel: split.label,
-          orderNumber: split.purchaseOrder?.poNumber,
-          supplierName: split.purchaseOrder?.supplierName,
-        };
-      }
-      
-      // Remove relations from output if desired, or keep them
-      const { dispatchSplit, purchaseOrderSplit, ...rest } = tx;
-      return { ...rest, ...extraData };
-    });
-
+    const enrichedData = await this.enrichStockTransactions(data);
     return { data: enrichedData, total };
   }
 
@@ -269,41 +291,10 @@ export class StockService {
         product: {
           select: { id: true, name: true, modelNumber: true },
         },
-        dispatchSplit: {
-          include: { salesOrder: { include: { quotation: true } } }
-        },
-        purchaseOrderSplit: {
-          include: { purchaseOrder: true }
-        }
       },
     });
 
-    const enrichedData = transactions.map((tx: any) => {
-      let extraData: any = {};
-      if (tx.referenceType === 'DISPATCH_SPLIT' && tx.dispatchSplit) {
-        const split = tx.dispatchSplit;
-        extraData = {
-          splitNumber: split.splitNumber,
-          splitLabel: split.label,
-          orderNumber: split.salesOrder?.soNumber,
-          clientName: split.salesOrder?.quotation?.clientName,
-          gymName: split.salesOrder?.quotation?.gymName,
-        };
-      } else if (tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.purchaseOrderSplit) {
-        const split = tx.purchaseOrderSplit;
-        extraData = {
-          splitNumber: split.splitNumber,
-          splitLabel: split.label,
-          orderNumber: split.purchaseOrder?.poNumber,
-          supplierName: split.purchaseOrder?.supplierName,
-        };
-      }
-      
-      const { dispatchSplit, purchaseOrderSplit, ...rest } = tx;
-      return { ...rest, ...extraData };
-    });
-
-    return enrichedData;
+    return this.enrichStockTransactions(transactions);
   }
 
   async update(

@@ -79,6 +79,8 @@ model Product {
   machineArtwork       String? // URL
   brochure             String[] // JSON array of URLs
   thumbnail            String? // URL
+  instagramLink        String? // URL
+  youtubeLink          String? // URL
   cousinMachine        String[] // Array of model numbers
   orderTogether        String[] // Array of model numbers
   swapMachine          String[] // Array of model numbers
@@ -91,10 +93,10 @@ model Product {
   deletedAt            DateTime?
 
   // Relations
-  category          Category?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  quotationItems    QuotationItem[]
-  stockTransactions StockTransaction[]
-  bookings          Booking[]
+  category           Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  quotationItems     QuotationItem[]
+  stockTransactions  StockTransaction[]
+  bookings           Booking[]
   purchaseOrderItems PurchaseOrderItem[]
 
   @@index([name])
@@ -251,10 +253,10 @@ model SalesOrder {
   updatedAt DateTime @updatedAt
 
   // Relations
-  quotation Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  splits    DispatchSplit[]
+  quotation    Quotation       @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  splits       DispatchSplit[]
   serviceCards ServiceCard[]
-  challans  Challan[]
+  challans     Challan[]
 
   @@index([quotationId])
   @@index([status])
@@ -324,7 +326,7 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id              String @id @default(uuid())
+  id              String  @id @default(uuid())
   purchaseOrderId String
   productId       String?
 
@@ -492,8 +494,8 @@ model ClientPartner {
 
 // Gym Management Models
 model Gym {
-  id               String   @id @default(uuid())
-  gymCode          String   @unique // Auto-generated, immutable
+  id               String    @id @default(uuid())
+  gymCode          String    @unique // Auto-generated, immutable
   installationDate DateTime?
   stateCode        String?
   city             String?
@@ -505,8 +507,8 @@ model Gym {
   instagramLink    String?
   locationLink     String?
   locationQR       String? // Auto-generated from locationLink
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // Relations
   clients       ClientGym[]
@@ -703,8 +705,8 @@ model Booking {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  dispatchSplitId  String?
-  dispatchSplit    DispatchSplit? @relation(fields: [dispatchSplitId], references: [id], onDelete: SetNull)
+  dispatchSplitId String?
+  dispatchSplit   DispatchSplit? @relation(fields: [dispatchSplitId], references: [id], onDelete: SetNull)
 
   product Product @relation(fields: [productId], references: [id])
 
@@ -757,10 +759,10 @@ model User {
 }
 
 model ServiceCard {
-  id               String   @id @default(uuid())
-  serialNumber     Int      @unique @default(autoincrement()) // Auto-incrementing S. No.
-  filledOnDate     DateTime @default(now())
-  
+  id           String   @id @default(uuid())
+  serialNumber Int      @unique @default(autoincrement()) // Auto-incrementing S. No.
+  filledOnDate DateTime @default(now())
+
   // General Form Fields
   installationDate DateTime?
   stateCode        String?
@@ -772,12 +774,12 @@ model ServiceCard {
   salesInitial     String?
   contactAtGym     String?
   contactNo        String?
-  engineers        Json?    // Array of engineer names
+  engineers        Json? // Array of engineer names
   landmark         String?
   locationQR       String?
 
   // Visit Type
-  visitType        String?  // INSTALLATION, SERVICE, REPAIR, RE_INSTALL
+  visitType String? // INSTALLATION, SERVICE, REPAIR, RE_INSTALL
 
   // Charges
   installationAndServiceCharges Float?
@@ -793,7 +795,7 @@ model ServiceCard {
   startDate                  DateTime?
   startTime                  String?
   techActualExpense          Float?
-  expenseLog                 Json?     // [{ type, date, time, expenses, amount }]
+  expenseLog                 Json? // [{ type, date, time, expenses, amount }]
   endDate                    DateTime?
   endTime                    String?
   pendingWork                Boolean   @default(false)
@@ -801,23 +803,23 @@ model ServiceCard {
   engineerSign               String?   @db.Text
 
   // Accounts Dept
-  sAmount                    Float?
-  otAmount                   Float?
-  accountsActualExpense      Float?
-  accountsReimbursement      Float?
-  netCtc                     Float?
+  sAmount               Float?
+  otAmount              Float?
+  accountsActualExpense Float?
+  accountsReimbursement Float?
+  netCtc                Float?
 
   // Attached Sales Order
-  salesOrderId               String?
-  status                     ServiceCardStatus @default(STARTED)
-  productNotes               Json?    // Stores notes specific to products for this service card
+  salesOrderId String?
+  status       ServiceCardStatus @default(STARTED)
+  productNotes Json? // Stores notes specific to products for this service card
 
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  gym                        Gym?        @relation(fields: [gymId], references: [id], onDelete: SetNull)
-  salesOrder                 SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  gym        Gym?        @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  salesOrder SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
 
   @@index([serialNumber])
   @@index([gymId])
@@ -825,27 +827,25 @@ model ServiceCard {
   @@map("service_cards")
 }
 
-
 enum ServiceCardStatus {
   STARTED
   PENDING
   COMPLETE
 }
 
-
 // Challan Cum Goods Outward Note
 model Challan {
-  id              String   @id @default(uuid())
-  chnNumber       String   @unique // Auto-generated: CHN 00001
-  date            DateTime @default(now())
-  
+  id        String   @id @default(uuid())
+  chnNumber String   @unique // Auto-generated: CHN 00001
+  date      DateTime @default(now())
+
   // Recipient details
-  recipientName   String?
-  address         String?  @db.Text
-  
+  recipientName String?
+  address       String? @db.Text
+
   // Attached Sales Order
-  salesOrderId    String?
-  
+  salesOrderId String?
+
   // Dispatch Footer Section
   goodsDispatchedBy String?
   checkedBy         String?
@@ -855,13 +855,13 @@ model Challan {
   mobNo             String?
   vehicleType       String?
   freightAmt        String?
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  salesOrder      SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
-  items           ChallanItem[]
+  salesOrder SalesOrder?   @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  items      ChallanItem[]
 
   @@index([chnNumber])
   @@index([salesOrderId])
@@ -875,8 +875,8 @@ model ChallanItem {
   modelNos    String?
   packages    String? // String to allow text or numbers
   quantity    Int?
-  
-  challan     Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+
+  challan Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
 
   @@index([challanId])
   @@map("challan_items")

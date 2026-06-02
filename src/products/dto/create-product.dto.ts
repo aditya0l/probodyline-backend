@@ -199,6 +199,16 @@ export class CreateProductDto {
   @IsString()
   thumbnail?: string;
 
+  @ApiPropertyOptional({ description: 'Instagram link for product' })
+  @IsOptional()
+  @IsString()
+  instagramLink?: string;
+
+  @ApiPropertyOptional({ description: 'YouTube video link for product' })
+  @IsOptional()
+  @IsString()
+  youtubeLink?: string;
+
   @ApiPropertyOptional({
     description: 'Related cousin machine model numbers',
     type: [String],

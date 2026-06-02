@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateProductDto, UpdateProductMediaDto } from './dto/update-product.dto';
 import { Product, Prisma } from '@prisma/client';
 import { QRCodeService } from './qr-code.service';
 
@@ -63,6 +63,8 @@ export class ProductsService {
           stockPlus360Days: true,
           dateSelectStock: true,
           thumbnail: true,
+          instagramLink: true,
+          youtubeLink: true,
           cousinMachine: true,
           orderTogether: true,
           swapMachine: true,
@@ -225,6 +227,59 @@ export class ProductsService {
     return this.prisma.product.update({
       where: { id },
       data: data as Prisma.ProductUncheckedUpdateInput,
+    });
+  }
+
+  async updateMedia(id: string, data: UpdateProductMediaDto): Promise<Product> {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: data as Prisma.ProductUncheckedUpdateInput,
+    });
+  }
+
+  async findQuotationsByProduct(productId: string) {
+    return this.prisma.quotation.findMany({
+      where: {
+        items: {
+          some: {
+            productId,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        customer: true,
+      },
+    });
+  }
+
+  async findSalesOrdersByProduct(productId: string) {
+    return this.prisma.salesOrder.findMany({
+      where: {
+        quotation: {
+          items: {
+            some: {
+              productId,
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        quotation: {
+          include: {
+            customer: true,
+          },
+        },
+      },
     });
   }
 

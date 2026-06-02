@@ -20,6 +20,7 @@ import { Throttle } from '@nestjs/throttler';
 import { StockService } from './stock.service';
 import { CreateStockTransactionDto } from './dto/create-stock-transaction.dto';
 import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
+import { GetBulkProjectedStockDto } from './dto/get-bulk-projected-stock.dto';
 
 @ApiTags('stock')
 @Controller('stock')
@@ -190,7 +191,7 @@ export class StockController {
     status: 200,
     description: 'Bulk stock projection data',
   })
-  getBulkProjectedStock(@Body() body: { productIds: string[]; date: string }) {
+  getBulkProjectedStock(@Body() body: GetBulkProjectedStockDto) {
     return this.stockService.getBulkProjectedStock(body.productIds, body.date);
   }
 

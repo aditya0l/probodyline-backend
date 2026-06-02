@@ -186,6 +186,7 @@ model Quotation {
   customer    Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items       QuotationItem[]
   salesOrders SalesOrder[]
+  challans    Challan[]
 
   @@index([status])
   @@index([createdAt])

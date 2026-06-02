@@ -66,6 +66,7 @@ export class FilesService {
         Key: key,
         Body: processedBuffer,
         ContentType: 'image/webp',
+        CacheControl: 'public, max-age=31536000, immutable',
       })
     );
     
@@ -87,6 +88,7 @@ export class FilesService {
         Key: key,
         Body: buffer,
         ContentType: mimetype,
+        CacheControl: 'public, max-age=31536000, immutable',
       })
     );
   }
@@ -102,6 +104,7 @@ export class FilesService {
     const folderPrefix = subfolder ? `${subfolder}/` : '';
     
     const isImage = file.mimetype.startsWith('image/');
+    const cloudfrontUrl = process.env.CLOUDFRONT_URL?.replace(/\/$/, '') || `https://${this.bucketName}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com`;
 
     if (isImage) {
       const mainKey = `${folderPrefix}${baseFilename}.webp`;
@@ -113,8 +116,8 @@ export class FilesService {
         const lqip = await this.generateLQIP(file.buffer);
         
         return {
-          url: `https://${this.bucketName}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${mainKey}`,
-          thumbnailUrl: `https://${this.bucketName}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${thumbKey}`,
+          url: `${cloudfrontUrl}/${mainKey}`,
+          thumbnailUrl: `${cloudfrontUrl}/${thumbKey}`,
           lqip,
           mainKey,
           thumbKey
@@ -128,7 +131,7 @@ export class FilesService {
        const key = `${folderPrefix}${Date.now()}-${sanitizedFilename}`;
        await this.uploadToS3(file.buffer, key, file.mimetype);
        return {
-         url: `https://${this.bucketName}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`,
+         url: `${cloudfrontUrl}/${key}`,
          key
        };
     }

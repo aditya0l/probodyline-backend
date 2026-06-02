@@ -23,7 +23,9 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts"
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "verify:image-urls": "ts-node scripts/verify-image-urls.ts",
+    "migrate:cloudfront": "ts-node scripts/update-urls-to-cloudfront.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

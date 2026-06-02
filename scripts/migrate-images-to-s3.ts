@@ -52,10 +52,12 @@ async function migrate() {
         Bucket: bucketName,
         Key: key,
         Body: processedBuffer,
-        ContentType: 'image/webp'
+        ContentType: 'image/webp',
+        CacheControl: 'public, max-age=31536000, immutable'
       }));
 
-      return `https://${bucketName}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`;
+      const cloudfrontUrl = process.env.CLOUDFRONT_URL?.replace(/\/$/, '') || `https://${bucketName}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com`;
+      return `${cloudfrontUrl}/${key}`;
     };
 
     const generateLQIP = async (imagePath: string) => {

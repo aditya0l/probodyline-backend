@@ -53,6 +53,9 @@ export class ProductsService {
           seriesName: true,
           thumbnail: true,
           price: true,
+          image: true,
+          images: true,
+          qrCode: true,
           category: {
             select: { id: true, name: true },
           },

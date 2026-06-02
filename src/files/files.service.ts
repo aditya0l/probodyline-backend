@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, InternalServerErrorException } from '@
 import * as fs from 'fs';
 import * as path from 'path';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 @Injectable()
 export class FilesService {

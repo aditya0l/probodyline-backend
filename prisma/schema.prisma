@@ -79,6 +79,7 @@ model Product {
   machineArtwork       String? // URL
   brochure             String[] // JSON array of URLs
   thumbnail            String? // URL
+  lqip                 String?  @db.Text // Base64 LQIP
   instagramLink        String? // URL
   youtubeLink          String? // URL
   cousinMachine        String[] // Array of model numbers

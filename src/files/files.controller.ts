@@ -75,10 +75,12 @@ export class FilesController {
       throw new BadRequestException('No file uploaded');
     }
 
-    const filepath = await this.filesService.saveFile(file, folder);
+    const result = await this.filesService.saveFile(file, folder);
     return {
       message: 'File uploaded successfully',
-      filepath,
+      filepath: result.url,
+      thumbnailUrl: result.thumbnailUrl,
+      lqip: result.lqip,
       filename: file.originalname,
       size: file.size,
     };

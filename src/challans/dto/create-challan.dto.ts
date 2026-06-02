@@ -16,6 +16,10 @@ export class ChallanItemDto {
   @IsOptional()
   @IsNumber()
   quantity?: number;
+
+  @IsOptional()
+  @IsObject()
+  editHistory?: any;
 }
 
 export class CreateChallanDto {
@@ -34,6 +38,10 @@ export class CreateChallanDto {
   @IsOptional()
   @IsString()
   salesOrderId?: string;
+
+  @IsOptional()
+  @IsString()
+  quotationId?: string;
 
   @IsOptional()
   @IsString()
@@ -66,6 +74,10 @@ export class CreateChallanDto {
   @IsOptional()
   @IsString()
   freightAmt?: string;
+
+  @IsOptional()
+  @IsObject()
+  editHistory?: any;
 
   @IsOptional()
   @IsArray()

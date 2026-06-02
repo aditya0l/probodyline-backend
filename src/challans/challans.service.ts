@@ -36,6 +36,9 @@ export class ChallansService {
       },
       include: {
         items: true,
+        quotation: {
+          select: { quoteNumber: true }
+        },
         salesOrder: {
           include: {
             quotation: {
@@ -55,6 +58,7 @@ export class ChallansService {
         { chnNumber: { contains: query.search, mode: 'insensitive' } },
         { recipientName: { contains: query.search, mode: 'insensitive' } },
         { salesOrder: { soNumber: { contains: query.search, mode: 'insensitive' } } },
+        { quotation: { quoteNumber: { contains: query.search, mode: 'insensitive' } } },
       ];
     }
 
@@ -62,6 +66,7 @@ export class ChallansService {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
+        quotation: { select: { quoteNumber: true } },
         salesOrder: {
           select: { soNumber: true, quotation: { select: { quoteNumber: true } } }
         }
@@ -74,6 +79,9 @@ export class ChallansService {
       where: { id },
       include: {
         items: true,
+        quotation: {
+          select: { quoteNumber: true }
+        },
         salesOrder: {
           include: {
             quotation: {
@@ -117,6 +125,7 @@ export class ChallansService {
         },
         include: {
           items: true,
+          quotation: { select: { quoteNumber: true } },
           salesOrder: true
         }
       });

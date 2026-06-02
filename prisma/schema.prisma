@@ -843,8 +843,9 @@ model Challan {
   recipientName String?
   address       String? @db.Text
 
-  // Attached Sales Order
+  // Attached Sales Order / Quotation
   salesOrderId String?
+  quotationId  String?
 
   // Dispatch Footer Section
   goodsDispatchedBy String?
@@ -856,15 +857,19 @@ model Challan {
   vehicleType       String?
   freightAmt        String?
 
+  editHistory Json? // Stores { fieldName: ["oldVal1", "oldVal2"] }
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   salesOrder SalesOrder?   @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  quotation  Quotation?    @relation(fields: [quotationId], references: [id], onDelete: SetNull)
   items      ChallanItem[]
 
   @@index([chnNumber])
   @@index([salesOrderId])
+  @@index([quotationId])
   @@map("challans")
 }
 
@@ -875,6 +880,8 @@ model ChallanItem {
   modelNos    String?
   packages    String? // String to allow text or numbers
   quantity    Int?
+
+  editHistory Json? // Stores { fieldName: ["oldVal1", "oldVal2"] }
 
   challan Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
 

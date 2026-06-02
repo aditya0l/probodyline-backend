@@ -50,14 +50,16 @@ export class QuotationsController {
   findAll(
     @Query('gymName') gymName?: string,
     @Query('clientName') clientName?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 50;
+    const limitNum = limit ? parseInt(limit, 10) : 100;
     return this.quotationsService.findAll({
       gymName,
       clientName,
+      search,
       page: pageNum,
       limit: limitNum,
     });

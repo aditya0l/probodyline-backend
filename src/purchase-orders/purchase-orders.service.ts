@@ -53,14 +53,35 @@ export class PurchaseOrdersService {
     });
   }
 
-  async findAll() {
-    return this.prisma.purchaseOrder.findMany({
-      include: {
-        items: true,
-        splits: { include: { items: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findAll(search?: string, page: number = 0, limit: number = 100): Promise<{ data: any[]; total: number }> {
+    const whereClause: Prisma.PurchaseOrderWhereInput = {};
+    if (search) {
+      whereClause.OR = [
+        { poNumber: { contains: search, mode: 'insensitive' } },
+        { supplierName: { contains: search, mode: 'insensitive' } },
+        { notes: { contains: search, mode: 'insensitive' } }
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.prisma.purchaseOrder.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          poNumber: true,
+          createdAt: true,
+          status: true,
+          jaipurArrival: true,
+          supplierName: true,
+          items: true,
+        },
+        skip: page * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.purchaseOrder.count({ where: whereClause })
+    ]);
+    return { data, total };
   }
 
   async findOne(id: string) {

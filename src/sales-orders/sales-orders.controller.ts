@@ -59,8 +59,15 @@ export class SalesOrdersController {
 
   @Get('unbooked')
   @ApiOperation({ summary: 'Get unbooked Sales Orders' })
-  findUnbooked() {
-    return this.salesOrdersService.findUnbooked();
+  @ApiQuery({ name: 'search', required: false, type: String })
+  findUnbooked(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 0;
+    const limitNum = limit ? parseInt(limit, 10) : 100;
+    return this.salesOrdersService.findUnbooked(search, pageNum, limitNum);
   }
 
   @Post(':id/unbook')
@@ -73,17 +80,20 @@ export class SalesOrdersController {
   @ApiOperation({ summary: 'Get all Sales Orders' })
   @ApiQuery({ name: 'gymName', required: false, type: String })
   @ApiQuery({ name: 'clientName', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
   findAll(
     @Query('gymName') gymName?: string,
     @Query('clientName') clientName?: string,
+    @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 0;
-    const limitNum = limit ? parseInt(limit, 10) : 50;
+    const limitNum = limit ? parseInt(limit, 10) : 100;
     return this.salesOrdersService.findAll({
       gymName,
       clientName,
+      search,
       page: pageNum,
       limit: limitNum,
     });

@@ -106,6 +106,7 @@ model Product {
   @@index([deletedAt])
   @@index([categoryId])
   @@index([isDormant])
+  @@index([modelNumber, seriesName, categoryId])
   @@map("products")
 }
 
@@ -192,6 +193,7 @@ model Quotation {
   @@index([createdAt])
   @@index([quoteNumber])
   @@index([status, createdAt])
+  @@index([createdAt, status, clientName, gymName])
   @@map("quotations")
 }
 
@@ -261,6 +263,7 @@ model SalesOrder {
 
   @@index([quotationId])
   @@index([status])
+  @@index([createdAt, status])
   @@map("sales_orders")
 }
 
@@ -323,6 +326,7 @@ model PurchaseOrder {
 
   @@index([poNumber])
   @@index([status])
+  @@index([createdAt, status, jaipurArrival])
   @@map("purchase_orders")
 }
 
@@ -425,10 +429,13 @@ model StockTransaction {
   createdBy       String? // FK to User (future)
 
   // Relations
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  dispatchSplit      DispatchSplit?      @relation(fields: [referenceId], references: [id], map: "fk_dispatch_split")
+  purchaseOrderSplit PurchaseOrderSplit? @relation(fields: [referenceId], references: [id], map: "fk_po_split")
 
   @@index([productId, date])
   @@index([date])
+  @@index([productId, date, transactionType])
   @@map("stock_transactions")
 }
 
@@ -452,6 +459,7 @@ model Client {
   @@index([clientCode])
   @@index([stateCode, city])
   @@index([salesInitial])
+  @@index([stateCode, city, clientCode])
   @@map("clients")
 }
 
@@ -523,6 +531,7 @@ model Gym {
   @@index([gymCode])
   @@index([stateCode, city])
   @@index([salesInitial])
+  @@index([stateCode, city, gymName, gymCode])
   @@map("gyms")
 }
 
@@ -825,6 +834,7 @@ model ServiceCard {
   @@index([serialNumber])
   @@index([gymId])
   @@index([salesOrderId])
+  @@index([createdAt, status, gymId])
   @@map("service_cards")
 }
 
@@ -871,6 +881,7 @@ model Challan {
   @@index([chnNumber])
   @@index([salesOrderId])
   @@index([quotationId])
+  @@index([date])
   @@map("challans")
 }
 

@@ -75,8 +75,15 @@ export class ServiceCardsService {
     return this.prisma.serviceCard.findMany({
       where: whereClause,
       orderBy: { serialNumber: 'desc' },
-      include: {
-        gym: true,
+      select: {
+        id: true,
+        serialNumber: true,
+        filledOnDate: true,
+        gymName: true,
+        engineers: true,
+        techEngineerName: true,
+        visitType: true,
+        installationDate: true,
       },
     });
   }

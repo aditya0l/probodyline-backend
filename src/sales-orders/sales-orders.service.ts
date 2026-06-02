@@ -312,36 +312,46 @@ export class SalesOrdersService {
   async findAll(filters?: {
     gymName?: string;
     clientName?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.SalesOrderWhereInput = {};
     
-    if (filters?.gymName || filters?.clientName) {
+    if (filters?.gymName || filters?.clientName || filters?.search) {
       whereClause.quotation = {};
       if (filters.gymName) whereClause.quotation.gymName = filters.gymName;
       if (filters.clientName) whereClause.quotation.clientName = filters.clientName;
+      if (filters.search) {
+        whereClause.OR = [
+          { soNumber: { contains: filters.search, mode: 'insensitive' } },
+          { quotation: { clientName: { contains: filters.search, mode: 'insensitive' } } },
+          { quotation: { gymName: { contains: filters.search, mode: 'insensitive' } } },
+          { quotation: { quoteNumber: { contains: filters.search, mode: 'insensitive' } } }
+        ];
+      }
     }
 
     const page = filters?.page || 0;
-    const limit = filters?.limit || 50;
+    const limit = filters?.limit || 100;
 
     const [data, total] = await Promise.all([
       this.prisma.salesOrder.findMany({
         where: whereClause,
         skip: page * limit,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          soNumber: true,
+          createdAt: true,
+          status: true,
+          grandTotal: true,
           quotation: {
             select: {
               id: true,
-              quoteNumber: true,
               clientName: true,
               gymName: true,
-              status: true,
-              grandTotal: true,
-              subtotal: true,
-              gstAmount: true,
+              dispatchDate: true,
             },
           },
           splits: {
@@ -694,15 +704,31 @@ export class SalesOrdersService {
     });
   }
 
-  async findUnbooked() {
-    return this.prisma.salesOrder.findMany({
-      where: { status: 'UNBOOKED' },
-      include: {
-        quotation: { include: { items: true } },
-        splits: { include: { items: true } },
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
+  async findUnbooked(search?: string, page: number = 0, limit: number = 100): Promise<{ data: any[]; total: number }> {
+    const whereClause: Prisma.SalesOrderWhereInput = { status: 'UNBOOKED' };
+    if (search) {
+      whereClause.OR = [
+        { soNumber: { contains: search, mode: 'insensitive' } },
+        { quotation: { clientName: { contains: search, mode: 'insensitive' } } },
+        { quotation: { gymName: { contains: search, mode: 'insensitive' } } },
+        { quotation: { quoteNumber: { contains: search, mode: 'insensitive' } } }
+      ];
+    }
+    
+    const [data, total] = await Promise.all([
+      this.prisma.salesOrder.findMany({
+        where: whereClause,
+        include: {
+          quotation: { include: { items: true } },
+          splits: { include: { items: true } },
+        },
+        skip: page * limit,
+        take: limit,
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.prisma.salesOrder.count({ where: whereClause })
+    ]);
+    return { data, total };
   }
 
   // 6. Update Master Sales Order Date (Quotation Date)

@@ -97,6 +97,7 @@ export class QuotationsService {
   async findAll(filters?: {
     gymName?: string;
     clientName?: string;
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
@@ -107,9 +108,17 @@ export class QuotationsService {
     if (filters?.clientName) {
       whereClause.clientName = filters.clientName;
     }
+    if (filters?.search) {
+      whereClause.OR = [
+        { quoteNumber: { contains: filters.search, mode: 'insensitive' } },
+        { clientName: { contains: filters.search, mode: 'insensitive' } },
+        { gymName: { contains: filters.search, mode: 'insensitive' } },
+        { leadName: { contains: filters.search, mode: 'insensitive' } },
+      ];
+    }
 
     const page = filters?.page || 0;
-    const limit = filters?.limit || 50;
+    const limit = filters?.limit || 100;
 
     const [data, total] = await Promise.all([
       this.prisma.quotation.findMany({
@@ -117,7 +126,14 @@ export class QuotationsService {
         orderBy: { createdAt: 'desc' },
         skip: page * limit,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          quoteNumber: true,
+          createdAt: true,
+          status: true,
+          deliveryDate: true,
+          gymName: true,
+          clientName: true,
           customer: {
             select: { id: true, name: true, gymName: true },
           },

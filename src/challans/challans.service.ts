@@ -65,11 +65,15 @@ export class ChallansService {
     return this.prisma.challan.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: {
-        quotation: { select: { quoteNumber: true } },
+      select: {
+        id: true,
+        chnNumber: true,
+        date: true,
+        recipientName: true,
         salesOrder: {
           select: { soNumber: true, quotation: { select: { quoteNumber: true } } }
-        }
+        },
+        quotation: { select: { quoteNumber: true } }
       }
     });
   }

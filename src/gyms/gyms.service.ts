@@ -67,6 +67,15 @@ export class GymsService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          gymCode: true,
+          gymName: true,
+          city: true,
+          stateCode: true,
+          branchCode: true,
+          branchTitle: true,
+        },
       }),
       this.prisma.gym.count({ where }),
     ]);

@@ -19,8 +19,14 @@ export class PurchaseOrdersController {
   }
 
   @Get()
-  findAll() {
-    return this.purchaseOrdersService.findAll();
+  findAll(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 0;
+    const limitNum = limit ? parseInt(limit, 10) : 100;
+    return this.purchaseOrdersService.findAll(search, pageNum, limitNum);
   }
 
   @Get(':id')

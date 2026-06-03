@@ -343,12 +343,14 @@ export class SalesOrdersService {
         select: {
           id: true,
           soNumber: true,
+          quotationId: true,
           createdAt: true,
           status: true,
           grandTotal: true,
           quotation: {
             select: {
               id: true,
+              quoteNumber: true,
               clientName: true,
               gymName: true,
               dispatchDate: true,

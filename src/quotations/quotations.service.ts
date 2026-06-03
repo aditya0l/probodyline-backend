@@ -132,8 +132,13 @@ export class QuotationsService {
           createdAt: true,
           status: true,
           deliveryDate: true,
+          bookingDate: true,
+          dispatchDate: true,
+          installationDate: true,
+          inaugurationDate: true,
           gymName: true,
           clientName: true,
+          leadName: true,
           customer: {
             select: { id: true, name: true, gymName: true },
           },

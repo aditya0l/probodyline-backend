@@ -49,8 +49,10 @@ export class PurchaseOrdersService {
       });
 
       if (po.jaipurArrival && po.status !== 'CANCELLED') {
-        const stockTxs = po.items.map((item) => ({
-          productId: item.productId,
+        const stockTxs = po.items
+          .filter(item => item.productId)
+          .map((item) => ({
+          productId: item.productId as string,
           quantity: item.quantity,
           transactionType: 'IN' as const,
           referenceType: 'PURCHASE_ORDER',
@@ -180,8 +182,10 @@ export class PurchaseOrdersService {
       });
 
       if (refreshedPo && refreshedPo.splits.length === 0 && refreshedPo.jaipurArrival && refreshedPo.status !== 'CANCELLED') {
-        const stockTxs = refreshedPo.items.map((item) => ({
-          productId: item.productId,
+        const stockTxs = refreshedPo.items
+          .filter(item => item.productId)
+          .map((item) => ({
+          productId: item.productId as string,
           quantity: item.quantity,
           transactionType: 'IN' as const,
           referenceType: 'PURCHASE_ORDER',

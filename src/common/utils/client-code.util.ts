@@ -57,7 +57,7 @@ export function parseClientCode(clientCode: string): ClientCodeData | null {
       stateCode: parts[1] === 'NA' || parts[1] === '??' ? undefined : parts[1],
       city: parts[2] === 'NA' || parts[2] === '?' ? undefined : parts[2].replace(/_/g, ' '),
       clientName: parts[3] === 'NA' || parts[3] === '?' ? undefined : parts[3].replace(/_/g, ' '),
-      salesInitial: parts[4] === 'NA' || parts[4] === '?' ? undefined : parts[4],
+      salesInitial: parts[4] === 'NA' || parts[4] === '?' ? '' : parts[4],
     };
   } catch {
     return null;

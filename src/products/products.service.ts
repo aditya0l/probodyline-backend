@@ -10,12 +10,14 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto, UpdateProductMediaDto } from './dto/update-product.dto';
 import { Product, Prisma } from '@prisma/client';
 import { QRCodeService } from './qr-code.service';
+import { EventsGateway } from '../events/events.gateway';
 
 @Injectable()
 export class ProductsService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private qrCodeService: QRCodeService,
+    private eventsGateway: EventsGateway,
   ) {}
 
   async onModuleInit() {
@@ -110,7 +112,7 @@ export class ProductsService implements OnModuleInit {
 
       const enrichedData = data.map(p => ({
         ...p,
-        openingStock: openingStockMap.get(p.id) || 0,
+        openingStockQty: openingStockMap.get(p.id) || 0,
       }));
 
       return { data: enrichedData, total };
@@ -265,6 +267,8 @@ export class ProductsService implements OnModuleInit {
           where: { id: item.productId },
           data: { todaysStock: currentStock },
         });
+
+        this.eventsGateway.broadcastEntityUpdate('STOCK', item.productId);
       }
     });
   }

@@ -48,6 +48,20 @@ export class PurchaseOrdersService {
         include: { items: true, splits: { include: { items: true } } },
       });
 
+      if (po.jaipurArrival && po.status !== 'CANCELLED') {
+        const stockTxs = po.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          transactionType: 'IN' as const,
+          referenceType: 'PURCHASE_ORDER',
+          referenceId: po.id,
+          date: po.jaipurArrival!,
+        }));
+        if (stockTxs.length > 0) {
+          await tx.stockTransaction.createMany({ data: stockTxs });
+        }
+      }
+
       this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', po.id);
       return po;
     });
@@ -137,9 +151,46 @@ export class PurchaseOrdersService {
 
       // Update items if provided
       if (data.items) {
-        // For simplicity in a master update, we can delete all items and recreate them,
-        // BUT this would break splits. So we just update or ignore for now.
-        // Assuming PO items are fixed after creation for this MVP, or updated carefully.
+        await tx.purchaseOrderItem.deleteMany({
+          where: { purchaseOrderId: id },
+        });
+
+        await tx.purchaseOrderItem.createMany({
+          data: data.items.map((item) => ({
+            purchaseOrderId: id,
+            productId: item.productId,
+            productName: item.productName,
+            productImage: item.productImage,
+            modelNumber: item.modelNumber,
+            rate: item.rate,
+            quantity: item.quantity,
+            amount: item.amount,
+          })),
+        });
+      }
+
+      // Handle stock transactions
+      await tx.stockTransaction.deleteMany({
+        where: { referenceType: 'PURCHASE_ORDER', referenceId: id },
+      });
+
+      const refreshedPo = await tx.purchaseOrder.findUnique({
+        where: { id },
+        include: { items: true, splits: true }
+      });
+
+      if (refreshedPo && refreshedPo.splits.length === 0 && refreshedPo.jaipurArrival && refreshedPo.status !== 'CANCELLED') {
+        const stockTxs = refreshedPo.items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          transactionType: 'IN' as const,
+          referenceType: 'PURCHASE_ORDER',
+          referenceId: id,
+          date: refreshedPo.jaipurArrival!,
+        }));
+        if (stockTxs.length > 0) {
+          await tx.stockTransaction.createMany({ data: stockTxs });
+        }
       }
 
       this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
@@ -205,6 +256,11 @@ export class PurchaseOrdersService {
           },
         });
       }
+
+      // Delete master PO stock transactions since splits are taking over
+      await tx.stockTransaction.deleteMany({
+        where: { referenceType: 'PURCHASE_ORDER', referenceId: id },
+      });
 
       // 2. Re-create splits
       const newSplits: any[] = [];

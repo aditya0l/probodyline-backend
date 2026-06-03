@@ -69,6 +69,8 @@ model Product {
   seriesName           String?
   packagingDescription String[] // JSON array
   keyword              String[] // JSON array
+  openingStock         Int?      @default(0)
+  openingStockDate     DateTime?
   todaysStock          Int?      @default(0)
   stockPlus360Days     Int?      @default(0)
   dateSelectStock      DateTime?

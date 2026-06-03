@@ -40,27 +40,27 @@ export function generateGymCode(data: GymCodeData): string {
     throw new Error('Branch code must be between 1.0 and 99.0');
   }
 
-  // Normalize components (use "-" placeholder for missing values)
+  // Normalize components (use question mark placeholders for missing values)
   const normalizedDate = installationDate
     ? installationDate.split('T')[0]
-    : '-';
-  const normalizedState = stateCode ? stateCode.toUpperCase().trim() : '-';
+    : '????-??-??';
+  const normalizedState = stateCode ? stateCode.toUpperCase().trim() : '??';
   const normalizedCity = city
     ? city.toUpperCase().trim().replace(/\s+/g, '_')
-    : '-';
+    : '?';
   const normalizedGymName = gymName
     ? gymName.toUpperCase().trim().replace(/\s+/g, '_')
-    : '-';
+    : '?';
   const normalizedBranchCode =
     branchCode !== undefined && branchCode !== null
       ? branchCode.toString()
-      : '-';
+      : '?.0';
   const normalizedBranchTitle = branchTitle
     ? branchTitle.toUpperCase().trim().replace(/\s+/g, '_')
-    : '-';
+    : '?';
   const normalizedSalesInitial = salesInitial
     ? salesInitial.toUpperCase().trim()
-    : '-';
+    : '?';
 
   // Build gym code
   const parts = [
@@ -87,13 +87,13 @@ export function parseGymCode(gymCode: string): GymCodeData | null {
     }
 
     return {
-      installationDate: parts[0] === '-' ? undefined : parts[0],
-      stateCode: parts[1] === '-' ? undefined : parts[1],
-      city: parts[2] === '-' ? undefined : parts[2].replace(/_/g, ' '),
-      gymName: parts[3] === '-' ? undefined : parts[3].replace(/_/g, ' '),
-      branchCode: parts[4] === '-' ? undefined : parseFloat(parts[4]),
-      branchTitle: parts[5] === '-' ? undefined : parts[5].replace(/_/g, ' '),
-      salesInitial: parts[6] === '-' ? undefined : parts[6],
+      installationDate: parts[0] === '-' || parts[0] === '????-??-??' ? undefined : parts[0],
+      stateCode: parts[1] === '-' || parts[1] === '??' ? undefined : parts[1],
+      city: parts[2] === '-' || parts[2] === '?' ? undefined : parts[2].replace(/_/g, ' '),
+      gymName: parts[3] === '-' || parts[3] === '?' ? undefined : parts[3].replace(/_/g, ' '),
+      branchCode: parts[4] === '-' || parts[4] === '?.0' ? undefined : parseFloat(parts[4]),
+      branchTitle: parts[5] === '-' || parts[5] === '?' ? undefined : parts[5].replace(/_/g, ' '),
+      salesInitial: parts[6] === '-' || parts[6] === '?' ? undefined : parts[6],
     };
   } catch {
     return null;

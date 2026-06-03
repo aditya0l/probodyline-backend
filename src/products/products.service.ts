@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -11,11 +12,34 @@ import { Product, Prisma } from '@prisma/client';
 import { QRCodeService } from './qr-code.service';
 
 @Injectable()
-export class ProductsService {
+export class ProductsService implements OnModuleInit {
   constructor(
     private prisma: PrismaService,
     private qrCodeService: QRCodeService,
   ) {}
+
+  async onModuleInit() {
+    console.log('[ProductsService] Running product name migration...');
+    const productsToUpdate = await this.prisma.product.findMany({
+      where: {
+        OR: [
+          { name: null },
+          { name: '' }
+        ]
+      }
+    });
+    
+    if (productsToUpdate.length > 0) {
+      console.log(`[ProductsService] Found ${productsToUpdate.length} products to migrate names for.`);
+      for (const product of productsToUpdate) {
+        await this.prisma.product.update({
+          where: { id: product.id },
+          data: { name: product.modelNumber }
+        });
+      }
+      console.log('[ProductsService] Product name migration complete.');
+    }
+  }
 
   async findAll(filters?: {
     search?: string;
@@ -177,6 +201,34 @@ export class ProductsService {
     return createdProduct;
   }
 
+  async saveOpeningStock(dto: import('./dto/opening-stock.dto').BatchOpeningStockDto): Promise<void> {
+    await this.prisma.$transaction(async (prisma) => {
+      for (const item of dto.data) {
+        // Update product opening stock
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            openingStock: item.quantity,
+            openingStockDate: new Date(item.date),
+          },
+        });
+
+        // Recalculate todaysStock
+        const product = await prisma.product.findUnique({ where: { id: item.productId } });
+        const result = await prisma.stockTransaction.aggregate({
+          where: { productId: item.productId },
+          _sum: { quantity: true },
+        });
+
+        const currentStock = (product?.openingStock || 0) + (result._sum.quantity || 0);
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { todaysStock: currentStock },
+        });
+      }
+    });
+  }
+
   async update(id: string, data: UpdateProductDto): Promise<Product> {
     // Check if product exists
     const product = await this.prisma.product.findUnique({
@@ -334,7 +386,7 @@ export class ProductsService {
       _sum: { quantity: true },
     });
 
-    const currentStock = result._sum.quantity || 0;
+    const currentStock = (product.openingStock || 0) + (result._sum.quantity || 0);
 
     // Update product's todaysStock
     return this.prisma.product.update({
@@ -351,6 +403,7 @@ export class ProductsService {
       },
       select: {
         id: true,
+        openingStock: true,
       },
     });
 
@@ -376,7 +429,8 @@ export class ProductsService {
     // Batch update all products in parallel
     await Promise.all(
       products.map((product) => {
-        const currentStock = stockMap.get(product.id) || 0;
+        const transactionsSum = stockMap.get(product.id) || 0;
+        const currentStock = (product.openingStock || 0) + transactionsSum;
         return this.prisma.product.update({
           where: { id: product.id },
           data: { todaysStock: currentStock },

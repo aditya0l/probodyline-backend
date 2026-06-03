@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +20,7 @@ import {
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto, UpdateProductMediaDto } from './dto/update-product.dto';
+import { BatchOpeningStockDto } from './dto/opening-stock.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -31,7 +33,19 @@ export class ProductsController {
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: CreateProductDto })
   create(@Body() createProductDto: CreateProductDto) {
+    if (!createProductDto.name || createProductDto.name.trim() === '') {
+      throw new BadRequestException('Product name is required');
+    }
     return this.productsService.create(createProductDto);
+  }
+
+  @Post('opening-stock')
+  @ApiOperation({ summary: 'Save batch opening stock for multiple products' })
+  @ApiResponse({ status: 200, description: 'Opening stocks successfully updated' })
+  @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
+  @ApiBody({ type: BatchOpeningStockDto })
+  saveOpeningStock(@Body() batchOpeningStockDto: BatchOpeningStockDto) {
+    return this.productsService.saveOpeningStock(batchOpeningStockDto);
   }
 
   @Get()
@@ -97,6 +111,9 @@ export class ProductsController {
   @ApiResponse({ status: 400, description: 'Bad request - validation failed' })
   @ApiBody({ type: UpdateProductDto })
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+    if (updateProductDto.name !== undefined && (updateProductDto.name === null || updateProductDto.name.trim() === '')) {
+      throw new BadRequestException('Product name is required');
+    }
     return this.productsService.update(id, updateProductDto);
   }
 

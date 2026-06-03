@@ -18,14 +18,14 @@ import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductDto {
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Product name',
     example: 'Treadmill Pro 5000',
   })
-  @IsOptional()
+  @IsNotEmpty({ message: 'Product name is required' })
   @IsString()
   @Length(1, 255)
-  name?: string;
+  name: string;
 
   @ApiProperty({
     description:

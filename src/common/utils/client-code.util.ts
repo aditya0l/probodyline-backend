@@ -22,13 +22,13 @@ export function generateClientCode(data: ClientCodeData): string {
   }
 
   // Normalize components or use defaults
-  const normalizedDate = tokenDate ? tokenDate.split('T')[0] : 'NA';
-  const normalizedState = stateCode ? stateCode.toUpperCase().trim() : 'NA';
-  const normalizedCity = city ? city.trim().replace(/\s+/g, '_') : 'NA';
+  const normalizedDate = tokenDate ? tokenDate.split('T')[0] : '????-??-??';
+  const normalizedState = stateCode ? stateCode.toUpperCase().trim() : '??';
+  const normalizedCity = city ? city.trim().replace(/\s+/g, '_') : '?';
   const normalizedClientName = clientName
     ? clientName.trim().replace(/\s+/g, '_')
-    : 'NA';
-  const normalizedSalesInitial = salesInitial.toUpperCase().trim();
+    : '?';
+  const normalizedSalesInitial = salesInitial.toUpperCase().trim() || '?';
 
   // Build client code
   const parts = [
@@ -53,11 +53,11 @@ export function parseClientCode(clientCode: string): ClientCodeData | null {
     }
 
     return {
-      tokenDate: parts[0],
-      stateCode: parts[1],
-      city: parts[2].replace(/_/g, ' '),
-      clientName: parts[3].replace(/_/g, ' '),
-      salesInitial: parts[4],
+      tokenDate: parts[0] === 'NA' || parts[0] === '????-??-??' ? undefined : parts[0],
+      stateCode: parts[1] === 'NA' || parts[1] === '??' ? undefined : parts[1],
+      city: parts[2] === 'NA' || parts[2] === '?' ? undefined : parts[2].replace(/_/g, ' '),
+      clientName: parts[3] === 'NA' || parts[3] === '?' ? undefined : parts[3].replace(/_/g, ' '),
+      salesInitial: parts[4] === 'NA' || parts[4] === '?' ? undefined : parts[4],
     };
   } catch {
     return null;

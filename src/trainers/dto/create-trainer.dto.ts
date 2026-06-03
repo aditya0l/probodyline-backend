@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTrainerDto {
@@ -9,8 +9,8 @@ export class CreateTrainerDto {
 
   @ApiPropertyOptional({ description: 'Primary Phone', example: '+919876543210' })
   @IsString()
-  @IsOptional()
-  phone?: string;
+  @IsNotEmpty({ message: 'Phone number is required' })
+  phone: string;
 
   @ApiPropertyOptional({ description: 'Alternate Phone' })
   @IsString()

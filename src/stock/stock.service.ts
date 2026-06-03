@@ -149,7 +149,7 @@ export class StockService {
       where: { productId: data.productId },
       _sum: { quantity: true },
     });
-    const currentStock = (product.openingStock || 0) + (stockResult._sum.quantity || 0);
+    const currentStock = (stockResult._sum.quantity || 0);
     await this.prisma.product.update({
       where: { id: data.productId },
       data: { todaysStock: currentStock },
@@ -226,7 +226,7 @@ export class StockService {
     // First try to get from product.todaysStock (faster, already maintained)
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
-      select: { todaysStock: true, openingStock: true },
+      select: { todaysStock: true },
     });
 
     if (product?.todaysStock !== null && product?.todaysStock !== undefined) {
@@ -238,7 +238,7 @@ export class StockService {
       where: { productId },
       _sum: { quantity: true },
     });
-    const currentStock = (product?.openingStock || 0) + (result._sum.quantity || 0);
+    const currentStock = (result._sum.quantity || 0);
 
     // Update product's todaysStock for future queries
     await this.prisma.product.update({
@@ -270,10 +270,10 @@ export class StockService {
 
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
-      select: { openingStock: true }
+      select: { id: true }
     });
 
-    return (product?.openingStock || 0) + (result._sum.quantity || 0);
+    return (result._sum.quantity || 0);
   }
 
   async getStockHistory(
@@ -361,10 +361,10 @@ export class StockService {
     
     const product = await this.prisma.product.findUnique({
       where: { id: transaction.productId },
-      select: { openingStock: true }
+      select: { id: true }
     });
     
-    const currentStock = (product?.openingStock || 0) + (stockResult._sum.quantity || 0);
+    const currentStock = (stockResult._sum.quantity || 0);
     await this.prisma.product.update({
       where: { id: transaction.productId },
       data: { todaysStock: currentStock },
@@ -396,10 +396,10 @@ export class StockService {
     
     const product = await this.prisma.product.findUnique({
       where: { id: transaction.productId },
-      select: { openingStock: true }
+      select: { id: true }
     });
     
-    const currentStock = (product?.openingStock || 0) + (stockResult._sum.quantity || 0);
+    const currentStock = (stockResult._sum.quantity || 0);
     await this.prisma.product.update({
       where: { id: transaction.productId },
       data: { todaysStock: currentStock },

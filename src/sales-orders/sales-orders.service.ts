@@ -347,7 +347,6 @@ export class SalesOrdersService {
           createdAt: true,
           status: true,
           grandTotal: true,
-          dispatchDate: true,
           quotation: {
             select: {
               id: true,

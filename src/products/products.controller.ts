@@ -48,6 +48,14 @@ export class ProductsController {
     return this.productsService.saveOpeningStock(batchOpeningStockDto);
   }
 
+  @Delete('opening-stock')
+  @ApiOperation({ summary: 'Delete all opening stock transactions' })
+  @ApiResponse({ status: 200, description: 'Opening stocks successfully cleared' })
+  clearAllOpeningStock() {
+    return this.productsService.clearAllOpeningStock();
+  }
+
+
   @Get()
   @ApiOperation({ summary: 'Get all products with filtering and pagination' })
   @ApiQuery({

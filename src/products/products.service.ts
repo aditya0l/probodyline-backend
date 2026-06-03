@@ -80,6 +80,7 @@ export class ProductsService implements OnModuleInit {
           image: true,
           images: true,
           qrCode: true,
+          todaysStock: true,
           category: {
             select: { id: true, name: true },
           },
@@ -87,6 +88,33 @@ export class ProductsService implements OnModuleInit {
       }),
       this.prisma.product.count({ where }),
     ]);
+
+    // Fetch opening stock from transactions for the returned products
+    if (data.length > 0) {
+      const productIds = data.map(p => p.id);
+      const openingStocks = await this.prisma.stockTransaction.groupBy({
+        by: ['productId'],
+        where: {
+          productId: { in: productIds },
+          referenceType: 'OPENING_STOCK',
+        },
+        _sum: {
+          quantity: true,
+        },
+      });
+
+      const openingStockMap = new Map();
+      openingStocks.forEach(os => {
+        openingStockMap.set(os.productId, os._sum.quantity || 0);
+      });
+
+      const enrichedData = data.map(p => ({
+        ...p,
+        openingStock: openingStockMap.get(p.id) || 0,
+      }));
+
+      return { data: enrichedData, total };
+    }
 
     return { data, total };
   }
@@ -204,23 +232,35 @@ export class ProductsService implements OnModuleInit {
   async saveOpeningStock(dto: import('./dto/opening-stock.dto').BatchOpeningStockDto): Promise<void> {
     await this.prisma.$transaction(async (prisma) => {
       for (const item of dto.data) {
-        // Update product opening stock
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            openingStock: item.quantity,
-            openingStockDate: new Date(item.date),
+        // Delete existing OPENING_STOCK transactions for this product
+        await prisma.stockTransaction.deleteMany({
+          where: {
+            productId: item.productId,
+            referenceType: 'OPENING_STOCK',
           },
         });
 
+        // Create new OPENING_STOCK transaction if quantity > 0
+        if (item.quantity > 0) {
+          await prisma.stockTransaction.create({
+            data: {
+              productId: item.productId,
+              transactionType: 'IN',
+              quantity: item.quantity,
+              referenceType: 'OPENING_STOCK',
+              date: new Date('2026-04-01T00:00:00Z'),
+              notes: 'Opening Stock',
+            },
+          });
+        }
+
         // Recalculate todaysStock
-        const product = await prisma.product.findUnique({ where: { id: item.productId } });
         const result = await prisma.stockTransaction.aggregate({
           where: { productId: item.productId },
           _sum: { quantity: true },
         });
 
-        const currentStock = (product?.openingStock || 0) + (result._sum.quantity || 0);
+        const currentStock = result._sum.quantity || 0;
         await prisma.product.update({
           where: { id: item.productId },
           data: { todaysStock: currentStock },
@@ -386,7 +426,7 @@ export class ProductsService implements OnModuleInit {
       _sum: { quantity: true },
     });
 
-    const currentStock = (product.openingStock || 0) + (result._sum.quantity || 0);
+    const currentStock = result._sum.quantity || 0;
 
     // Update product's todaysStock
     return this.prisma.product.update({
@@ -403,7 +443,6 @@ export class ProductsService implements OnModuleInit {
       },
       select: {
         id: true,
-        openingStock: true,
       },
     });
 
@@ -429,8 +468,7 @@ export class ProductsService implements OnModuleInit {
     // Batch update all products in parallel
     await Promise.all(
       products.map((product) => {
-        const transactionsSum = stockMap.get(product.id) || 0;
-        const currentStock = (product.openingStock || 0) + transactionsSum;
+        const currentStock = stockMap.get(product.id) || 0;
         return this.prisma.product.update({
           where: { id: product.id },
           data: { todaysStock: currentStock },
@@ -520,5 +558,12 @@ export class ProductsService implements OnModuleInit {
     }
 
     return { count, errors };
+  }
+
+  async clearAllOpeningStock(): Promise<void> {
+    await this.prisma.stockTransaction.deleteMany({
+      where: { referenceType: 'OPENING_STOCK' },
+    });
+    await this.syncAllStocks();
   }
 }

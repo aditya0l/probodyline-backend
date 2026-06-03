@@ -9,9 +9,6 @@ export class OpeningStockDto {
   @IsInt()
   @Min(0)
   quantity: number;
-
-  @IsDateString()
-  date: string;
 }
 
 export class BatchOpeningStockDto {

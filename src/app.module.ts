@@ -33,6 +33,7 @@ import configuration from './config/configuration';
 import { configValidationSchema } from './config/config.schema';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { ChallansModule } from './challans/challans.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { ChallansModule } from './challans/challans.module';
     ServiceCardsModule,
     PurchaseOrdersModule,
     ChallansModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

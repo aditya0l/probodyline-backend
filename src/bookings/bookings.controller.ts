@@ -32,6 +32,7 @@ export class BookingsController {
       dispatchDateFrom: filters.dispatchDateFrom,
       dispatchDateTo: filters.dispatchDateTo,
       productModel: filters.productModel,
+      sortOrder: filters.sortOrder,
     });
   }
 

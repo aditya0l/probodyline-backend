@@ -69,6 +69,7 @@ export class BookingsService {
     dispatchDateFrom?: string;
     dispatchDateTo?: string;
     productModel?: string;
+    sortOrder?: 'asc' | 'desc';
     page?: number;
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
@@ -116,13 +117,17 @@ export class BookingsService {
       };
     }
 
+    const orderBy = filters?.sortOrder 
+      ? [{ bookedOn: filters.sortOrder }] 
+      : [{ dispatchDate: 'asc' as const }, { bookedOn: 'asc' as const }];
+
     // Execute query
     const [bookings, total] = await Promise.all([
       this.prisma.booking.findMany({
         where,
         skip,
         take: limit,
-        orderBy: [{ dispatchDate: 'asc' }, { bookedOn: 'asc' }],
+        orderBy,
         select: {
           id: true,
           productId: true,
@@ -141,7 +146,7 @@ export class BookingsService {
     ]);
 
     // Calculate status dynamically for each booking using FIFO priority
-    const bookingsWithStatus = await this.calculateDynamicStatus(bookings);
+    const bookingsWithStatus = await this.calculateDynamicStatus(bookings, filters?.sortOrder);
 
     return { data: bookingsWithStatus, total };
   }
@@ -150,7 +155,7 @@ export class BookingsService {
    * Calculate dynamic status for bookings using FIFO priority
    * Groups bookings by product+date and applies priority logic
    */
-  private async calculateDynamicStatus(bookings: any[]): Promise<any[]> {
+  private async calculateDynamicStatus(bookings: any[], sortOrder?: 'asc' | 'desc'): Promise<any[]> {
     // Group bookings by productId + dispatchDate
     const grouped = bookings.reduce(
       (acc, booking) => {
@@ -195,8 +200,12 @@ export class BookingsService {
       }
     }
 
-    // Return in original order
+    // Return in original requested order
     return results.sort((a, b) => {
+      if (sortOrder) {
+        const diff = a.bookedOn.getTime() - b.bookedOn.getTime();
+        return sortOrder === 'asc' ? diff : -diff;
+      }
       const dateCompare = a.dispatchDate.getTime() - b.dispatchDate.getTime();
       if (dateCompare !== 0) return dateCompare;
       return a.bookedOn.getTime() - b.bookedOn.getTime();

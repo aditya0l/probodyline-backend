@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { BookingStatus } from '@prisma/client';
+import { calculateFifoAllocation } from '../utils/fifo-allocator';
 
 @Injectable()
 export class BookingsService {
@@ -25,18 +26,14 @@ export class BookingsService {
       );
     }
 
-    // Determine allocation status based on stock
+    // Determine allocation status based on stock using shared FIFO utility
     const dispatchDate = new Date(data.dispatchDate);
     const stockOnDate = await this.getStockOnDate(data.productId, dispatchDate);
     const requiredQty = data.requiredQuantity || 1;
 
-    let status: BookingStatus = BookingStatus.CONFIRM;
-    let waitingQuantity = 0;
-
-    if (stockOnDate < requiredQty) {
-      status = BookingStatus.WAITING_LIST;
-      waitingQuantity = requiredQty - Math.max(0, stockOnDate);
-    }
+    const alloc = calculateFifoAllocation(stockOnDate, requiredQty);
+    const status = alloc.status;
+    const waitingQuantity = alloc.waitingQuantity;
 
     // Create booking
     const booking = await this.prisma.booking.create({
@@ -185,18 +182,10 @@ export class BookingsService {
       let runningStock = baseStock;
 
       for (const booking of sorted) {
-        if (runningStock >= booking.requiredQuantity) {
-          // CONFIRM
-          booking.calculatedStatus = BookingStatus.CONFIRM;
-          booking.calculatedWaitingQuantity = 0;
-          runningStock -= booking.requiredQuantity;
-        } else {
-          // WAITING_LIST
-          booking.calculatedStatus = BookingStatus.WAITING_LIST;
-          booking.calculatedWaitingQuantity =
-            booking.requiredQuantity - Math.max(0, runningStock);
-          runningStock = 0;
-        }
+        const alloc = calculateFifoAllocation(runningStock, booking.requiredQuantity);
+        booking.calculatedStatus = alloc.status;
+        booking.calculatedWaitingQuantity = alloc.waitingQuantity;
+        runningStock = alloc.runningStock;
 
         results.push({
           ...booking,
@@ -384,20 +373,17 @@ export class BookingsService {
       const availableStockAtBooking = runningStock;
 
       // FIFO Logic: Check if enough stock for this booking
-      if (runningStock >= booking.requiredQuantity) {
-        // Stock available - CONFIRM
-        calculatedStatus = 'CONFIRM';
-        calculatedWaitingQuantity = 0;
-        runningStock -= booking.requiredQuantity;
+      const alloc = calculateFifoAllocation(runningStock, booking.requiredQuantity);
+      calculatedStatus = alloc.status as 'CONFIRM' | 'WAITING LIST';
+      calculatedWaitingQuantity = alloc.waitingQuantity;
+      
+      if (calculatedStatus === 'CONFIRM') {
         totalConfirmedQuantity += booking.requiredQuantity;
       } else {
-        // Insufficient stock - WAITING_LIST
-        calculatedStatus = 'WAITING LIST';
-        calculatedWaitingQuantity =
-          booking.requiredQuantity - Math.max(0, runningStock);
         totalWaitingQuantity += calculatedWaitingQuantity;
-        runningStock = 0; // All stock consumed
       }
+      
+      runningStock = alloc.runningStock;
 
       return {
         dispatchDate: booking.dispatchDate.toISOString().split('T')[0],

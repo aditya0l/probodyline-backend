@@ -8,6 +8,8 @@ import { CreateStockTransactionDto } from './dto/create-stock-transaction.dto';
 import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
 import { StockTransaction, Prisma, StockTransactionType } from '@prisma/client';
 import { EventsGateway } from '../events/events.gateway';
+import { fromZonedTime } from 'date-fns-tz';
+import { calculateFifoAllocation } from '../utils/fifo-allocator';
 
 @Injectable()
 export class StockService {
@@ -25,6 +27,10 @@ export class StockService {
       .filter((tx) => tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.referenceId)
       .map((tx) => tx.referenceId as string);
 
+    const quotationIds = data
+      .filter((tx) => (tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING') && tx.referenceId)
+      .map((tx) => tx.referenceId as string);
+
     const dispatchSplits = dispatchSplitIds.length > 0
       ? await this.prisma.dispatchSplit.findMany({
           where: { id: { in: dispatchSplitIds } },
@@ -39,8 +45,16 @@ export class StockService {
         })
       : [];
 
+    const quotations = quotationIds.length > 0
+      ? await this.prisma.quotation.findMany({
+          where: { id: { in: quotationIds } },
+          include: { customer: true },
+        })
+      : [];
+
     const dispatchSplitMap = new Map(dispatchSplits.map((s) => [s.id, s]));
     const poSplitMap = new Map(poSplits.map((s) => [s.id, s]));
+    const quotationMap = new Map(quotations.map((q) => [q.id, q]));
 
     return data.map((tx) => {
       let extraData: any = {};
@@ -66,6 +80,18 @@ export class StockService {
             splitLabel: split.label,
             orderNumber: split.purchaseOrder?.poNumber,
             supplierName: split.purchaseOrder?.supplierName,
+          };
+        }
+      } else if ((tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING') && tx.referenceId) {
+        const quotation = quotationMap.get(tx.referenceId);
+        if (quotation) {
+          extraData = {
+            customerName: quotation.clientName || (quotation as any).customer?.name || null,
+            gymName: quotation.gymName || null,
+            orderNumber: quotation.quoteNumber || null,
+            bookedOn: quotation.bookingDate || tx.createdAt,
+            city: quotation.clientCity || null,
+            stateCode: (quotation as any).customer?.stateCode || null,
           };
         }
       }
@@ -170,18 +196,20 @@ export class StockService {
       page?: number;
       limit?: number;
     },
-  ): Promise<{ data: StockTransaction[]; total: number }> {
-    // Build date filter - handle cases where only startDate or only endDate is provided
+  ): Promise<{ data: any[]; total: number }> {
+    // Build date filter using date-fns-tz for correct IST parsing
     const dateFilter: { gte?: Date; lte?: Date } = {};
+    const timeZone = 'Asia/Kolkata';
+
     if (filters?.startDate) {
-      dateFilter.gte = new Date(filters.startDate);
+      dateFilter.gte = fromZonedTime(`${filters.startDate}T00:00:00`, timeZone);
     }
     if (filters?.endDate) {
       // If date is in YYYY-MM-DD format, append time to get end of day
       const endDateStr = filters.endDate.includes('T')
         ? filters.endDate
-        : `${filters.endDate}T23:59:59.999Z`;
-      dateFilter.lte = new Date(endDateStr);
+        : `${filters.endDate}T23:59:59.999`;
+      dateFilter.lte = fromZonedTime(endDateStr, timeZone);
     }
 
     const where: Prisma.StockTransactionWhereInput = {
@@ -194,12 +222,25 @@ export class StockService {
       }),
     };
 
-    const [data, total] = await Promise.all([
+    // Calculate start balance before the requested date range
+    let startBalance = 0;
+    if (productId && dateFilter.gte) {
+      const startBalanceResult = await this.prisma.stockTransaction.aggregate({
+        where: {
+          productId,
+          date: { lt: dateFilter.gte },
+        },
+        _sum: { quantity: true },
+      });
+      startBalance = startBalanceResult._sum.quantity || 0;
+    }
+
+    const [dataAsc, total] = await Promise.all([
       this.prisma.stockTransaction.findMany({
         where,
-        skip: (filters?.page || 0) * (filters?.limit || 50),
-        take: filters?.limit || 50,
-        orderBy: { date: 'desc' },
+        skip: (filters?.page || 0) * (filters?.limit || 10000), // Default high limit for ledger
+        take: filters?.limit || 10000,
+        orderBy: [{ date: 'asc' }, { createdAt: 'asc' }], // Must be ASC to calculate running balance correctly
         include: {
           product: {
             select: { id: true, name: true, modelNumber: true },
@@ -209,8 +250,36 @@ export class StockService {
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    const enrichedData = await this.enrichStockTransactions(data);
-    return { data: enrichedData, total };
+    let runningStock = startBalance;
+    const enrichedData = dataAsc.map((tx) => {
+      let status = 'CONFIRM';
+      let waitingQuantity = 0;
+
+      if (tx.transactionType === 'IN') {
+        runningStock += tx.quantity;
+      } else if (tx.transactionType === 'OUT') {
+        const alloc = calculateFifoAllocation(runningStock, Math.abs(tx.quantity));
+        status = alloc.status;
+        waitingQuantity = alloc.waitingQuantity;
+        runningStock = alloc.runningStock;
+      } else {
+        // Adjustments, etc.
+        runningStock += tx.quantity;
+      }
+
+      return {
+        ...tx,
+        runningBalance: runningStock,
+        status,
+        waitingQuantity,
+      };
+    });
+
+    // Reverse to match standard descending order for recent transactions first
+    const data = enrichedData.reverse();
+
+    const fullyEnrichedData = await this.enrichStockTransactions(data);
+    return { data: fullyEnrichedData, total };
   }
 
   async findOne(id: string): Promise<StockTransaction | null> {

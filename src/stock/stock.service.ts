@@ -9,7 +9,7 @@ import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
 import { StockTransaction, Prisma, StockTransactionType } from '@prisma/client';
 import { EventsGateway } from '../events/events.gateway';
 import { fromZonedTime } from 'date-fns-tz';
-import { calculateFifoAllocation } from '../utils/fifo-allocator';
+import { calculateFifoAllocation, processStrictFifoLedger } from '../utils/fifo-allocator';
 
 @Injectable()
 export class StockService {
@@ -235,12 +235,12 @@ export class StockService {
       startBalance = startBalanceResult._sum.quantity || 0;
     }
 
-    const [dataAsc, total] = await Promise.all([
+    const [dataRaw, total] = await Promise.all([
       this.prisma.stockTransaction.findMany({
         where,
         skip: (filters?.page || 0) * (filters?.limit || 10000), // Default high limit for ledger
         take: filters?.limit || 10000,
-        orderBy: [{ date: 'asc' }, { createdAt: 'asc' }], // Must be ASC to calculate running balance correctly
+        orderBy: [{ date: 'asc' }, { createdAt: 'asc' }], // Initial fetch order doesn't matter much as we resort in memory
         include: {
           product: {
             select: { id: true, name: true, modelNumber: true },
@@ -250,34 +250,52 @@ export class StockService {
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    let runningStock = startBalance;
-    const enrichedData = dataAsc.map((tx) => {
-      let status = 'CONFIRM';
-      let waitingQuantity = 0;
+    // 1. Fetch Quotations to enrich bookedOn date BEFORE sorting
+    const quotationIds = dataRaw
+      .filter((tx) => tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING')
+      .map((tx) => tx.referenceId)
+      .filter(Boolean) as string[];
 
-      if (tx.transactionType === 'IN') {
-        runningStock += tx.quantity;
-      } else if (tx.transactionType === 'OUT') {
-        const alloc = calculateFifoAllocation(runningStock, Math.abs(tx.quantity));
-        status = alloc.status;
-        waitingQuantity = alloc.waitingQuantity;
-        runningStock = alloc.runningStock;
-      } else {
-        // Adjustments, etc.
-        runningStock += tx.quantity;
+    let quotationsMap = new Map<string, any>();
+    if (quotationIds.length > 0) {
+      const quotations = await this.prisma.quotation.findMany({
+        where: { id: { in: quotationIds } },
+        select: {
+          id: true,
+          bookingDate: true,
+          clientName: true,
+          clientCity: true,
+          gymName: true,
+          quoteNumber: true,
+        },
+      });
+      quotationsMap = new Map(quotations.map((q) => [q.id, q]));
+    }
+
+    // 2. Pre-enrich data with bookedOn and other fields
+    const preEnrichedData = dataRaw.map((tx) => {
+      const enriched = { ...tx } as any;
+      
+      if (tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING') {
+        const quote = quotationsMap.get(tx.referenceId as string);
+        if (quote) {
+          enriched.bookedOn = quote.bookingDate;
+          enriched.customerName = quote.clientName;
+          enriched.gymName = quote.gymName;
+          enriched.city = quote.clientCity;
+          enriched.orderNumber = quote.quoteNumber;
+        }
       }
-
-      return {
-        ...tx,
-        runningBalance: runningStock,
-        status,
-        waitingQuantity,
-      };
+      return enriched;
     });
 
-    // Reverse to match standard descending order for recent transactions first
-    const data = enrichedData.reverse();
+    // 3. Process strict FIFO simulation
+    const resultsAsc = processStrictFifoLedger(preEnrichedData, startBalance);
 
+    // 4. For display, we return strictly ascending (oldest first) to match user requested FIFO display
+    const data = resultsAsc;
+
+    // 5. Final enrichment (POs etc)
     const fullyEnrichedData = await this.enrichStockTransactions(data);
     return { data: fullyEnrichedData, total };
   }

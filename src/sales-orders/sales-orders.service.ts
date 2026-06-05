@@ -432,6 +432,12 @@ export class SalesOrdersService {
         });
       }
 
+      // Restore the Master SO status to DRAFT in case it was UNBOOKED
+      await paramTx.salesOrder.update({
+        where: { id: so.id },
+        data: { status: 'DRAFT' },
+      });
+
       return this.getSplitWithDetails(split.id, paramTx);
     };
 

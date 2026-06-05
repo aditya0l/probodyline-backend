@@ -27,6 +27,10 @@ export class StockService {
       .filter((tx) => tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.referenceId)
       .map((tx) => tx.referenceId as string);
 
+    const poIds = data
+      .filter((tx) => tx.referenceType === 'PURCHASE_ORDER' && tx.referenceId)
+      .map((tx) => tx.referenceId as string);
+
     const quotationIds = data
       .filter((tx) => (tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING') && tx.referenceId)
       .map((tx) => tx.referenceId as string);
@@ -45,6 +49,12 @@ export class StockService {
         })
       : [];
 
+    const pos = poIds.length > 0
+      ? await this.prisma.purchaseOrder.findMany({
+          where: { id: { in: poIds } },
+        })
+      : [];
+
     const quotations = quotationIds.length > 0
       ? await this.prisma.quotation.findMany({
           where: { id: { in: quotationIds } },
@@ -54,6 +64,7 @@ export class StockService {
 
     const dispatchSplitMap = new Map(dispatchSplits.map((s) => [s.id, s]));
     const poSplitMap = new Map(poSplits.map((s) => [s.id, s]));
+    const poMap = new Map(pos.map((p) => [p.id, p]));
     const quotationMap = new Map(quotations.map((q) => [q.id, q]));
 
     return data.map((tx) => {
@@ -80,6 +91,14 @@ export class StockService {
             splitLabel: split.label,
             orderNumber: split.purchaseOrder?.poNumber,
             supplierName: split.purchaseOrder?.supplierName,
+          };
+        }
+      } else if (tx.referenceType === 'PURCHASE_ORDER' && tx.referenceId) {
+        const po = poMap.get(tx.referenceId);
+        if (po) {
+          extraData = {
+            orderNumber: po.poNumber,
+            supplierName: po.supplierName,
           };
         }
       } else if ((tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING') && tx.referenceId) {

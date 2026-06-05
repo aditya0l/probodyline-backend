@@ -116,4 +116,13 @@ export class SalesOrdersController {
       body.dispatchDate,
     );
   }
+
+  @Patch(':id/generated-date')
+  @ApiOperation({ summary: 'Update Sales Order Generated Date (createdAt)' })
+  updateGeneratedDate(
+    @Param('id') id: string,
+    @Body() body: { createdAt: string },
+  ) {
+    return this.salesOrdersService.updateGeneratedDate(id, body.createdAt);
+  }
 }

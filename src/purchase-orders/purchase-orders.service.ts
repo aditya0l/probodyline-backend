@@ -15,9 +15,21 @@ export class PurchaseOrdersService {
   ) {}
 
   async create(data: any) {
-    // Find next PO number
-    const count = await this.prisma.purchaseOrder.count();
-    const poNumber = `PO_${new Date().getFullYear()}${(count + 1).toString().padStart(4, '0')}`;
+    const currentYear = new Date().getFullYear();
+    const lastPo = await this.prisma.purchaseOrder.findFirst({
+      where: { poNumber: { startsWith: `PO_${currentYear}` } },
+      orderBy: { createdAt: 'desc' },
+      select: { poNumber: true }
+    });
+
+    let nextNumber = 1;
+    if (lastPo && lastPo.poNumber) {
+      const match = lastPo.poNumber.match(/PO_\d{4}(\d+)/);
+      if (match && match[1]) {
+        nextNumber = parseInt(match[1], 10) + 1;
+      }
+    }
+    const poNumber = `PO_${currentYear}${nextNumber.toString().padStart(4, '0')}`;
 
     return this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.create({

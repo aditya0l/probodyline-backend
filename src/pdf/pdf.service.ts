@@ -100,6 +100,140 @@ export class PdfService {
     }
   }
 
+  async generateSOSplitPDF(
+    soId: string,
+    splitId: string,
+    template: string = 'default',
+  ): Promise<Buffer> {
+    const split = await this.prisma.dispatchSplit.findUnique({
+      where: { id: splitId },
+      include: {
+        items: true,
+        salesOrder: {
+          include: {
+            quotation: {
+              include: {
+                customer: true,
+                items: {
+                  orderBy: { srNo: 'asc' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!split || !split.salesOrder || !split.salesOrder.quotation) {
+      throw new NotFoundException('Split or Quotation not found');
+    }
+
+    const quotation = split.salesOrder.quotation;
+
+    // Filter and update items for this split
+    const filteredItems = quotation.items.map(item => {
+      const splitItem = split.items.find(si => si.quotationItemId === item.id);
+      const qty = splitItem ? splitItem.quantity : 0;
+      if (qty <= 0) return null;
+
+      return {
+        ...item,
+        quantity: qty,
+        totalAmount: qty * Number(item.rate || 0),
+      };
+    }).filter(Boolean) as unknown as QuotationItem[];
+
+    // Recalculate totals
+    const subtotal = filteredItems.reduce((sum, item) => sum + Number(item.totalAmount), 0);
+    const gstAmount = subtotal * (Number(quotation.gstRate || 18) / 100);
+    const grandTotal = subtotal + gstAmount;
+
+    const mockedQuotation = {
+      ...quotation,
+      items: filteredItems,
+      subtotal: subtotal as any,
+      gstAmount: gstAmount as any,
+      grandTotal: grandTotal as any,
+    };
+
+    const html = await this.generateQuotationHTML(mockedQuotation, template);
+
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    const browser = await puppeteer.launch({
+      headless: true,
+      executablePath,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '12mm', left: '10mm' } });
+      return Buffer.from(pdf);
+    } finally {
+      await browser.close();
+    }
+  }
+
+  async generateSOSplitHTMLPreview(
+    soId: string,
+    splitId: string,
+    template: string = 'default',
+  ): Promise<string> {
+    const split = await this.prisma.dispatchSplit.findUnique({
+      where: { id: splitId },
+      include: {
+        items: true,
+        salesOrder: {
+          include: {
+            quotation: {
+              include: {
+                customer: true,
+                items: {
+                  orderBy: { srNo: 'asc' },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!split || !split.salesOrder || !split.salesOrder.quotation) {
+      throw new NotFoundException('Split or Quotation not found');
+    }
+
+    const quotation = split.salesOrder.quotation;
+
+    // Filter and update items for this split
+    const filteredItems = quotation.items.map(item => {
+      const splitItem = split.items.find(si => si.quotationItemId === item.id);
+      const qty = splitItem ? splitItem.quantity : 0;
+      if (qty <= 0) return null;
+
+      return {
+        ...item,
+        quantity: qty,
+        totalAmount: qty * Number(item.rate || 0),
+      };
+    }).filter(Boolean) as unknown as QuotationItem[];
+
+    // Recalculate totals
+    const subtotal = filteredItems.reduce((sum, item) => sum + Number(item.totalAmount), 0);
+    const gstAmount = subtotal * (Number(quotation.gstRate || 18) / 100);
+    const grandTotal = subtotal + gstAmount;
+
+    const mockedQuotation = {
+      ...quotation,
+      items: filteredItems,
+      subtotal: subtotal as any,
+      gstAmount: gstAmount as any,
+      grandTotal: grandTotal as any,
+    };
+
+    return await this.generateQuotationHTML(mockedQuotation, template, true);
+  }
+
   async generateQuotationHTMLPreview(
     quotationId: string,
     template: string = 'default',

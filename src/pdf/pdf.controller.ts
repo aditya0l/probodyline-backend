@@ -90,4 +90,69 @@ export class PdfController {
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   }
+
+  @Post('sales-orders/:soId/splits/:splitId/generate')
+  @ApiOperation({ summary: 'Generate PDF for a Sales Order Split' })
+  @ApiParam({ name: 'soId', description: 'Sales Order UUID' })
+  @ApiParam({ name: 'splitId', description: 'Dispatch Split UUID' })
+  @ApiQuery({
+    name: 'template',
+    required: false,
+    description: 'Template type (default, wholesale, retail, loading, price-list)',
+    enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'PDF file generated successfully',
+    content: { 'application/pdf': {} },
+  })
+  async generateSOSplitPDF(
+    @Param('soId') soId: string,
+    @Param('splitId') splitId: string,
+    @Query('template') template: string = 'default',
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.pdfService.generateSOSplitPDF(
+      soId,
+      splitId,
+      template,
+    );
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="split-${splitId}.pdf"`,
+    );
+    res.send(pdfBuffer);
+  }
+
+  @Get('sales-orders/:soId/splits/:splitId/preview')
+  @ApiOperation({ summary: 'Preview HTML for a Sales Order Split PDF' })
+  @ApiParam({ name: 'soId', description: 'Sales Order UUID' })
+  @ApiParam({ name: 'splitId', description: 'Dispatch Split UUID' })
+  @ApiQuery({
+    name: 'template',
+    required: false,
+    description: 'Template type',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'HTML preview generated successfully',
+    content: { 'text/html': {} },
+  })
+  async previewSOSplitHTML(
+    @Param('soId') soId: string,
+    @Param('splitId') splitId: string,
+    @Query('template') template: string = 'default',
+    @Res() res: Response,
+  ) {
+    const html = await this.pdfService.generateSOSplitHTMLPreview(
+      soId,
+      splitId,
+      template,
+    );
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  }
 }

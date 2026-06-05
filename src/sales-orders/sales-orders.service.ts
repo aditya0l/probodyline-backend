@@ -815,6 +815,48 @@ export class SalesOrdersService {
     });
   }
 
+  // 7. Update Generated Date
+  async updateGeneratedDate(salesOrderId: string, createdAt: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const so = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: { quotation: true },
+      });
+
+      if (!so) throw new NotFoundException('Sales Order not found');
+
+      const newDate = new Date(createdAt);
+
+      await tx.salesOrder.update({
+        where: { id: salesOrderId },
+        data: { createdAt: newDate },
+      });
+
+      await tx.quotation.update({
+        where: { id: so.quotationId },
+        data: { createdAt: newDate },
+      });
+
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+      
+      return tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: {
+          quotation: { include: { items: true } },
+          splits: {
+            include: {
+              items: {
+                include: { quotationItem: true },
+                orderBy: { quotationItem: { srNo: 'asc' } },
+              },
+            },
+            orderBy: { splitNumber: 'asc' },
+          },
+        },
+      });
+    });
+  }
+
   // Helper
   private async getSplitWithDetails(splitId: string, tx: any) {
     return tx.dispatchSplit.findUnique({

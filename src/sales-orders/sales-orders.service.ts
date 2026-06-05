@@ -614,7 +614,7 @@ export class SalesOrdersService {
         const split = await tx.dispatchSplit.create({
           data: {
             salesOrderId: id,
-            splitNumber: i + 1,
+            splitNumber: splitInput.splitNumber || i + 1,
             dispatchDate: splitInput.dispatchDate
               ? new Date(String(splitInput.dispatchDate))
               : null,

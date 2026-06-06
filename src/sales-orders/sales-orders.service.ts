@@ -639,9 +639,8 @@ export class SalesOrdersService {
               data: itemsToCreate,
             });
 
-            // Create Stock Transactions (OUT) and Bookings only for items with quantity > 0
+            // Create Stock Transactions (OUT) and Bookings
             for (const splitItem of itemsToCreate) {
-              if (splitItem.quantity <= 0) continue;
               
               const qItem = so.quotation.items.find(
                 (qi) => qi.id === splitItem.quotationItemId,

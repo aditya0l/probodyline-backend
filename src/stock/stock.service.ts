@@ -79,7 +79,8 @@ export class StockService {
       if (tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId) {
         const split = dispatchSplitMap.get(tx.referenceId);
         if (split) {
-          const totalSplits = split.salesOrder?._count?.splits || split.splitNumber;
+          // If pending split is not saved, _count.splits will be less than the highest split number. Use Math.max to correctly infer total columns.
+          const totalSplits = Math.max(split.salesOrder?._count?.splits || 0, split.splitNumber);
           const firstLetter = String.fromCharCode(64 + split.splitNumber);
           const secondLetter = String.fromCharCode(64 + totalSplits);
           const splitSuffix = `${firstLetter}/${secondLetter}`;

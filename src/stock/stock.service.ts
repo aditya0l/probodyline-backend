@@ -38,7 +38,14 @@ export class StockService {
     const dispatchSplits = dispatchSplitIds.length > 0
       ? await this.prisma.dispatchSplit.findMany({
           where: { id: { in: dispatchSplitIds } },
-          include: { salesOrder: { include: { quotation: { include: { customer: true } } } } },
+          include: { 
+            salesOrder: { 
+              include: { 
+                quotation: { include: { customer: true } },
+                _count: { select: { splits: true } }
+              } 
+            } 
+          },
         })
       : [];
 
@@ -72,10 +79,16 @@ export class StockService {
       if (tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId) {
         const split = dispatchSplitMap.get(tx.referenceId);
         if (split) {
+          const totalSplits = split.salesOrder?._count?.splits || split.splitNumber;
+          const firstLetter = String.fromCharCode(64 + split.splitNumber);
+          const secondLetter = String.fromCharCode(64 + totalSplits);
+          const splitSuffix = `${firstLetter}/${secondLetter}`;
+          const soNumberWithSplit = `${split.salesOrder?.soNumber} ${splitSuffix}`;
+          
           extraData = {
             splitNumber: split.splitNumber,
             splitLabel: split.label,
-            orderNumber: split.salesOrder?.soNumber,
+            orderNumber: soNumberWithSplit,
             clientName: split.salesOrder?.quotation?.clientName,
             gymName: split.salesOrder?.quotation?.gymName,
             bookedOn: split.salesOrder?.quotation?.bookingDate,

@@ -607,6 +607,8 @@ export class SalesOrdersService {
         });
       }
 
+      const totalMatrixSplits = splitsData.length > 0 ? Math.max(...splitsData.map(s => s.splitNumber || 1)) : 1;
+      
       // Re-create new splits from matrix
       for (let i = 0; i < splitsData.length; i++) {
         const splitInput = splitsData[i];
@@ -630,16 +632,17 @@ export class SalesOrdersService {
               dispatchSplitId: split.id,
               quotationItemId: item.itemId || item.quotationItemId,
               quantity: item.quantity,
-            }))
-            .filter((i) => i.quantity > 0);
+            }));
 
           if (itemsToCreate.length > 0) {
             await tx.dispatchSplitItem.createMany({
               data: itemsToCreate,
             });
 
-            // Create Stock Transactions (OUT) and Bookings
+            // Create Stock Transactions (OUT) and Bookings only for items with quantity > 0
             for (const splitItem of itemsToCreate) {
+              if (splitItem.quantity <= 0) continue;
+              
               const qItem = so.quotation.items.find(
                 (qi) => qi.id === splitItem.quotationItemId,
               );
@@ -659,11 +662,15 @@ export class SalesOrdersService {
                   },
                 });
 
+                const firstLetter = String.fromCharCode(64 + split.splitNumber);
+                const secondLetter = String.fromCharCode(64 + totalMatrixSplits);
+                const quoteNumberWithSplit = `${so.soNumber} ${firstLetter}/${secondLetter}`;
+
                 await tx.booking.create({
                   data: {
                     quotationId: so.quotationId,
                     quotationItemId: qItem.id,
-                    quoteNumber: so.quotation.quoteNumber,
+                    quoteNumber: quoteNumberWithSplit,
                     productId: qItem.productId,
                     productName: qItem.productName,
                     modelNumber: qItem.modelNumber,
@@ -693,6 +700,7 @@ export class SalesOrdersService {
       }
 
       this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', id);
+      this.eventsGateway.broadcastEntityUpdate('BOOKING', id); // Broadcast BOOKING updates when matrix changes
 
       return tx.salesOrder.findUnique({
         where: { id },

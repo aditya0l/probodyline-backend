@@ -559,43 +559,32 @@ export class SalesOrdersService {
       });
       if (!so) throw new NotFoundException('Sales Order not found');
 
-      // Revert all existing stock OUT transactions for these splits
+      // Delete master PI_BOOKING/QUOTATION OUT transactions since they are replaced by splits
+      await tx.stockTransaction.deleteMany({
+        where: {
+          referenceId: so.quotationId,
+          referenceType: { in: ['QUOTATION', 'PI_BOOKING'] },
+          transactionType: 'OUT'
+        }
+      });
+
+      // Physically delete old DISPATCH_SPLIT stock OUT transactions
       const oldSplitIds = so.splits.map((s) => s.id);
       if (oldSplitIds.length > 0) {
-        // Return stock IN to undo the OUTs
-        for (const oldSplit of so.splits) {
-          if (oldSplit.status === 'BOOKED') {
-            for (const item of oldSplit.items) {
-              if (item.quantity > 0) {
-                // Find the product
-                const qItem = so.quotation.items.find(
-                  (qi) => qi.id === item.quotationItemId,
-                );
-                if (qItem && qItem.productId) {
-                  await tx.stockTransaction.create({
-                    data: {
-                      productId: qItem.productId,
-                      transactionType: 'IN', // Revert OUT
-                      quantity: item.quantity,
-                      referenceType: 'REVERT_DISPATCH_SPLIT',
-                      referenceId: oldSplit.id,
-                      date: new Date(),
-                      notes: `Revert Disp: ${so.soNumber} / Sp-${oldSplit.splitNumber}`,
-                    },
-                  });
-                }
-              }
-            }
-
-            // Try to delete bookings
-            try {
-              await tx.booking.deleteMany({
-                where: { dispatchSplitId: oldSplit.id },
-              });
-            } catch (e) {
-              console.warn('Failed to delete booking during matrix update', e);
-            }
+        await tx.stockTransaction.deleteMany({
+          where: {
+            referenceId: { in: oldSplitIds },
+            referenceType: 'DISPATCH_SPLIT'
           }
+        });
+
+        // Try to delete bookings
+        try {
+          await tx.booking.deleteMany({
+            where: { dispatchSplitId: { in: oldSplitIds } },
+          });
+        } catch (e) {
+          console.warn('Failed to delete booking during matrix update', e);
         }
 
         // Now delete splits and items
@@ -688,10 +677,7 @@ export class SalesOrdersService {
                   },
                 });
 
-                this.eventsGateway.broadcastEntityUpdate(
-                  'STOCK',
-                  qItem.productId,
-                );
+                // Broadcast will be handled outside the loop to prevent flooding
               }
             }
           }
@@ -700,6 +686,20 @@ export class SalesOrdersService {
 
       this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', id);
       this.eventsGateway.broadcastEntityUpdate('BOOKING', id); // Broadcast BOOKING updates when matrix changes
+
+      // Deduplicate STOCK broadcasts
+      const broadcastProductIds = new Set<string>();
+      splitsData.forEach(split => {
+        split.items?.forEach(item => {
+          const qItem = so.quotation.items.find(qi => qi.id === (item.itemId || item.quotationItemId));
+          if (qItem?.productId) {
+            broadcastProductIds.add(qItem.productId);
+          }
+        });
+      });
+      broadcastProductIds.forEach(productId => {
+        this.eventsGateway.broadcastEntityUpdate('STOCK', productId);
+      });
 
       return tx.salesOrder.findUnique({
         where: { id },

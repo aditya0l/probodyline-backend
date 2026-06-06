@@ -19,21 +19,21 @@ export class StockService {
   ) {}
 
   private async enrichStockTransactions(data: any[]): Promise<any[]> {
-    const dispatchSplitIds = data
+    const dispatchSplitIds = Array.from(new Set(data
       .filter((tx) => tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId)
-      .map((tx) => tx.referenceId as string);
+      .map((tx) => tx.referenceId as string)));
 
-    const poSplitIds = data
+    const poSplitIds = Array.from(new Set(data
       .filter((tx) => tx.referenceType === 'PURCHASE_ORDER_SPLIT' && tx.referenceId)
-      .map((tx) => tx.referenceId as string);
+      .map((tx) => tx.referenceId as string)));
 
-    const poIds = data
+    const poIds = Array.from(new Set(data
       .filter((tx) => tx.referenceType === 'PURCHASE_ORDER' && tx.referenceId)
-      .map((tx) => tx.referenceId as string);
+      .map((tx) => tx.referenceId as string)));
 
-    const quotationIds = data
+    const quotationIds = Array.from(new Set(data
       .filter((tx) => (tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING') && tx.referenceId)
-      .map((tx) => tx.referenceId as string);
+      .map((tx) => tx.referenceId as string)));
 
     const dispatchSplits = dispatchSplitIds.length > 0
       ? await this.prisma.dispatchSplit.findMany({
@@ -87,9 +87,10 @@ export class StockService {
           
           extraData = {
             splitNumber: split.splitNumber,
+            formattedSplitLabel: splitSuffix,
             splitLabel: split.label,
             orderNumber: soNumberWithSplit,
-            clientName: split.salesOrder?.quotation?.clientName,
+            customerName: split.salesOrder?.quotation?.clientName || (split.salesOrder?.quotation as any)?.customer?.name,
             gymName: split.salesOrder?.quotation?.gymName,
             bookedOn: split.salesOrder?.quotation?.bookingDate,
             city: split.salesOrder?.quotation?.clientCity,
@@ -283,10 +284,10 @@ export class StockService {
     ]);
 
     // 1. Fetch Quotations to enrich bookedOn date BEFORE sorting
-    const quotationIds = dataRaw
+    const quotationIds = Array.from(new Set(dataRaw
       .filter((tx) => tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING')
       .map((tx) => tx.referenceId)
-      .filter(Boolean) as string[];
+      .filter(Boolean) as string[]));
 
     let quotationsMap = new Map<string, any>();
     if (quotationIds.length > 0) {

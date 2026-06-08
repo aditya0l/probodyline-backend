@@ -19,6 +19,7 @@ export type QuotationColumnId =
   | 'brand'
   | 'warranty'
   | 'notes'
+  | 'mrp'
   | 'rate'
   | 'quantity'
   | 'totalAmount';
@@ -58,6 +59,19 @@ export interface PDFTemplateData {
   gymArea?: string;
   clientGST?: string;
   leadName?: string;
+  
+  // Client Info visibility flags
+  showClientNameField?: boolean;
+  showAddressLine1Field?: boolean;
+  showAddressLine2Field?: boolean;
+  showCityField?: boolean;
+  showGstNoField?: boolean;
+  showBookingDateField?: boolean;
+  showDispatchDateField?: boolean;
+  showPanCardField?: boolean;
+  showAadharCardField?: boolean;
+  showGymAreaField?: boolean;
+  showGymNameField?: boolean;
 
   // Totals
   subtotal: string;

@@ -30,11 +30,11 @@
     <div class="header-section">
       <div class="header-left">
         {{#if companyLogo}}
-        <img src="{{{companyLogo}}}" alt="Company Logo" class="company-logo">
+        <img src="{{{companyLogo}}}" alt="Company Logo" class="company-logo" style="max-height: 60px;">
         {{/if}}
       </div>
-      <div class="header-right">
-        <div class="company-name">{{companyName}}</div>
+      <div class="header-right" style="font-size: 8pt;">
+        <div class="company-name" style="font-size: 14pt;">CREATIVE ENTERPRISES</div>
         {{#if companyGST}}
         <div class="company-contact">GST No.: {{companyGST}}</div>
         {{/if}}
@@ -50,11 +50,9 @@
         {{#if companyWebsite}}
         <div class="company-contact">Web: www.{{companyWebsite}}</div>
         {{/if}}
-        {{#if companyContactPerson}}
-        <div class="company-contact">Contact: {{companyContactPerson}}</div>
-        {{/if}}
       </div>
     </div>
+    <div style="text-align: center; margin-bottom: 5mm; font-weight: bold; font-size: 12pt;">GYM EQUIPMENT QUOTATION</div>
     {{/if}}
 
     <!-- Document Info Block -->
@@ -65,48 +63,70 @@
         <div>#{{quoteNumber}}</div>
       </div>
       <div class="info-grid">
+        {{#if showClientNameField}}
         <div class="info-row">
-          <div class="info-label">DATE</div>
-          <div class="info-value">{{quoteDate}}</div>
-        </div>
-        <div class="info-row">
-          <div class="info-label">CLIENT NAME</div>
+          <div class="info-label">1. CLIENT NAME</div>
           <div class="info-value">{{#if clientName}}{{clientName}}{{else}}—{{/if}}</div>
         </div>
-        {{#if showGymName}}
+        {{/if}}
+        {{#if showAddressLine1Field}}
         <div class="info-row">
-          <div class="info-label">GYM NAME</div>
+          <div class="info-label">2. ADDRESS LINE 1</div>
+          <div class="info-value">{{#if clientAddress}}{{{clientAddress}}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if showAddressLine2Field}}
+        <div class="info-row">
+          <div class="info-label">3. ADDRESS LINE 2</div>
+          <div class="info-value">—</div>
+        </div>
+        {{/if}}
+        {{#if showCityField}}
+        <div class="info-row">
+          <div class="info-label">4. CITY</div>
+          <div class="info-value">{{#if clientCity}}{{clientCity}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if showGstNoField}}
+        <div class="info-row">
+          <div class="info-label">5. GST NO.</div>
+          <div class="info-value">{{#if clientGST}}{{clientGST}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if showBookingDateField}}
+        <div class="info-row">
+          <div class="info-label">6. BOOKING DATE</div>
+          <div class="info-value">{{#if bookingDate}}{{bookingDate}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if showDispatchDateField}}
+        <div class="info-row">
+          <div class="info-label">7. DISPATCH DATE</div>
+          <div class="info-value">{{#if dispatchDate}}{{dispatchDate}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if showPanCardField}}
+        <div class="info-row">
+          <div class="info-label">8. PAN CARD</div>
+          <div class="info-value">—</div>
+        </div>
+        {{/if}}
+        {{#if showAadharCardField}}
+        <div class="info-row">
+          <div class="info-label">9. AADHAR CARD</div>
+          <div class="info-value">—</div>
+        </div>
+        {{/if}}
+        {{#if showGymAreaField}}
+        <div class="info-row">
+          <div class="info-label">10. GYM AREA (Sq.ft)</div>
+          <div class="info-value">{{#if gymArea}}{{gymArea}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
+        {{#if showGymNameField}}
+        <div class="info-row">
+          <div class="info-label">11. GYM NAME</div>
           <div class="info-value">{{#if gymName}}{{gymName}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{#if gymArea}}
-        <div class="info-row">
-          <div class="info-label">GYM AREA</div>
-          <div class="info-value">{{gymArea}}</div>
-        </div>
-        {{/if}}
-        {{#if clientGST}}
-        <div class="info-row">
-          <div class="info-label">CLIENT GST</div>
-          <div class="info-value">{{clientGST}}</div>
-        </div>
-        {{/if}}
-        {{#if showDeliveryDate}}
-        <div class="info-row">
-          <div class="info-label">DELIVERY DATE</div>
-          <div class="info-value">{{#if deliveryDate}}{{deliveryDate}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{#if dispatchDate}}
-        <div class="info-row">
-          <div class="info-label">DISPATCH DATE</div>
-          <div class="info-value">{{dispatchDate}}</div>
-        </div>
-        {{/if}}
-        {{#if bookingDate}}
-        <div class="info-row">
-          <div class="info-label">BOOKING DATE</div>
-          <div class="info-value">{{bookingDate}}</div>
         </div>
         {{/if}}
       </div>

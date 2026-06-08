@@ -1,5 +1,6 @@
 // PDF Template Engine Helpers
 // Column definitions and helper functions for building table data
+import sharp from 'sharp';
 
 import { QuotationColumnId, PDFTemplateData } from './types';
 import { QuotationItem } from '@prisma/client';
@@ -9,25 +10,11 @@ import * as path from 'path';
 // Canonical column order - defines the standard left-to-right order for columns in PDFs
 export const CANONICAL_COLUMN_ORDER: QuotationColumnId[] = [
   'srNo',
-  'productImage',
   'productName',
-  'modelNumber',
-  'priority',
-  'productType',
-  'seriesName',
-  'packagingDescription',
-  'keyword',
-  'todaysStock',
-  'stockPlus360Days',
-  'cousinMachine',
-  'orderTogether',
-  'swapMachine',
-  'category',
-  'brand',
-  'warranty',
-  'notes',
-  'rate',
+  'productImage',
   'quantity',
+  'mrp',
+  'rate',
   'totalAmount',
 ];
 
@@ -50,6 +37,7 @@ export const COLUMN_LABELS: Record<QuotationColumnId, string> = {
   brand: 'Brand',
   warranty: 'Warranty',
   notes: 'Notes',
+  mrp: 'MRP',
   rate: 'Rate',
   quantity: 'Quantity',
   totalAmount: 'Amount',
@@ -74,6 +62,7 @@ const HEADER_ABBREVIATIONS: Record<string, string> = {
   Brand: 'BRAND',
   Warranty: 'WAR',
   Notes: 'NOTES',
+  MRP: 'MRP',
   Rate: 'RATE',
   Quantity: 'QTY',
   Amount: 'AMT',
@@ -85,6 +74,7 @@ export function getColumnClass(colId: QuotationColumnId): string {
     cls += ' col-center';
   } else if (
     colId === 'rate' ||
+    colId === 'mrp' ||
     colId === 'quantity' ||
     colId === 'totalAmount' ||
     colId === 'todaysStock' ||
@@ -142,6 +132,8 @@ export function getCellValue(
       return item.warranty || '';
     case 'notes':
       return item.notes || '';
+    case 'mrp':
+      return '—';
     case 'rate': {
       const rate =
         typeof item.rate === 'object' &&
@@ -216,8 +208,15 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
       '.webp': 'image/webp',
     };
     const mimeType = mimeTypes[ext] || 'image/png';
-    const base64 = imageBuffer.toString('base64');
-    return `data:${mimeType};base64,${base64}`;
+    
+    // Compress image using Sharp
+    const compressedBuffer = await sharp(imageBuffer)
+      .resize(150, 150, { fit: 'inside' })
+      .webp({ quality: 60 })
+      .toBuffer();
+
+    const base64 = compressedBuffer.toString('base64');
+    return `data:image/webp;base64,${base64}`;
   } catch (error) {
     console.error(`Error converting image to data URL: ${imagePath}`, error);
     return '';

@@ -12,6 +12,7 @@ import {
 } from './pdf-template-engine-helpers';
 import { QuotationColumnId, PDFTemplateData } from './types';
 import { Quotation, Customer, QuotationItem } from '@prisma/client';
+import { LOGO_BASE64 } from './logo-base64';
 
 @Injectable()
 export class PdfService {
@@ -23,6 +24,7 @@ export class PdfService {
   async generateQuotationPDF(
     quotationId: string,
     template: string = 'default',
+    visibleClientFields?: string[],
   ): Promise<Buffer> {
     // Get quotation data with full organization details
     const quotation = await this.quotationsService.findOne(quotationId);
@@ -46,7 +48,7 @@ export class PdfService {
     }
 
     // Generate HTML from quotation data
-    const html = await this.generateQuotationHTML(fullQuotation, template);
+    const html = await this.generateQuotationHTML(fullQuotation, template, false, visibleClientFields);
 
     // Launch Puppeteer with optimized settings for faster PDF generation
     const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -94,6 +96,7 @@ export class PdfService {
         },
       });
 
+      console.log('PDF Generated. Size:', (pdf.length / 1024).toFixed(2), 'KB');
       return Buffer.from(pdf);
     } finally {
       await browser.close();
@@ -104,6 +107,7 @@ export class PdfService {
     soId: string,
     splitId: string,
     template: string = 'default',
+    visibleClientFields?: string[],
   ): Promise<Buffer> {
     const split = await this.prisma.dispatchSplit.findUnique({
       where: { id: splitId },
@@ -156,7 +160,7 @@ export class PdfService {
       grandTotal: grandTotal as any,
     };
 
-    const html = await this.generateQuotationHTML(mockedQuotation, template);
+    const html = await this.generateQuotationHTML(mockedQuotation, template, false, visibleClientFields);
 
     const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     const browser = await puppeteer.launch({
@@ -169,6 +173,7 @@ export class PdfService {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
       const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '12mm', left: '10mm' } });
+      console.log('PDF Generated (SO Split). Size:', (pdf.length / 1024).toFixed(2), 'KB');
       return Buffer.from(pdf);
     } finally {
       await browser.close();
@@ -179,6 +184,7 @@ export class PdfService {
     soId: string,
     splitId: string,
     template: string = 'default',
+    visibleClientFields?: string[],
   ): Promise<string> {
     const split = await this.prisma.dispatchSplit.findUnique({
       where: { id: splitId },
@@ -231,12 +237,13 @@ export class PdfService {
       grandTotal: grandTotal as any,
     };
 
-    return await this.generateQuotationHTML(mockedQuotation, template, true);
+    return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields);
   }
 
   async generateQuotationHTMLPreview(
     quotationId: string,
     template: string = 'default',
+    visibleClientFields?: string[],
   ): Promise<string> {
     // Fetch full quotation with all details
     const fullQuotation = await this.prisma.quotation.findUnique({
@@ -253,7 +260,7 @@ export class PdfService {
       throw new NotFoundException('Quotation not found');
     }
 
-    return await this.generateQuotationHTML(fullQuotation, template, true);
+    return await this.generateQuotationHTML(fullQuotation, template, true, visibleClientFields);
   }
 
   private async generateQuotationHTML(
@@ -263,6 +270,7 @@ export class PdfService {
     },
     templateType: string,
     isPreview = false,
+    visibleClientFields?: string[],
   ): Promise<string> {
     const customer = quotation.customer;
 
@@ -388,15 +396,11 @@ export class PdfService {
         !isPreview,
       );
 
-    // Convert company logo to base64
-    let companyLogoBase64 = '';
-    if (quotation.companyLogo) {
-      try {
-        companyLogoBase64 = await imageToDataURL(quotation.companyLogo);
-      } catch (error) {
-        console.error('Failed to load company logo:', error);
-      }
-    }
+    // Use hardcoded base64 for reliable layout
+    let companyLogoBase64 = LOGO_BASE64;
+    
+    // Map visibleClientFields to boolean flags. If visibleClientFields is not provided, default all to true.
+    const showField = (field: string) => visibleClientFields ? visibleClientFields.includes(field) : true;
 
     const data: PDFTemplateData = {
       // Company Info (denormalized from quotation)
@@ -440,6 +444,19 @@ export class PdfService {
       clientGST: customer?.gst || quotation.clientGST || undefined,
       leadName: quotation.leadName || undefined,
       status: quotation.status || 'DRAFT',
+      
+      // Client Info visibility flags
+      showClientNameField: showField('clientName'),
+      showAddressLine1Field: showField('addressLine1'),
+      showAddressLine2Field: showField('addressLine2'),
+      showCityField: showField('city'),
+      showGstNoField: showField('gstNo'),
+      showBookingDateField: showField('bookingDate'),
+      showDispatchDateField: showField('dispatchDate'),
+      showPanCardField: showField('panCard'),
+      showAadharCardField: showField('aadharCard'),
+      showGymAreaField: showField('gymArea'),
+      showGymNameField: showField('gymName'),
 
       // Totals
       subtotal: toNumber(quotation.subtotal).toLocaleString('en-IN'),

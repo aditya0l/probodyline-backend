@@ -901,8 +901,8 @@ export class StockService {
     // 5. Determine Status based on selectedDate
     let status: 'SAFE' | 'AT RISK' | 'WAITING LIST' = 'SAFE';
     
-    // Use the stock on the selected date (stockAtDispatch) for immediate status check
-    if (stockAtDispatch <= 0) {
+    // Use the stock on the selected date (stockOnSelectedDate) for immediate status check
+    if (stockOnSelectedDate <= 0) {
       status = 'WAITING LIST';
     } else {
       // Check for any dips in the 30 days following the selected date

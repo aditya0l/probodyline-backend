@@ -51,6 +51,16 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
+  @Get('verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify JWT token' })
+  @ApiResponse({ status: 200, description: 'Token is valid' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async verify() {
+    return { valid: true };
+  }
+
   @Get('profile')
   @UseGuards(DevAuthBypassGuard, JwtAuthGuard)
   @ApiBearerAuth()

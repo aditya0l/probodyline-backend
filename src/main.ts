@@ -1,10 +1,12 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { ConfigService } from '@nestjs/config';
 
 
 import { json, urlencoded } from 'express';
@@ -79,6 +81,10 @@ async function bootstrap() {
 
   // Set global prefix for API routes
   app.setGlobalPrefix('api');
+
+  // Apply Global Auth Guard
+  const configService = app.get(ConfigService);
+  app.useGlobalGuards(new JwtAuthGuard(configService));
 
   // Swagger API Documentation
   const config = new DocumentBuilder()

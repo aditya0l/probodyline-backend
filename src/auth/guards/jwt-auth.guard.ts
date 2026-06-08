@@ -9,12 +9,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
-    const isAuthDisabled = this.configService.get<boolean>(
-      'auth.disabled',
-      false,
-    );
+    const request = context.switchToHttp().getRequest();
+    if (request.url.includes('/api/auth/login') || request.url.includes('/api/auth/register')) {
+      return true;
+    }
 
-    if (isAuthDisabled) {
+    const isAuthDisabled = this.configService.get<boolean>(
       // Auth is disabled - inject mock user and skip JWT validation
       const request = context.switchToHttp().getRequest();
       request.user = {

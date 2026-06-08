@@ -898,18 +898,19 @@ export class StockService {
         }
       : { date: null, quantity: null };
 
-    // 5. Determine Status
+    // 5. Determine Status based on selectedDate
     let status: 'SAFE' | 'AT RISK' | 'WAITING LIST' = 'SAFE';
-    // Use Physical Stock for immediate status check
-    if (todaysPhysicalStock < 0) {
+    
+    // Use the stock on the selected date (stockAtDispatch) for immediate status check
+    if (stockAtDispatch <= 0) {
       status = 'WAITING LIST';
     } else {
-      // Check for any dips in the next 30 days
+      // Check for any dips in the 30 days following the selected date
       const minBal30 = calculateMinProjectedBalance(
-        today.toISOString().split('T')[0],
+        selectedDateObj.toISOString().split('T')[0],
         30,
       );
-      if (minBal30 < 0) {
+      if (minBal30 <= 0) {
         status = 'AT RISK';
       }
     }

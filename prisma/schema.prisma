@@ -899,3 +899,18 @@ model ChallanItem {
   @@index([challanId])
   @@map("challan_items")
 }
+
+// Calendar Events
+model CalendarEvent {
+  id        String   @id @default(uuid())
+  date      DateTime
+  title     String
+  notes     String?  @db.Text
+  color     String   @default("#FAC775")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@map("calendar_events")
+}

@@ -34,6 +34,7 @@ import { configValidationSchema } from './config/config.schema';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { ChallansModule } from './challans/challans.module';
 import { SearchModule } from './search/search.module';
+import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { SearchModule } from './search/search.module';
     PurchaseOrdersModule,
     ChallansModule,
     SearchModule,
+    CalendarEventsModule,
   ],
   controllers: [AppController],
   providers: [

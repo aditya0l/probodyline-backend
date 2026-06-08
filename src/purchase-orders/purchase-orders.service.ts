@@ -99,6 +99,7 @@ export class PurchaseOrdersService {
           poNumber: true,
           createdAt: true,
           status: true,
+          bookedOn: true,
           jaipurArrival: true,
           supplierName: true,
           items: true,

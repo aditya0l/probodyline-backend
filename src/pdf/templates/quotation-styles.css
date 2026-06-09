@@ -63,7 +63,7 @@ body.landscape .quotation-container {
 .header-section {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center; /* Center vertically with logo */
   margin-bottom: 5mm;
   padding-bottom: 5mm;
   border-bottom: 1px solid var(--border);
@@ -308,11 +308,14 @@ body.landscape .product-name-txt {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
 }
 
 .product-image {
-  max-height: 80px !important;
-  width: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   object-fit: contain !important;
   background-color: transparent;
   display: block;

@@ -76,7 +76,7 @@ body.landscape .quotation-container {
 }
 
 .company-logo {
-  max-height: 120px;
+  max-height: 150px;
   width: auto;
   object-fit: contain;
   display: block;

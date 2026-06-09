@@ -417,19 +417,19 @@ export class PdfService {
       quoteNumber: quotation.quoteNumber,
       quoteDate: this.formatDateWithTime(quotation.createdAt),
       deliveryDate: quotation.deliveryDate
-        ? new Date(quotation.deliveryDate).toLocaleDateString('en-IN')
+        ? this.formatDateFriendly(quotation.deliveryDate)
         : undefined,
       bookingDate: quotation.bookingDate
-        ? this.formatDateWithTime(quotation.bookingDate)
+        ? this.formatDateFriendly(quotation.bookingDate)
         : undefined,
       dispatchDate: quotation.dispatchDate
-        ? this.formatDateOnly(quotation.dispatchDate)
+        ? this.formatDateFriendly(quotation.dispatchDate)
         : undefined,
       installationDate: quotation.installationDate
-        ? this.formatDateOnly(quotation.installationDate)
+        ? this.formatDateFriendly(quotation.installationDate)
         : undefined,
       inaugurationDate: quotation.inaugurationDate
-        ? this.formatDateOnly(quotation.inaugurationDate)
+        ? this.formatDateFriendly(quotation.inaugurationDate)
         : undefined,
       templateType: templateType,
       isDefaultTemplate: templateType === 'default',
@@ -541,5 +541,16 @@ export class PdfService {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Format date as dd/mm/yyyy
+   */
+  private formatDateFriendly(date: Date | string): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${day}/${month}/${year}`;
   }
 }

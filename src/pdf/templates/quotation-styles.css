@@ -173,6 +173,7 @@ body.landscape .quotation-container {
   color: var(--text-primary);
   font-weight: bold;
   width: auto !important;
+  word-break: break-all;
 }
 
 /* Table Section */
@@ -188,12 +189,12 @@ body.landscape .quotation-container {
 }
 
 /* Portrait column widths (8 or fewer columns) */
-.products-table .col-srNo { width: 4%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
-.products-table .col-productImage { width: 12%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
-.products-table .col-productName { width: 32%; }
-.products-table .col-modelNumber { width: 12%; word-break: break-all !important; }
+.products-table .col-srNo { width: 5%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
+.products-table .col-productImage { width: 18%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
+.products-table .col-productName { width: 37%; }
+.products-table .col-modelNumber { width: 10%; word-break: break-all !important; }
 .products-table .col-quantity { width: 8%; }
-.products-table .col-rate { width: 12%; }
+.products-table .col-rate { width: 10%; }
 .products-table .col-totalAmount { width: 12%; }
 
 /* Landscape column widths (more than 8 columns) */
@@ -308,7 +309,7 @@ body.landscape .product-name-txt {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 80px;
+  width: 100%;
   height: 80px;
   margin: 0 auto;
 }

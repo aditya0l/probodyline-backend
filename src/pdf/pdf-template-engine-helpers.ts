@@ -211,8 +211,8 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     
     // Compress base64 images down significantly using Sharp to keep PDF size small while improving zoom quality
     const compressed = await sharp(imageBuffer)
-      .resize(450, 450, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 60 })
+      .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 50 })
       .toBuffer();
 
     const base64 = compressed.toString('base64');

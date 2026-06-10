@@ -205,21 +205,23 @@
     {{/if}}
     {{/if}}
 
-    <!-- Bank Details Section -->
-    {{#if showBankDetails}}
-      {{#if bankDetails}}
-      <div class="bank-details-section">
-        <div class="bank-details-title">Details Of Bank A/C :</div>
-        <div class="bank-details-content">{{{bankDetails}}}</div>
+    <div class="footer-details-wrapper" style="page-break-inside: avoid;">
+      <!-- Bank Details Section -->
+      {{#if showBankDetails}}
+        {{#if bankDetails}}
+        <div class="bank-details-section">
+          <div class="bank-details-title">Details Of Bank A/C :</div>
+          <div class="bank-details-content">{{{bankDetails}}}</div>
+        </div>
+        {{/if}}
+      {{/if}}
+
+      {{#if computerGeneratedText}}
+      <div class="computer-generated-text" style="text-align: center; font-size: 8pt; color: #666; padding: 15px 0;">
+        {{computerGeneratedText}}
       </div>
       {{/if}}
-    {{/if}}
-
-    {{#if computerGeneratedText}}
-    <div class="computer-generated-text">
-      {{computerGeneratedText}}
     </div>
-    {{/if}}
 
     <!-- Disclaimer -->
     {{#if showDisclaimer}}

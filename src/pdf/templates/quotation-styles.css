@@ -212,7 +212,7 @@ body.landscape .products-table .col-quantity { width: 5% !important; }
 body.landscape .products-table .col-totalAmount { width: 7% !important; }
 
 .products-table thead {
-  display: table-header-group;
+  display: table-row-group;
 }
 
 .products-table tbody {
@@ -531,11 +531,11 @@ body.landscape .no-image-placeholder {
 
 /* Bank Details */
 .bank-details-section {
-  background-color: var(--row-alt);
-  border: 1px solid var(--border);
-  padding: 8px !important; /* padding 8px */
-  margin-bottom: 6mm;
-  page-break-inside: avoid;
+  margin-top: 15px;
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  font-size: 8pt;
+  line-height: 1.4;
 }
 
 .bank-details-title {

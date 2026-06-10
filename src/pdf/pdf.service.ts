@@ -363,8 +363,8 @@ export class PdfService implements OnModuleDestroy {
         // Retail: always use predefined columns (ignore saved visibleColumns)
         visibleColumns = [
           'srNo',
-          'productImage',
           'productName',
+          'productImage',
           'modelNumber',
           'quantity',
         ];
@@ -379,8 +379,8 @@ export class PdfService implements OnModuleDestroy {
         // Loading slip: always use predefined columns (ignore saved visibleColumns)
         visibleColumns = [
           'srNo',
-          'productImage',
           'productName',
+          'productImage',
           'modelNumber',
           'quantity',
         ];
@@ -394,8 +394,8 @@ export class PdfService implements OnModuleDestroy {
         // Price list: always use predefined columns (ignore saved visibleColumns)
         visibleColumns = [
           'srNo',
-          'productImage',
           'productName',
+          'productImage',
           'modelNumber',
           'rate',
         ];
@@ -436,6 +436,7 @@ export class PdfService implements OnModuleDestroy {
         visibleColumns,
         visibleColumns.length,
         !isPreview,
+        templateType,
       );
 
     // Use hardcoded base64 for reliable layout

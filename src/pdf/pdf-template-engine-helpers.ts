@@ -90,12 +90,18 @@ export function getColumnClass(colId: QuotationColumnId): string {
 export function getCellValue(
   item: QuotationItem,
   colId: QuotationColumnId,
+  templateType: string = 'default'
 ): string {
   switch (colId) {
     case 'srNo':
       return String(item.srNo);
-    case 'productName':
-      return item.productName ? `<span class="product-name-txt">${item.productName}</span>` : '';
+    case 'productName': {
+      let html = item.productName ? `<span class="product-name-txt">${item.productName}</span>` : '';
+      if (templateType === 'loading' && Array.isArray(item.packagingDescription) && item.packagingDescription.length > 0) {
+        html += `<div style="font-size: 7pt; color: #555; margin-top: 4px; padding-top: 2px;">${item.packagingDescription.join(', ')}</div>`;
+      }
+      return html;
+    }
     case 'productImage':
       return item.productImage || '';
     case 'modelNumber':
@@ -229,6 +235,7 @@ export async function buildTableData(
   visibleColumns: QuotationColumnId[],
   columnCount?: number,
   convertToBase64 = true,
+  templateType = 'default',
 ): Promise<{ headers: any[]; rows: any[] }> {
   const useAbbreviations = columnCount !== undefined && columnCount >= 10;
 
@@ -260,7 +267,7 @@ export async function buildTableData(
       try {
         const cells = await Promise.all(
           visibleColumns.map(async (colId) => {
-            let value = getCellValue(item, colId);
+            let value = getCellValue(item, colId, templateType);
             const isImage = colId === 'productImage';
 
             // Convert product images

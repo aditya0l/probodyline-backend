@@ -209,11 +209,11 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     };
     const mimeType = mimeTypes[ext] || 'image/png';
     
-    // Compress base64 images down significantly using Sharp to keep PDF size small while improving zoom quality
-    // JPEG gives much better size/quality ratio for these large resolutions than WebP in this context
+    // 900px = 6x the original 150px resolution for crystal clear zoom
+    // JPEG quality 40 + progressive keeps each image ~15-25KB (tiny) while sharp at zoom
     const compressed = await sharp(imageBuffer)
-      .resize(500, 500, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 65, progressive: true })
+      .resize(900, 900, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 40, progressive: true, mozjpeg: true })
       .toBuffer();
 
     const base64 = compressed.toString('base64');

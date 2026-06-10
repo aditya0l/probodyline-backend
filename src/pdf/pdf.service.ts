@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import puppeteer from 'puppeteer';
+import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
+import puppeteer, { Browser } from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 import { QuotationsService } from '../quotations/quotations.service';
@@ -15,11 +15,61 @@ import { Quotation, Customer, QuotationItem } from '@prisma/client';
 import { LOGO_BASE64 } from './logo-base64';
 
 @Injectable()
-export class PdfService {
+export class PdfService implements OnModuleDestroy {
+  private browserInstance: Browser | null = null;
+  private browserLaunchPromise: Promise<Browser> | null = null;
+
   constructor(
     private quotationsService: QuotationsService,
     private prisma: PrismaService,
   ) {}
+
+  async onModuleDestroy() {
+    if (this.browserInstance) {
+      await this.browserInstance.close();
+      this.browserInstance = null;
+    }
+  }
+
+  private async getBrowser(): Promise<Browser> {
+    // If we already have a healthy browser, return it
+    if (this.browserInstance) {
+      try {
+        // Quick health check
+        await this.browserInstance.version();
+        return this.browserInstance;
+      } catch {
+        this.browserInstance = null;
+        this.browserLaunchPromise = null;
+      }
+    }
+
+    // If a launch is already in progress, wait for it
+    if (this.browserLaunchPromise) {
+      return this.browserLaunchPromise;
+    }
+
+    // Launch a new browser
+    this.browserLaunchPromise = puppeteer.launch({
+      headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--disable-software-rasterizer',
+        '--disable-extensions',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+      ],
+    });
+
+    this.browserInstance = await this.browserLaunchPromise;
+    this.browserLaunchPromise = null;
+    return this.browserInstance;
+  }
 
   async generateQuotationPDF(
     quotationId: string,
@@ -50,27 +100,11 @@ export class PdfService {
     // Generate HTML from quotation data
     const html = await this.generateQuotationHTML(fullQuotation, template, false, visibleClientFields);
 
-    // Launch Puppeteer with optimized settings for faster PDF generation
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    const browser = await puppeteer.launch({
-      headless: true,
-      executablePath,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage', // Overcome limited resource problems
-        '--disable-gpu', // Disable GPU hardware acceleration
-        '--disable-software-rasterizer',
-        '--disable-extensions',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-      ],
-    });
+    // Reuse persistent browser instance for speed
+    const browser = await this.getBrowser();
+    const page = await browser.newPage();
 
     try {
-      const page = await browser.newPage();
-      // Use 'domcontentloaded' instead of 'networkidle0' for faster loading
       await page.setContent(html, {
         waitUntil: 'domcontentloaded',
         timeout: 15000,
@@ -99,7 +133,7 @@ export class PdfService {
       console.log('PDF Generated. Size:', (pdf.length / 1024).toFixed(2), 'KB');
       return Buffer.from(pdf);
     } finally {
-      await browser.close();
+      await page.close();
     }
   }
 
@@ -163,20 +197,18 @@ export class PdfService {
     const html = await this.generateQuotationHTML(mockedQuotation, template, false, visibleClientFields);
 
     const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-    const browser = await puppeteer.launch({
-      headless: true,
-      executablePath,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    const browser = await this.getBrowser();
 
     try {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
       const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '12mm', left: '10mm' } });
       console.log('PDF Generated (SO Split). Size:', (pdf.length / 1024).toFixed(2), 'KB');
+      await page.close();
       return Buffer.from(pdf);
-    } finally {
-      await browser.close();
+    } catch (e) {
+      console.error(e);
+      throw e;
     }
   }
 

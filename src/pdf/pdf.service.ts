@@ -490,6 +490,7 @@ export class PdfService {
       bankDetails: quotation.bankDetails || undefined,
       termsAndConditions: quotation.termsAndConditions || undefined,
       warrantyInfo: quotation.warrantyInfo || undefined,
+      computerGeneratedText: `This is a computer Generated Quotation, Page 1 of 1 for #${quotation.quoteNumber || quotation.id}, ${quotation.status === 'BOOKED' ? 'Booked' : 'Booking Pending'}`,
 
       // CSS content (will be injected)
       CSS_CONTENT: '',

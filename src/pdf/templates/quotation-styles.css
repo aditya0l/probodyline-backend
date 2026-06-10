@@ -76,7 +76,7 @@ body.landscape .quotation-container {
 }
 
 .company-logo {
-  max-height: 170px;
+  max-height: 200px;
   width: auto;
   object-fit: contain;
   display: block;
@@ -445,13 +445,13 @@ body.landscape .no-image-placeholder {
 }
 
 .gst-text-left {
-  text-align: left;
+  text-align: center;
   padding-left: 10px !important;
   border-right: none !important;
 }
 
 .gst-label {
-  text-align: right;
+  text-align: center;
   padding-right: 10px !important;
   border-right: none !important;
   border-left: none !important;
@@ -468,22 +468,28 @@ body.landscape .no-image-placeholder {
 }
 
 .amount-words-left {
-  text-align: left;
-  font-style: italic;
-  color: var(--text-secondary);
-  font-size: 8pt;
+  text-align: center;
+  color: #000;
+  font-size: 8.5pt;
   vertical-align: middle;
   border-right: none !important;
 }
 
 .g-total-label {
-  text-align: right;
+  text-align: center;
   font-weight: bold;
   font-size: 11pt;
   vertical-align: middle;
   padding-right: 10px !important;
   border-right: none !important;
   border-left: none !important;
+}
+
+.computer-generated-text {
+  text-align: center;
+  font-size: 8pt;
+  color: #666;
+  margin: 15px 0;
 }
 
 .g-total-value {

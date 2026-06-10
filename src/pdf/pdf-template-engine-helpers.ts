@@ -209,13 +209,13 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     };
     const mimeType = mimeTypes[ext] || 'image/png';
     
-    // Compress image using Sharp
-    const compressedBuffer = await sharp(imageBuffer)
-      .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 75 })
+    // Compress base64 images down significantly using Sharp to keep PDF size small while improving zoom quality
+    const compressed = await sharp(imageBuffer)
+      .resize(450, 450, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 60 })
       .toBuffer();
 
-    const base64 = compressedBuffer.toString('base64');
+    const base64 = compressed.toString('base64');
     return `data:image/webp;base64,${base64}`;
   } catch (error) {
     console.error(`Error converting image to data URL: ${imagePath}`, error);

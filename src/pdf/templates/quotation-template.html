@@ -209,10 +209,16 @@
     {{#if showBankDetails}}
       {{#if bankDetails}}
       <div class="bank-details-section">
-        <div class="bank-details-title">Details Of Bank A/C:</div>
+        <div class="bank-details-title">Details Of Bank A/C :</div>
         <div class="bank-details-content">{{{bankDetails}}}</div>
       </div>
       {{/if}}
+    {{/if}}
+
+    {{#if computerGeneratedText}}
+    <div class="computer-generated-text">
+      {{computerGeneratedText}}
+    </div>
     {{/if}}
 
     <!-- Disclaimer -->

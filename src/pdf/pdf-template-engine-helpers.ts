@@ -209,11 +209,11 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     };
     const mimeType = mimeTypes[ext] || 'image/png';
     
-    // 900px = 6x the original 150px resolution for crystal clear zoom
-    // JPEG quality 40 + progressive keeps each image ~15-25KB (tiny) while sharp at zoom
+    // 1200px = 8x the original 150px resolution for ultra clear zoom
+    // JPEG quality 80 + progressive keeps each image ~30-50KB while extremely sharp
     const compressed = await sharp(imageBuffer)
-      .resize(900, 900, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 40, progressive: true, mozjpeg: true })
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 80, progressive: true, mozjpeg: true })
       .toBuffer();
 
     const base64 = compressed.toString('base64');

@@ -122,10 +122,13 @@ export class PdfService implements OnModuleDestroy {
         format: 'A4',
         landscape: useLandscape,
         printBackground: true,
+        displayHeaderFooter: true,
+        headerTemplate: '<span></span>',
+        footerTemplate: `<div style="font-size: 8px; width: 100%; text-align: center; color: #666; font-family: Arial, sans-serif;">This is a computer Generated Quotation, Page <span class="pageNumber"></span> of <span class="totalPages"></span> for #${quotation.quoteNumber || quotation.id}, ${quotation.status === 'BOOKED' ? 'Booked' : 'Booking Pending'}</div>`,
         margin: {
           top: '10mm',
           right: '10mm',
-          bottom: '12mm',
+          bottom: '15mm',
           left: '10mm',
         },
       });
@@ -202,7 +205,14 @@ export class PdfService implements OnModuleDestroy {
     try {
       const page = await browser.newPage();
       await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      const pdf = await page.pdf({ format: 'A4', printBackground: true, margin: { top: '10mm', right: '10mm', bottom: '12mm', left: '10mm' } });
+      const pdf = await page.pdf({ 
+        format: 'A4', 
+        printBackground: true, 
+        displayHeaderFooter: true,
+        headerTemplate: '<span></span>',
+        footerTemplate: `<div style="font-size: 8px; width: 100%; text-align: center; color: #666; font-family: Arial, sans-serif;">This is a computer Generated Quotation, Page <span class="pageNumber"></span> of <span class="totalPages"></span> for #${quotation.quoteNumber || quotation.id}, ${quotation.status === 'BOOKED' ? 'Booked' : 'Booking Pending'}</div>`,
+        margin: { top: '10mm', right: '10mm', bottom: '15mm', left: '10mm' } 
+      });
       console.log('PDF Generated (SO Split). Size:', (pdf.length / 1024).toFixed(2), 'KB');
       await page.close();
       return Buffer.from(pdf);

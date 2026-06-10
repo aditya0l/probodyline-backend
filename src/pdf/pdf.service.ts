@@ -469,6 +469,8 @@ export class PdfService {
       tableHeaders: tableHeaders,
       products: productsTableRows,
       columnCount: visibleColumns.length,
+      colSpanMinusOne: visibleColumns.length - 1,
+      colSpanMinusTwo: Math.max(1, visibleColumns.length - 2),
       useLandscape: useLandscape,
 
       // Conditional Flags

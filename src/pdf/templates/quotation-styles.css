@@ -76,7 +76,7 @@ body.landscape .quotation-container {
 }
 
 .company-logo {
-  max-height: 150px;
+  max-height: 170px;
   width: auto;
   object-fit: contain;
   display: block;
@@ -421,6 +421,76 @@ body.landscape .no-image-placeholder {
 .g-total-row .totals-value {
   color: #FFFFFF !important;
   font-weight: bold !important;
+}
+
+/* Inline Totals CSS */
+.totals-label-inline {
+  text-align: right;
+  font-weight: bold;
+  padding-right: 10px !important;
+  border-right: none !important;
+}
+
+.totals-value-inline {
+  font-weight: bold;
+}
+
+.gst-highlight-row td {
+  background-color: #FFB3B3 !important;
+  border-color: #FFB3B3 !important;
+  color: #000 !important;
+  font-weight: bold !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+.gst-text-left {
+  text-align: left;
+  padding-left: 10px !important;
+  border-right: none !important;
+}
+
+.gst-label {
+  text-align: right;
+  padding-right: 10px !important;
+  border-right: none !important;
+  border-left: none !important;
+}
+
+.gst-value {
+  text-align: right;
+  border-left: none !important;
+}
+
+.g-total-inline-row td {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
+.amount-words-left {
+  text-align: left;
+  font-style: italic;
+  color: var(--text-secondary);
+  font-size: 8pt;
+  vertical-align: middle;
+  border-right: none !important;
+}
+
+.g-total-label {
+  text-align: right;
+  font-weight: bold;
+  font-size: 11pt;
+  vertical-align: middle;
+  padding-right: 10px !important;
+  border-right: none !important;
+  border-left: none !important;
+}
+
+.g-total-value {
+  font-weight: bold;
+  font-size: 11pt;
+  vertical-align: middle;
+  border-left: none !important;
 }
 
 /* Amount in words */

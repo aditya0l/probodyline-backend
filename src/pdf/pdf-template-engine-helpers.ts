@@ -39,7 +39,7 @@ export const COLUMN_LABELS: Record<QuotationColumnId, string> = {
   notes: 'Notes',
   mrp: 'MRP',
   rate: 'Rate',
-  quantity: 'Quantity',
+  quantity: 'QTY',
   totalAmount: 'Amount',
 };
 
@@ -211,8 +211,8 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     
     // Compress image using Sharp
     const compressedBuffer = await sharp(imageBuffer)
-      .resize(150, 150, { fit: 'inside' })
-      .webp({ quality: 60 })
+      .resize(300, 300, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 75 })
       .toBuffer();
 
     const base64 = compressedBuffer.toString('base64');

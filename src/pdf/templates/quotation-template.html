@@ -167,44 +167,42 @@
             {{/each}}
           </tr>
           {{/each}}
+          {{#if showTotals}}
+            {{#unless isRetail}}
+              {{#if showSubtotalLabel}}
+              <tr>
+                <td colspan="{{colSpanMinusOne}}" class="totals-label-inline">TOTAL</td>
+                <td class="col-right totals-value-inline">{{subtotal}}</td>
+              </tr>
+              {{/if}}
+              <tr class="gst-highlight-row">
+                <td colspan="{{colSpanMinusTwo}}" class="gst-text-left">TOTAL INCLUDING {{gstRate}}% GST INR {{grandTotal}}/-</td>
+                <td class="gst-label">GST {{gstRate}}%</td>
+                <td class="col-right gst-value">{{gstAmount}}</td>
+              </tr>
+              <tr class="g-total-inline-row">
+                <td colspan="{{colSpanMinusTwo}}" class="amount-words-left">Rupees {{amountInWords}} Only</td>
+                <td class="g-total-label">G. TOTAL</td>
+                <td class="col-right g-total-value">{{grandTotal}}</td>
+              </tr>
+            {{/unless}}
+          {{/if}}
         </tbody>
       </table>
     </div>
 
     <!-- Totals Section -->
+    <!-- Totals Section -->
     {{#if showTotals}}
+    {{#if isRetail}}
     <div class="totals-section">
-      {{#if isRetail}}
         <!-- Retail format -->
         <div class="totals-retail-block">
           <div class="retail-g-total">GRAND TOTAL: INR {{grandTotal}}/-</div>
           <div class="amount-words-container">Rupees {{amountInWords}} only</div>
         </div>
-      {{else}}
-        <!-- Default & Wholesale Format -->
-        <div style="width: 100%; display: flex; justify-content: flex-end; flex-direction: column; align-items: flex-end;">
-          <table class="totals-table">
-            {{#if showSubtotalLabel}}
-            <tr>
-              <td class="totals-label">Subtotal</td>
-              <td class="totals-value">{{subtotal}}</td>
-            </tr>
-            {{/if}}
-            <tr>
-              <td class="totals-label">GST {{gstRate}}%</td>
-              <td class="totals-value">{{gstAmount}}</td>
-            </tr>
-            <tr class="g-total-row">
-              <td class="totals-label">G. TOTAL</td>
-              <td class="totals-value">{{grandTotal}}</td>
-            </tr>
-          </table>
-          <div class="amount-words-container">
-            Rupees {{amountInWords}} only
-          </div>
-        </div>
-      {{/if}}
     </div>
+    {{/if}}
     {{/if}}
 
     <!-- Bank Details Section -->

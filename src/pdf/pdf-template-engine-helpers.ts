@@ -198,7 +198,7 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
       return '';
     }
 
-    const imageBuffer = fs.readFileSync(fullPath);
+    const imageBuffer = await fs.promises.readFile(fullPath);
     const ext = path.extname(fullPath).toLowerCase();
     const mimeTypes: Record<string, string> = {
       '.jpg': 'image/jpeg',
@@ -210,13 +210,14 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     const mimeType = mimeTypes[ext] || 'image/png';
     
     // Compress base64 images down significantly using Sharp to keep PDF size small while improving zoom quality
+    // JPEG gives much better size/quality ratio for these large resolutions than WebP in this context
     const compressed = await sharp(imageBuffer)
-      .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 50 })
+      .resize(500, 500, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 65, progressive: true })
       .toBuffer();
 
     const base64 = compressed.toString('base64');
-    return `data:image/webp;base64,${base64}`;
+    return `data:image/jpeg;base64,${base64}`;
   } catch (error) {
     console.error(`Error converting image to data URL: ${imagePath}`, error);
     return '';

@@ -2,13 +2,11 @@
 /* A4 Page Setup */
 @page {
   size: A4;
-  margin: 0;
 }
 
 /* Landscape orientation for many columns (13+) */
 @page landscape {
   size: A4 landscape;
-  margin: 0;
 }
 
 :root {
@@ -37,15 +35,11 @@ body {
   line-height: 1.5;
   color: var(--text-primary);
   background: #FFFFFF;
-  width: 210mm;
-  min-height: 297mm;
-  padding: 10mm 10mm 12mm 10mm;
+  width: 100%;
 }
 
 body.landscape {
-  width: 297mm;
-  min-height: 210mm;
-  padding: 10mm 10mm 12mm 10mm;
+  width: 100%;
 }
 
 .quotation-container {
@@ -581,6 +575,6 @@ body.landscape .no-image-placeholder {
 @media print {
   body {
     margin: 0;
-    padding: 10mm 10mm 12mm 10mm;
+    padding: 0;
   }
 }

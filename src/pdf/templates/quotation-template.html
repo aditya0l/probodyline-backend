@@ -168,7 +168,6 @@
           </tr>
           {{/each}}
           {{#if showTotals}}
-            {{#unless isRetail}}
               {{#if showSubtotalLabel}}
               <tr>
                 <td colspan="{{colSpanMinusOne}}" class="totals-label-inline">TOTAL</td>
@@ -185,25 +184,12 @@
                 <td class="g-total-label">G. TOTAL</td>
                 <td class="col-right g-total-value">{{grandTotal}}</td>
               </tr>
-            {{/unless}}
           {{/if}}
         </tbody>
       </table>
     </div>
 
-    <!-- Totals Section -->
-    <!-- Totals Section -->
-    {{#if showTotals}}
-    {{#if isRetail}}
-    <div class="totals-section">
-        <!-- Retail format -->
-        <div class="totals-retail-block">
-          <div class="retail-g-total">GRAND TOTAL: INR {{grandTotal}}/-</div>
-          <div class="amount-words-container">Rupees {{amountInWords}} only</div>
-        </div>
-    </div>
-    {{/if}}
-    {{/if}}
+
 
     <div class="footer-details-wrapper" style="page-break-inside: avoid;">
       <!-- Bank Details Section -->

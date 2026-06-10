@@ -86,6 +86,8 @@ export interface PDFTemplateData {
     cells: Array<{ value: string; className: string; isImage: boolean }>;
   }>;
   columnCount: number;
+  colSpanMinusOne?: number;
+  colSpanMinusTwo?: number;
   useLandscape: boolean;
 
   // Conditional Flags

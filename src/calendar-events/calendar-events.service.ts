@@ -48,6 +48,7 @@ export class CalendarEventsService {
           salesOrder: {
             select: {
               soNumber: true,
+              quotationId: true,
               quotation: {
                 select: { gymName: true }
               }
@@ -85,6 +86,7 @@ export class CalendarEventsService {
       salesOrders: salesOrders.map(so => ({
         id: so.id,
         soNumber: so.soNumber,
+        quotationId: so.quotationId,
         gymName: so.quotation?.gymName || so.quotation?.clientName || 'Unknown Gym',
         dispatchDate: so.quotation?.dispatchDate,
         totalQuantity: so.quotation?.items.reduce((sum, item) => sum + item.quantity, 0) || 0,
@@ -92,6 +94,7 @@ export class CalendarEventsService {
       dispatchSplits: dispatchSplits.map(ds => ({
         id: ds.id,
         soNumber: ds.salesOrder?.soNumber,
+        quotationId: ds.salesOrder?.quotationId,
         gymName: ds.salesOrder?.quotation?.gymName || 'Unknown Gym',
         dispatchDate: ds.dispatchDate,
         splitLabel: ds.label || `Split ${ds.splitNumber}`,

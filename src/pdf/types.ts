@@ -42,6 +42,7 @@ export interface PDFTemplateData {
   // Quotation Info
   quoteNumber: string;
   quoteDate: string;
+  currentDate?: string;
   deliveryDate?: string;
   bookingDate?: string;
   dispatchDate?: string;

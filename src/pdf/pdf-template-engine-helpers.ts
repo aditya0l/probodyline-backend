@@ -6,8 +6,10 @@ import { QuotationColumnId, PDFTemplateData } from './types';
 import { QuotationItem } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+// Cache processed base64 images to prevent CPU thrashing during PDF generation
+const imageCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 500;
 
-// Canonical column order - defines the standard left-to-right order for columns in PDFs
 export const CANONICAL_COLUMN_ORDER: QuotationColumnId[] = [
   'srNo',
   'productName',
@@ -169,6 +171,13 @@ export function getCellValue(
 }
 
 export async function imageToDataURL(imagePath: string): Promise<string> {
+  if (!imagePath) return '';
+  
+  // Check cache first
+  if (imageCache.has(imagePath)) {
+    return imageCache.get(imagePath) || '';
+  }
+
   try {
     let cleanPath = imagePath;
 
@@ -218,15 +227,23 @@ export async function imageToDataURL(imagePath: string): Promise<string> {
     };
     const mimeType = mimeTypes[ext] || 'image/png';
     
-    // 1200px = 8x the original 150px resolution for ultra clear zoom
-    // JPEG quality 80 + progressive keeps each image ~30-50KB while extremely sharp
+    // 400px = Retina resolution for 80px max-height PDF table images
+    // Keeps generation lightning fast and PDF sizes tiny
     const compressed = await sharp(imageBuffer)
-      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality: 80, progressive: true, mozjpeg: true })
+      .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 75, progressive: true, mozjpeg: true })
       .toBuffer();
 
-    const base64 = compressed.toString('base64');
-    return `data:image/jpeg;base64,${base64}`;
+    const base64Str = `data:image/jpeg;base64,${compressed.toString('base64')}`;
+    
+    // Save to cache with basic size management
+    if (imageCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = imageCache.keys().next().value;
+      if (firstKey) imageCache.delete(firstKey);
+    }
+    imageCache.set(imagePath, base64Str);
+    
+    return base64Str;
   } catch (error) {
     console.error(`Error converting image to data URL: ${imagePath}`, error);
     return '';

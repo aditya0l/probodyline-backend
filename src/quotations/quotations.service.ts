@@ -371,6 +371,12 @@ export class QuotationsService {
           throw new NotFoundException('Quotation not found');
         }
 
+        if (quotation.status === 'CONFIRMED') {
+          throw new BadRequestException(
+            'Cannot modify a confirmed PI. Please go to Sales Orders and Unbook the order first before making changes.',
+          );
+        }
+
         // Delete existing items
         await tx.quotationItem.deleteMany({
           where: { quotationId: id },

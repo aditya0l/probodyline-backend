@@ -284,54 +284,16 @@ export class StockService {
       this.prisma.stockTransaction.count({ where }),
     ]);
 
-    // 1. Fetch Quotations to enrich bookedOn date BEFORE sorting
-    const quotationIds = Array.from(new Set(dataRaw
-      .filter((tx) => tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING')
-      .map((tx) => tx.referenceId)
-      .filter(Boolean) as string[]));
+    // 1. Fully enrich data first to ensure we have 'bookedOn' and other dates for ALL reference types
+    const fullyEnrichedData = await this.enrichStockTransactions(dataRaw);
 
-    let quotationsMap = new Map<string, any>();
-    if (quotationIds.length > 0) {
-      const quotations = await this.prisma.quotation.findMany({
-        where: { id: { in: quotationIds } },
-        select: {
-          id: true,
-          bookingDate: true,
-          clientName: true,
-          clientCity: true,
-          gymName: true,
-          quoteNumber: true,
-        },
-      });
-      quotationsMap = new Map(quotations.map((q) => [q.id, q]));
-    }
+    // 2. Process strict FIFO simulation using the fully enriched data
+    const resultsAsc = processStrictFifoLedger(fullyEnrichedData, startBalance);
 
-    // 2. Pre-enrich data with bookedOn and other fields
-    const preEnrichedData = dataRaw.map((tx) => {
-      const enriched = { ...tx } as any;
-      
-      if (tx.referenceType === 'QUOTATION' || tx.referenceType === 'PI_BOOKING') {
-        const quote = quotationsMap.get(tx.referenceId as string);
-        if (quote) {
-          enriched.bookedOn = quote.bookingDate;
-          enriched.customerName = quote.clientName;
-          enriched.gymName = quote.gymName;
-          enriched.city = quote.clientCity;
-          enriched.orderNumber = quote.quoteNumber;
-        }
-      }
-      return enriched;
-    });
-
-    // 3. Process strict FIFO simulation
-    const resultsAsc = processStrictFifoLedger(preEnrichedData, startBalance);
-
-    // 4. For display, we return strictly ascending (oldest first) to match user requested FIFO display
+    // 3. For display, we return strictly ascending (oldest first) to match user requested FIFO display
     const data = resultsAsc;
 
-    // 5. Final enrichment (POs etc)
-    const fullyEnrichedData = await this.enrichStockTransactions(data);
-    return { data: fullyEnrichedData, total };
+    return { data, total };
   }
 
   async findOne(id: string): Promise<StockTransaction | null> {

@@ -70,7 +70,7 @@ body.landscape .quotation-container {
 }
 
 .company-logo {
-  max-height: 190px;
+  max-height: 220px;
   width: auto;
   object-fit: contain;
   display: block;
@@ -157,7 +157,7 @@ body.landscape .quotation-container {
 
 .info-label {
   font-size: 8pt;
-  color: var(--text-secondary);
+  color: #000000;
   font-weight: bold;
   width: auto !important;
 }
@@ -221,7 +221,7 @@ body.landscape .products-table .col-totalAmount { width: 7% !important; }
 .products-table th {
   background: var(--header-bg);
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: bold;
   padding: 6px 8px; /* Consistent 6px 8px */
   text-align: center;
   border: 1px solid var(--border);
@@ -547,8 +547,6 @@ body.landscape .no-image-placeholder {
   color: var(--text-primary);
   line-height: 1.5;
   white-space: pre-line;
-  column-count: 2 !important; /* 2-column grid inside */
-  column-gap: 8mm;
 }
 
 /* Disclaimer */

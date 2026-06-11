@@ -42,6 +42,13 @@ export class StockController {
     return this.stockService.createTransaction(createStockTransactionDto);
   }
 
+  @Post('sync')
+  @ApiOperation({ summary: 'Sync stock values from stock transactions' })
+  @ApiResponse({ status: 200, description: 'Stock synchronized successfully' })
+  syncAll() {
+    return this.stockService.syncAllProductsStock();
+  }
+
   @Get('transactions')
   @ApiOperation({ summary: 'Get all stock transactions with filtering' })
   @ApiQuery({

@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { syncProductStock } from '../utils/stock-sync';
 import { Prisma } from '@prisma/client';
 import { EventsGateway } from '../events/events.gateway';
 
@@ -73,6 +74,9 @@ export class PurchaseOrdersService {
         }));
         if (stockTxs.length > 0) {
           await tx.stockTransaction.createMany({ data: stockTxs });
+          for (const item of stockTxs) {
+            await syncProductStock(tx, item.productId);
+          }
         }
       }
 
@@ -212,6 +216,16 @@ export class PurchaseOrdersService {
         }
       }
 
+      // Sync all involved products
+      const productIdsToSync = new Set<string>();
+      po.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
+      if (refreshedPo) {
+        refreshedPo.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
+      }
+      for (const pid of productIdsToSync) {
+        await syncProductStock(tx, pid);
+      }
+
       this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
       return updatedPo;
     });
@@ -243,7 +257,13 @@ export class PurchaseOrdersService {
         });
       }
 
-      const po = await tx.purchaseOrder.delete({ where: { id } });
+      const po = await tx.purchaseOrder.findUnique({ where: { id }, include: { items: true } });
+      if (po) {
+        await tx.purchaseOrder.delete({ where: { id } });
+        for (const item of po.items) {
+          if (item.productId) await syncProductStock(tx, item.productId);
+        }
+      }
       this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
       return po;
     });
@@ -342,6 +362,12 @@ export class PurchaseOrdersService {
       }
 
       this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
+
+      const productIdsToSync = new Set<string>();
+      po.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
+      for (const pid of productIdsToSync) {
+        await syncProductStock(tx, pid);
+      }
 
       return tx.purchaseOrder.findUnique({
         where: { id },

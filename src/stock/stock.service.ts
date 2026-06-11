@@ -956,4 +956,30 @@ export class StockService {
       swapMachineName,
     };
   }
+
+  async syncAllProductsStock(): Promise<{ updated: number }> {
+    const products = await this.prisma.product.findMany({
+      select: { id: true, todaysStock: true }
+    });
+    
+    let updatedCount = 0;
+    for (const product of products) {
+      const result = await this.prisma.stockTransaction.aggregate({
+        where: { productId: product.id },
+        _sum: { quantity: true },
+      });
+      const actualStock = result._sum.quantity || 0;
+      
+      if (actualStock !== (product.todaysStock || 0)) {
+        await this.prisma.product.update({
+          where: { id: product.id },
+          data: { todaysStock: actualStock }
+        });
+        updatedCount++;
+      }
+    }
+    
+    return { updated: updatedCount };
+  }
 }
+

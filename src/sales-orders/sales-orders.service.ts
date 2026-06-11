@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { syncProductStock } from '../utils/stock-sync';
 import { Prisma } from '@prisma/client';
 
 import { EventsGateway } from '../events/events.gateway';
@@ -288,6 +289,7 @@ export class SalesOrdersService {
       );
       for (const item of finalItems) {
         if (item.quotationItem.productId) {
+          await syncProductStock(tx, item.quotationItem.productId);
           this.eventsGateway.broadcastEntityUpdate(
             'STOCK',
             String(item.quotationItem.productId),
@@ -532,6 +534,7 @@ export class SalesOrdersService {
       for (const split of so.splits) {
         for (const item of split.items) {
           if (item.quotationItem.productId) {
+            await syncProductStock(tx, item.quotationItem.productId);
             this.eventsGateway.broadcastEntityUpdate(
               'STOCK',
               item.quotationItem.productId,
@@ -692,9 +695,10 @@ export class SalesOrdersService {
           }
         });
       });
-      broadcastProductIds.forEach(productId => {
+      for (const productId of broadcastProductIds) {
+        await syncProductStock(tx, productId);
         this.eventsGateway.broadcastEntityUpdate('STOCK', productId);
-      });
+      }
 
       return tx.salesOrder.findUnique({
         where: { id },

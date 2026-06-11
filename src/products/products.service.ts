@@ -169,13 +169,16 @@ export class ProductsService implements OnModuleInit {
 
     const srNo = (lastProduct?.srNo || 0) + 1;
 
+    const { todaysStock, ...safeData } = data as any;
+
     const productData = {
-      ...data,
+      ...safeData,
       srNo,
-      priority: data.priority || 1,
-      cousinMachine: data.cousinMachine || [],
-      orderTogether: data.orderTogether || [],
-      swapMachine: data.swapMachine || [],
+      priority: safeData.priority || 1,
+      cousinMachine: safeData.cousinMachine || [],
+      orderTogether: safeData.orderTogether || [],
+      swapMachine: safeData.swapMachine || [],
+      todaysStock: 0,
     };
 
     console.log('[ProductsService.create] Creating product with data:', {
@@ -302,9 +305,11 @@ export class ProductsService implements OnModuleInit {
 
     // Note: modelNumber is immutable and cannot be updated (excluded from UpdateProductDto)
 
+    const { todaysStock, ...safeData } = data as any;
+
     return this.prisma.product.update({
       where: { id },
-      data: data as Prisma.ProductUncheckedUpdateInput,
+      data: safeData as Prisma.ProductUncheckedUpdateInput,
     });
   }
 
@@ -402,6 +407,7 @@ export class ProductsService implements OnModuleInit {
       createdAt: ___,
       updatedAt: ____,
       deletedAt: _____,
+      todaysStock: ______,
       ...productData
     } = product;
 
@@ -410,6 +416,7 @@ export class ProductsService implements OnModuleInit {
         ...productData,
         name: `${product.name} (Copy)`,
         srNo,
+        todaysStock: 0,
         stockByDate: product.stockByDate as any,
       },
     });

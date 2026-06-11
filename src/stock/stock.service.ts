@@ -20,7 +20,7 @@ export class StockService {
 
   private async enrichStockTransactions(data: any[]): Promise<any[]> {
     const dispatchSplitIds = Array.from(new Set(data
-      .filter((tx) => tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId)
+      .filter((tx) => (tx.referenceType === 'DISPATCH_SPLIT' || tx.referenceType === 'UNBOOK_SO' || tx.referenceType === 'REVERT_DISPATCH_SPLIT') && tx.referenceId)
       .map((tx) => tx.referenceId as string)));
 
     const poSplitIds = Array.from(new Set(data
@@ -76,7 +76,7 @@ export class StockService {
 
     return data.map((tx) => {
       let extraData: any = {};
-      if (tx.referenceType === 'DISPATCH_SPLIT' && tx.referenceId) {
+      if ((tx.referenceType === 'DISPATCH_SPLIT' || tx.referenceType === 'UNBOOK_SO' || tx.referenceType === 'REVERT_DISPATCH_SPLIT') && tx.referenceId) {
         const split = dispatchSplitMap.get(tx.referenceId);
         if (split) {
           // If pending split is not saved, _count.splits will be less than the highest split number. Use Math.max to correctly infer total columns.

@@ -87,7 +87,9 @@ export class PurchaseOrdersService {
       whereClause.OR = [
         { poNumber: { contains: search, mode: 'insensitive' } },
         { supplierName: { contains: search, mode: 'insensitive' } },
-        { notes: { contains: search, mode: 'insensitive' } }
+        { notes: { contains: search, mode: 'insensitive' } },
+        { items: { some: { modelNumber: { contains: search, mode: 'insensitive' } } } },
+        { items: { some: { productName: { contains: search, mode: 'insensitive' } } } }
       ];
     }
 

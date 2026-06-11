@@ -769,6 +769,15 @@ export class QuotationsService {
         throw new BadRequestException('PI has no items to confirm');
       }
 
+      // Safety check: Delete any existing PI_BOOKING transactions to prevent duplicates if re-confirming
+      await tx.stockTransaction.deleteMany({
+        where: {
+          referenceId: quotation.id,
+          referenceType: 'PI_BOOKING',
+          transactionType: 'OUT',
+        },
+      });
+
       // Create stock OUT transactions and bookings for each item
       const dispatchDatePromises = itemsWithProducts.map(async (item) => {
         const dispatchDate = quotation.dispatchDate || new Date();

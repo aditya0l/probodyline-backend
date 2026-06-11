@@ -470,45 +470,20 @@ export class SalesOrdersService {
       // Process each split
       for (const split of so.splits) {
         if (split.status === 'BOOKED') {
-          // Revert Stock
-          for (const item of split.items) {
-            if (!item.quotationItem.productId) continue;
+          // Physically delete DISPATCH_SPLIT Stock OUT transactions
+          await tx.stockTransaction.deleteMany({
+            where: {
+              referenceId: split.id,
+              referenceType: 'DISPATCH_SPLIT',
+            },
+          });
 
-            // Create Stock IN transaction
-            await tx.stockTransaction.create({
-              data: {
-                productId: item.quotationItem.productId,
-                transactionType: 'IN',
-                quantity: item.quantity,
-                referenceType: 'UNBOOK_SO',
-                referenceId: split.id,
-                date: new Date(),
-                notes: `Unbook SO: ${so.soNumber} / Sp-${split.splitNumber}`,
-              },
+          try {
+            await tx.booking.deleteMany({
+              where: { dispatchSplitId: split.id },
             });
-
-            // Delete associated Booking record (if we tracked it by quote item id or similar)
-            // In bookDispatchSplit we created a Booking. We should probably cancel/delete it.
-            // For now, let's mark the split as UNBOOKED.
-            // If we need to delete bookings, we'd need to find them.
-            // Assuming Booking records are created with reference to quotationItemId and quotationId.
-            // It's safer to leave them or update status if we had one?
-            // Schema has BookingStatus enum: CONFIRM, WAITING_LIST.
-            // Let's delete the Booking entry for this item/so combo if possible, or ignore for strictness.
-            // Requirement: "Unbooking".
-            // Let's delete the bookings related to this quotation item created *recently*?
-            // Better: Delete bookings where quotationItemId matches and status is CONFIRMED?
-            // Actually, bookDispatchSplit created a Booking. We should delete it.
-            try {
-              await tx.booking.deleteMany({
-                where: {
-                  quotationItemId: item.quotationItemId,
-                  quotationId: so.quotationId,
-                },
-              });
-            } catch (e) {
-              console.warn('Failed to delete booking during unbook', e);
-            }
+          } catch (e) {
+            console.warn('Failed to delete booking during unbook', e);
           }
 
           // Update Split Status
@@ -524,6 +499,23 @@ export class SalesOrdersService {
         where: { id: salesOrderId },
         data: { status: 'UNBOOKED' },
       });
+
+      // Physically delete all PI_BOOKING Stock OUT transactions and Bookings for this Quotation
+      if (so.quotationId) {
+        await tx.stockTransaction.deleteMany({
+          where: {
+            referenceId: so.quotationId,
+            referenceType: 'PI_BOOKING',
+          },
+        });
+        
+        await tx.booking.deleteMany({
+          where: {
+            quotationId: so.quotationId,
+            dispatchSplitId: null, // Only delete auto-created bookings not tied to a specific split
+          },
+        });
+      }
 
       // Revert Quotation status to DRAFT so it can be confirmed again
       if (so.quotationId) {

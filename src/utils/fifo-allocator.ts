@@ -76,8 +76,8 @@ export function processStrictFifoLedger(
   // 4. Sort OUT transactions strictly by Priority (BookedOn) to process allocation
   const outs = txs.filter(t => t.transactionType === 'OUT' || t.transactionType === 'SALE');
   const outsForAllocation = [...outs].sort((a, b) => {
-    const timeA = (a.bookedOn ? new Date(a.bookedOn) : new Date(a.date)).getTime();
-    const timeB = (b.bookedOn ? new Date(b.bookedOn) : new Date(b.date)).getTime();
+    const timeA = a.sortDate.getTime();
+    const timeB = b.sortDate.getTime();
     if (timeA !== timeB) return timeA - timeB;
     return (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0);
   });

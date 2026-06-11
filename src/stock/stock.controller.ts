@@ -100,7 +100,7 @@ export class StockController {
       endDate,
       transactionType,
       page: page ? Number(page) : 0,
-      limit: limit ? Number(limit) : 50,
+      limit: limit ? Number(limit) : 10000,
     });
   }
 

@@ -60,7 +60,7 @@ export function numberToWords(amount: number): string {
     return result;
   }
 
-  if (amount === 0) return 'Zero Rupees Only';
+  if (amount === 0) return 'Rupees Zero Only';
 
   const crores = Math.floor(amount / 10000000);
   const lakhs = Math.floor((amount % 10000000) / 100000);
@@ -73,7 +73,7 @@ export function numberToWords(amount: number): string {
   if (thousands > 0) words += convertHundreds(thousands) + 'Thousand ';
   if (hundreds > 0) words += convertHundreds(hundreds);
 
-  return words.trim() + ' Rupees Only';
+  return 'Rupees ' + words.trim() + ' Only';
 }
 
 /**

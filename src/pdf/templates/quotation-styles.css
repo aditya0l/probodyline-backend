@@ -70,7 +70,7 @@ body.landscape .quotation-container {
 }
 
 .company-logo {
-  max-height: 200px;
+  max-height: 190px;
   width: auto;
   object-fit: contain;
   display: block;
@@ -158,14 +158,14 @@ body.landscape .quotation-container {
 .info-label {
   font-size: 8pt;
   color: var(--text-secondary);
-  font-weight: normal;
+  font-weight: bold;
   width: auto !important;
 }
 
 .info-value {
   font-size: 8.5pt;
   color: var(--text-primary);
-  font-weight: bold;
+  font-weight: normal;
   width: auto !important;
   word-break: break-all;
 }
@@ -449,6 +449,7 @@ body.landscape .no-image-placeholder {
   padding-right: 10px !important;
   border-right: none !important;
   border-left: none !important;
+  white-space: nowrap !important;
 }
 
 .gst-value {
@@ -477,6 +478,7 @@ body.landscape .no-image-placeholder {
   padding-right: 10px !important;
   border-right: none !important;
   border-left: none !important;
+  white-space: nowrap !important;
 }
 
 .computer-generated-text {

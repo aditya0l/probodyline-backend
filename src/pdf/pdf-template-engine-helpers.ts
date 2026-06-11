@@ -70,12 +70,15 @@ const HEADER_ABBREVIATIONS: Record<string, string> = {
 
 export function getColumnClass(colId: QuotationColumnId): string {
   let cls = `col-${colId}`;
-  if (colId === 'srNo' || colId === 'priority') {
-    cls += ' col-center';
-  } else if (
+  if (
+    colId === 'srNo' || 
+    colId === 'priority' ||
     colId === 'rate' ||
     colId === 'mrp' ||
-    colId === 'quantity' ||
+    colId === 'quantity'
+  ) {
+    cls += ' col-center';
+  } else if (
     colId === 'totalAmount' ||
     colId === 'todaysStock' ||
     colId === 'stockPlus360Days'

@@ -58,8 +58,8 @@
     {{#if showClientInfo}}
     <div class="info-block">
       <div class="info-header">
-        <div>{{titleText}}</div>
         <div>#{{quoteNumber}}</div>
+        <div style="font-weight: normal;">{{currentDate}}</div>
       </div>
       <div class="info-grid">
         {{#if showClientNameField}}
@@ -168,6 +168,8 @@
           </tr>
           {{/each}}
           {{#if showTotals}}
+          </tbody>
+          <tbody style="page-break-inside: avoid;">
               {{#if showSubtotalLabel}}
               <tr>
                 <td colspan="{{colSpanMinusOne}}" class="totals-label-inline">TOTAL</td>
@@ -180,7 +182,7 @@
                 <td class="col-right gst-value">{{gstAmount}}</td>
               </tr>
               <tr class="g-total-inline-row">
-                <td colspan="{{colSpanMinusTwo}}" class="amount-words-left">Rupees {{amountInWords}} Only</td>
+                <td colspan="{{colSpanMinusTwo}}" class="amount-words-left">{{amountInWords}}</td>
                 <td class="g-total-label">G. TOTAL</td>
                 <td class="col-right g-total-value">{{grandTotal}}</td>
               </tr>

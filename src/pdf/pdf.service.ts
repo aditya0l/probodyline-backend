@@ -124,7 +124,7 @@ export class PdfService implements OnModuleDestroy {
         printBackground: true,
         displayHeaderFooter: true,
         headerTemplate: '<span></span>',
-        footerTemplate: `<div style="font-size: 8px; width: 100%; text-align: center; color: #666; font-family: Arial, sans-serif; padding-top: 20px;">This is a computer Generated Quotation, Page <span class="pageNumber"></span> of <span class="totalPages"></span> for #${quotation.quoteNumber || quotation.id}, ${quotation.status === 'BOOKED' ? 'Booked' : 'Booking Pending'}</div>`,
+        footerTemplate: '<span></span>',
         margin: {
           top: '10mm',
           right: '10mm',
@@ -210,7 +210,7 @@ export class PdfService implements OnModuleDestroy {
         printBackground: true, 
         displayHeaderFooter: true,
         headerTemplate: '<span></span>',
-        footerTemplate: `<div style="font-size: 8px; width: 100%; text-align: center; color: #666; font-family: Arial, sans-serif; padding-top: 20px;">This is a computer Generated Quotation, Page <span class="pageNumber"></span> of <span class="totalPages"></span> for #${quotation.quoteNumber || quotation.id}, ${quotation.status === 'BOOKED' ? 'Booked' : 'Booking Pending'}</div>`,
+        footerTemplate: '<span></span>',
         margin: { top: '10mm', right: '10mm', bottom: '30mm', left: '10mm' } 
       });
       console.log('PDF Generated (SO Split). Size:', (pdf.length / 1024).toFixed(2), 'KB');
@@ -459,6 +459,7 @@ export class PdfService implements OnModuleDestroy {
       // Quotation Info
       quoteNumber: quotation.quoteNumber,
       quoteDate: this.formatDateWithTime(quotation.createdAt),
+      currentDate: this.formatDateFriendly(new Date()),
       deliveryDate: quotation.deliveryDate
         ? this.formatDateFriendly(quotation.deliveryDate)
         : undefined,

@@ -402,17 +402,20 @@ export class SalesOrdersService {
     const so = await this.ensureMasterSO(quotationId, tx);
     if (!so) throw new Error('Failed to ensure Sales Order');
 
-    // Check if any splits exist
-    if (so.splits && so.splits.length > 0) {
-      return so; // Already has splits, don't auto-create
+    // Check if any active splits exist
+    const activeSplits = so.splits ? so.splits.filter(s => s.status !== 'UNBOOKED') : [];
+    if (activeSplits.length > 0) {
+      return so; // Already has active splits, don't auto-create
     }
+
+    const nextSplitNumber = so.splits ? so.splits.length + 1 : 1;
 
     const executeLogic = async (paramTx: Prisma.TransactionClient) => {
       // Create Split
       const split = await paramTx.dispatchSplit.create({
         data: {
           salesOrderId: so.id,
-          splitNumber: 1,
+          splitNumber: nextSplitNumber,
           status: 'BOOKED',
           dispatchDate: so.quotation.dispatchDate || new Date(),
           bookedAt: new Date(),

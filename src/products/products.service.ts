@@ -83,6 +83,13 @@ export class ProductsService implements OnModuleInit {
           images: true,
           qrCode: true,
           todaysStock: true,
+          cartonLabel: true,
+          machineArtwork: true,
+          brochure: true,
+          brochureUrl: true,
+          instagramLink: true,
+          youtubeLink: true,
+          lqip: true,
           category: {
             select: { id: true, name: true },
           },

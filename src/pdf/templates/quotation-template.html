@@ -62,7 +62,12 @@
         <div style="font-weight: normal;">{{currentDate}}</div>
       </div>
       <div class="info-grid">
-
+        {{#if showClientNameField}}
+        <div class="info-row">
+          <div class="info-label">CLIENT NAME</div>
+          <div class="info-value">{{#if clientName}}{{clientName}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
         {{#if showAddressLine1Field}}
         <div class="info-row">
           <div class="info-label">ADDRESS LINE 1</div>
@@ -117,7 +122,12 @@
           <div class="info-value">{{#if gymArea}}{{gymArea}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
-
+        {{#if showGymNameField}}
+        <div class="info-row">
+          <div class="info-label">GYM NAME</div>
+          <div class="info-value">{{#if gymName}}{{gymName}}{{else}}—{{/if}}</div>
+        </div>
+        {{/if}}
       </div>
     </div>
     {{else}}

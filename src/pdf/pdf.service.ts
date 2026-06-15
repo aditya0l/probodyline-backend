@@ -493,7 +493,7 @@ export class PdfService implements OnModuleDestroy {
       status: quotation.status || 'DRAFT',
       
       // Client Info visibility flags
-      showClientNameField: showField('clientName'),
+      showClientNameField: true,
       showAddressLine1Field: showField('addressLine1'),
       showAddressLine2Field: showField('addressLine2'),
       showCityField: showField('city'),
@@ -503,7 +503,7 @@ export class PdfService implements OnModuleDestroy {
       showPanCardField: showField('panCard'),
       showAadharCardField: showField('aadharCard'),
       showGymAreaField: showField('gymArea'),
-      showGymNameField: showField('gymName'),
+      showGymNameField: true,
 
       // Totals
       subtotal: toNumber(quotation.subtotal).toLocaleString('en-IN'),

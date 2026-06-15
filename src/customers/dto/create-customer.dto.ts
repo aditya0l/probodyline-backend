@@ -26,6 +26,30 @@ export class CreateCustomerDto {
   city?: string;
 
   @ApiPropertyOptional({
+    description: 'Address Line 2',
+    example: 'Andheri West',
+  })
+  @IsOptional()
+  @IsString()
+  addressLine2?: string;
+
+  @ApiPropertyOptional({
+    description: 'PAN Card',
+    example: 'ABCDE1234F',
+  })
+  @IsOptional()
+  @IsString()
+  panCard?: string;
+
+  @ApiPropertyOptional({
+    description: 'Aadhar Card',
+    example: '123456789012',
+  })
+  @IsOptional()
+  @IsString()
+  aadharCard?: string;
+
+  @ApiPropertyOptional({
     description: 'Area/Locality',
     example: 'Andheri West',
   })

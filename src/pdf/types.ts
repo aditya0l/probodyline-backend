@@ -55,10 +55,13 @@ export interface PDFTemplateData {
   // Client Info
   clientName?: string;
   clientAddress?: string;
+  clientAddressLine2?: string;
   clientCity?: string;
   gymName?: string;
   gymArea?: string;
   clientGST?: string;
+  clientPanCard?: string;
+  clientAadharCard?: string;
   leadName?: string;
   
   // Client Info visibility flags

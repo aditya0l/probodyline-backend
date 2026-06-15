@@ -83,6 +83,9 @@ export class FilesController {
       lqip: result.lqip,
       filename: file.originalname,
       size: file.size,
+      secureUrl: result.url,
+      originalFilename: file.originalname,
+      fileSize: file.size,
     };
   }
 

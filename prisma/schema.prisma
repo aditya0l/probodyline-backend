@@ -78,6 +78,9 @@ model Product {
   cartonLabel          String? // URL
   machineArtwork       String? // URL
   brochure             String[] // JSON array of URLs
+  brochureUrl          String? // URL
+  brochureFilename     String?
+  brochureSize         Int?
   thumbnail            String? // URL
   lqip                 String?  @db.Text // Base64 LQIP
   instagramLink        String? // URL
@@ -116,9 +119,12 @@ model Customer {
   name          String
   gymName       String?
   address       String?
+  addressLine2  String?
   city          String?
   area          String?
   gst           String?
+  panCard       String?
+  aadharCard    String?
   phone         String?
   email         String?
   contactPerson String?
@@ -151,13 +157,16 @@ model Quotation {
   companyContactPerson String
 
   // Client info
-  clientName    String?
-  clientAddress String?
-  clientCity    String?
-  gymName       String?
-  gymArea       String?
-  clientGST     String?
-  deliveryDate  DateTime?
+  clientName          String?
+  clientAddress       String?
+  clientAddressLine2  String?
+  clientCity          String?
+  gymName             String?
+  gymArea             String?
+  clientGST           String?
+  clientPanCard       String?
+  clientAadharCard    String?
+  deliveryDate        DateTime?
   leadName      String?
 
   // Additional dates

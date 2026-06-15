@@ -41,6 +41,21 @@ export class CreateQuotationDto {
   @IsString()
   clientCity?: string;
 
+  @ApiPropertyOptional({ description: 'Client address line 2', example: 'Andheri West' })
+  @IsOptional()
+  @IsString()
+  clientAddressLine2?: string;
+
+  @ApiPropertyOptional({ description: 'Client PAN Card', example: 'ABCDE1234F' })
+  @IsOptional()
+  @IsString()
+  clientPanCard?: string;
+
+  @ApiPropertyOptional({ description: 'Client Aadhar Card', example: '123456789012' })
+  @IsOptional()
+  @IsString()
+  clientAadharCard?: string;
+
   @ApiPropertyOptional({ description: 'Gym name', example: 'FitZone Gym' })
   @IsOptional()
   @IsString()

@@ -77,7 +77,7 @@
         {{#if showAddressLine2Field}}
         <div class="info-row">
           <div class="info-label">ADDRESS LINE 2</div>
-          <div class="info-value">—</div>
+          <div class="info-value">{{#if clientAddressLine2}}{{{clientAddressLine2}}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
         {{#if showCityField}}
@@ -107,13 +107,13 @@
         {{#if showPanCardField}}
         <div class="info-row">
           <div class="info-label">PAN CARD</div>
-          <div class="info-value">—</div>
+          <div class="info-value">{{#if clientPanCard}}{{clientPanCard}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
         {{#if showAadharCardField}}
         <div class="info-row">
           <div class="info-label">AADHAR CARD</div>
-          <div class="info-value">—</div>
+          <div class="info-value">{{#if clientAadharCard}}{{clientAadharCard}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
         {{#if showGymAreaField}}

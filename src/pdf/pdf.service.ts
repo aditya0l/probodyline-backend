@@ -482,10 +482,13 @@ export class PdfService implements OnModuleDestroy {
       // Client Info
       clientName: customer?.name || quotation.clientName || undefined,
       clientAddress: customer?.address || quotation.clientAddress || undefined,
+      clientAddressLine2: customer?.addressLine2 || quotation.clientAddressLine2 || undefined,
       clientCity: customer?.city || quotation.clientCity || undefined,
       gymName: customer?.gymName || quotation.gymName || undefined,
       gymArea: customer?.area || quotation.gymArea || undefined,
       clientGST: customer?.gst || quotation.clientGST || undefined,
+      clientPanCard: customer?.panCard || quotation.clientPanCard || undefined,
+      clientAadharCard: customer?.aadharCard || quotation.clientAadharCard || undefined,
       leadName: quotation.leadName || undefined,
       status: quotation.status || 'DRAFT',
       

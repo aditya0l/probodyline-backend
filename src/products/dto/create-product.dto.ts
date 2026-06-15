@@ -194,6 +194,21 @@ export class CreateProductDto {
   @ArrayMaxSize(10)
   brochure?: string[];
 
+  @ApiPropertyOptional({ description: 'Brochure URL (PDF or image)' })
+  @IsOptional()
+  @IsString()
+  brochureUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Brochure original filename' })
+  @IsOptional()
+  @IsString()
+  brochureFilename?: string;
+
+  @ApiPropertyOptional({ description: 'Brochure file size in bytes' })
+  @IsOptional()
+  @IsNumber()
+  brochureSize?: number;
+
   @ApiPropertyOptional({ description: 'Thumbnail image (base64 or URL)' })
   @IsOptional()
   @IsString()

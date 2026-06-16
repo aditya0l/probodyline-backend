@@ -604,8 +604,8 @@ export class SalesOrdersService {
           data: {
             salesOrderId: id,
             splitNumber: splitInput.splitNumber || i + 1,
-            dispatchDate: splitInput.dispatchDate
-              ? new Date(String(splitInput.dispatchDate))
+            dispatchDate: (splitInput.dispatchDate || splitInput.date)
+              ? new Date(String(splitInput.dispatchDate || splitInput.date))
               : null,
             label: splitInput.label,
             status: 'BOOKED', // Matrix directly creates booked splits

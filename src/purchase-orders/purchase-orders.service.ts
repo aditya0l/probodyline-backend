@@ -309,9 +309,9 @@ export class PurchaseOrdersService {
         const split = await tx.purchaseOrderSplit.create({
           data: {
             purchaseOrderId: id,
-            splitNumber: i + 1,
-            jaipurArrival: splitInput.jaipurArrival
-              ? new Date(splitInput.jaipurArrival)
+            splitNumber: splitInput.splitNumber || i + 1,
+            jaipurArrival: (splitInput.jaipurArrival || splitInput.date)
+              ? new Date(String(splitInput.jaipurArrival || splitInput.date))
               : null,
             label: splitInput.label,
             status: 'CONFIRMED', // Auto-confirm PO splits for stock

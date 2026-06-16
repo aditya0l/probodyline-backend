@@ -55,6 +55,13 @@ export class ProductsController {
     return this.productsService.clearAllOpeningStock();
   }
 
+  @Get('media-stats')
+  @ApiOperation({ summary: 'Get all products with pre-computed stats for media library' })
+  @ApiResponse({ status: 200, description: 'List of products with stats' })
+  findAllWithStats() {
+    return this.productsService.findAllWithStats();
+  }
+
 
   @Get()
   @ApiOperation({ summary: 'Get all products with filtering and pagination' })

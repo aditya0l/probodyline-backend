@@ -9,6 +9,9 @@ import { PrismaService } from '../common/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto, UpdateProductMediaDto } from './dto/update-product.dto';
 import { Product, Prisma } from '@prisma/client';
+
+let statsCache: { data: any[]; timestamp: number } | null = null;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 import { QRCodeService } from './qr-code.service';
 import { EventsGateway } from '../events/events.gateway';
 
@@ -19,6 +22,96 @@ export class ProductsService implements OnModuleInit {
     private qrCodeService: QRCodeService,
     private eventsGateway: EventsGateway,
   ) {}
+
+  invalidateStatsCache() {
+    statsCache = null;
+  }
+
+  async findAllWithStats() {
+    if (statsCache && Date.now() - statsCache.timestamp < CACHE_TTL) {
+      return statsCache.data;
+    }
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const products = await this.prisma.product.findMany({
+      where: { deletedAt: null },
+      select: {
+        id: true,
+        name: true,
+        modelNumber: true,
+        seriesName: true,
+        priority: true,
+        thumbnail: true,
+        image: true,
+        cartonLabel: true,
+        machineArtwork: true,
+        brochureUrl: true,
+        brochure: true,
+        lqip: true,
+        instagramLink: true,
+        youtubeLink: true,
+        createdAt: true,
+        category: {
+          select: { id: true, name: true }
+        },
+        _count: {
+          select: { quotationItems: true }
+        },
+        stockTransactions: {
+          where: { transactionType: 'OUT' },
+          select: { quantity: true, date: true }
+        },
+        quotationItems: {
+          select: {
+            rate: true,
+            dispatchSplitItems: {
+              select: {
+                quantity: true,
+                dispatchSplit: {
+                  select: {
+                    salesOrder: { select: { status: true } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const data = products.map(p => {
+      const totalSold = p.stockTransactions
+        .reduce((sum, t) => sum + Math.abs(t.quantity || 0), 0);
+
+      const trendingSold = p.stockTransactions
+        .filter(t => new Date(t.date) >= thirtyDaysAgo)
+        .reduce((sum, t) => sum + Math.abs(t.quantity || 0), 0);
+
+      const totalRevenue = p.quotationItems.reduce((sum, qi) => {
+        const confirmedSplits = qi.dispatchSplitItems.filter(
+          i => i.dispatchSplit?.salesOrder?.status === 'COMPLETED' || i.dispatchSplit?.salesOrder?.status === 'CONFIRMED'
+        );
+        const splitQty = confirmedSplits.reduce((qSum, i) => qSum + (i.quantity || 0), 0);
+        return sum + (splitQty * Number(qi.rate || 0));
+      }, 0);
+
+      const totalQuoted = p._count.quotationItems;
+
+      const { stockTransactions, quotationItems, _count, ...productBase } = p;
+
+      return {
+        ...productBase,
+        totalSold,
+        trendingSold,
+        totalRevenue,
+        totalQuoted
+      };
+    });
+
+    statsCache = { data, timestamp: Date.now() };
+    return data;
+  }
 
   async onModuleInit() {
     console.log('[ProductsService] Running product name migration...');
@@ -200,6 +293,7 @@ export class ProductsService implements OnModuleInit {
     const createdProduct = await this.prisma.product.create({
       data: productData as Prisma.ProductUncheckedCreateInput,
     });
+    this.invalidateStatsCache();
 
     console.log('[ProductsService.create] Product created successfully:', {
       id: createdProduct.id,
@@ -314,10 +408,12 @@ export class ProductsService implements OnModuleInit {
 
     const { todaysStock, ...safeData } = data as any;
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: safeData as Prisma.ProductUncheckedUpdateInput,
     });
+    this.invalidateStatsCache();
+    return updated;
   }
 
   async updateMedia(id: string, data: UpdateProductMediaDto): Promise<Product> {
@@ -329,10 +425,12 @@ export class ProductsService implements OnModuleInit {
       throw new NotFoundException('Product not found');
     }
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: data as Prisma.ProductUncheckedUpdateInput,
     });
+    this.invalidateStatsCache();
+    return updated;
   }
 
   async findQuotationsByProduct(productId: string) {
@@ -383,13 +481,15 @@ export class ProductsService implements OnModuleInit {
     }
 
     // Soft delete: Rename modelNumber to free it up for reuse
-    return this.prisma.product.update({
+    const removed = await this.prisma.product.update({
       where: { id },
       data: {
         deletedAt: new Date(),
         modelNumber: `${product.modelNumber}_DEL_${Date.now()}`,
       },
     });
+    this.invalidateStatsCache();
+    return removed;
   }
 
   async duplicate(id: string): Promise<Product> {

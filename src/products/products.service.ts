@@ -44,6 +44,7 @@ export class ProductsService implements OnModuleInit {
         priority: true,
         thumbnail: true,
         image: true,
+        images: true,
         cartonLabel: true,
         machineArtwork: true,
         brochureUrl: true,

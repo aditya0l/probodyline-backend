@@ -446,6 +446,54 @@ export class QuotationsService {
           inaugurationDate,
           ...updateData
         } = data;
+        // Process multiple clients
+        const clientIdsToConnect: string[] = [];
+        if (clients && clients.length > 0) {
+          for (const c of clients) {
+            let customerId = c.id;
+            
+            if (customerId) {
+              await tx.customer.update({
+                where: { id: customerId },
+                data: {
+                  name: c.clientName?.trim() || 'Unknown',
+                  phone: c.clientPhone?.trim() || '0000000000',
+                  email: c.clientEmail?.trim() || null,
+                  address: c.clientAddress,
+                  addressLine2: c.clientAddressLine2,
+                  city: c.clientCity,
+                  panCard: c.clientPanCard?.trim() || null,
+                  aadharCard: c.clientAadharCard?.trim() || null,
+                  gst: c.clientGST?.trim() || null,
+                  gymName: c.gymName,
+                  area: c.gymArea,
+                },
+              });
+            } else if (c.clientName || c.clientPhone || c.clientEmail) {
+              const newCustomer = await tx.customer.create({
+                data: {
+                  name: c.clientName?.trim() || 'Unknown',
+                  phone: c.clientPhone?.trim() || '0000000000',
+                  email: c.clientEmail?.trim() || null,
+                  address: c.clientAddress,
+                  addressLine2: c.clientAddressLine2,
+                  city: c.clientCity,
+                  panCard: c.clientPanCard?.trim() || null,
+                  aadharCard: c.clientAadharCard?.trim() || null,
+                  gst: c.clientGST?.trim() || null,
+                  gymName: c.gymName,
+                  area: c.gymArea,
+                },
+              });
+              customerId = newCustomer.id;
+            }
+            
+            if (customerId) {
+              clientIdsToConnect.push(customerId);
+            }
+          }
+        }
+
         const itemsToCreate = items!; // Non-null assertion since we checked above
 
         // Calculate new totals
@@ -476,6 +524,9 @@ export class QuotationsService {
               updateData.leadName !== undefined
                 ? updateData.leadName
                 : undefined,
+            clients: clientIdsToConnect.length > 0 ? {
+              set: clientIdsToConnect.map(id => ({ id }))
+            } : undefined,
             items: {
               create: itemsToCreate.map((item, index) => ({
                 srNo: index + 1,
@@ -523,6 +574,54 @@ export class QuotationsService {
       ...updateData
     } = data;
 
+    // Process multiple clients
+    const clientIdsToConnect: string[] = [];
+    if (clients && clients.length > 0) {
+      for (const c of clients) {
+        let customerId = c.id;
+        
+        if (customerId) {
+          await this.prisma.customer.update({
+            where: { id: customerId },
+            data: {
+              name: c.clientName?.trim() || 'Unknown',
+              phone: c.clientPhone?.trim() || '0000000000',
+              email: c.clientEmail?.trim() || null,
+              address: c.clientAddress,
+              addressLine2: c.clientAddressLine2,
+              city: c.clientCity,
+              panCard: c.clientPanCard?.trim() || null,
+              aadharCard: c.clientAadharCard?.trim() || null,
+              gst: c.clientGST?.trim() || null,
+              gymName: c.gymName,
+              area: c.gymArea,
+            },
+          });
+        } else if (c.clientName || c.clientPhone || c.clientEmail) {
+          const newCustomer = await this.prisma.customer.create({
+            data: {
+              name: c.clientName?.trim() || 'Unknown',
+              phone: c.clientPhone?.trim() || '0000000000',
+              email: c.clientEmail?.trim() || null,
+              address: c.clientAddress,
+              addressLine2: c.clientAddressLine2,
+              city: c.clientCity,
+              panCard: c.clientPanCard?.trim() || null,
+              aadharCard: c.clientAadharCard?.trim() || null,
+              gst: c.clientGST?.trim() || null,
+              gymName: c.gymName,
+              area: c.gymArea,
+            },
+          });
+          customerId = newCustomer.id;
+        }
+        
+        if (customerId) {
+          clientIdsToConnect.push(customerId);
+        }
+      }
+    }
+
     const result = await this.prisma.quotation.update({
       where: { id },
       data: {
@@ -538,6 +637,9 @@ export class QuotationsService {
           : undefined,
         leadName:
           updateData.leadName !== undefined ? updateData.leadName : undefined,
+        clients: clientIdsToConnect.length > 0 ? {
+          set: clientIdsToConnect.map(id => ({ id }))
+        } : undefined,
       },
     });
 

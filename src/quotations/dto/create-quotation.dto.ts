@@ -143,6 +143,11 @@ export class CreateQuotationDto {
   @Max(100)
   gstRate?: number;
 
+  @ApiPropertyOptional({ description: 'Quotation notes', example: 'Special discount applied.' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
   @ApiPropertyOptional({
     description: 'PDF template type',
     enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'],

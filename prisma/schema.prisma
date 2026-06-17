@@ -185,6 +185,7 @@ model Quotation {
   bankDetails        String? @db.Text
   termsAndConditions String? @db.Text
   warrantyInfo       String? @db.Text
+  notes              String? @db.Text
 
   // Metadata
   visibleColumns Json? // Column visibility settings

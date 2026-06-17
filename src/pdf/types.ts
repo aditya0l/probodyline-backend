@@ -112,6 +112,7 @@ export interface PDFTemplateData {
   isPriceList?: boolean;
   isLoadingSlip?: boolean;
   status?: string;
+  notes?: string;
   computerGeneratedText?: string;
 
   // CSS content

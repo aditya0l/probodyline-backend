@@ -491,6 +491,7 @@ export class PdfService implements OnModuleDestroy {
       clientAadharCard: customer?.aadharCard || quotation.clientAadharCard || undefined,
       leadName: quotation.leadName || undefined,
       status: quotation.status || 'DRAFT',
+      notes: quotation.notes || undefined,
       
       // Client Info visibility flags
       showClientNameField: true,

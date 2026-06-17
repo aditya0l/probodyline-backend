@@ -35,6 +35,7 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { ChallansModule } from './challans/challans.module';
 import { SearchModule } from './search/search.module';
 import { CalendarEventsModule } from './calendar-events/calendar-events.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { CalendarEventsModule } from './calendar-events/calendar-events.module';
     ChallansModule,
     SearchModule,
     CalendarEventsModule,
+    OtpModule,
   ],
   controllers: [AppController],
   providers: [

@@ -260,6 +260,7 @@ export class QuotationsService {
                 gst: c.clientGST?.trim() || null,
                 gymName: c.gymName,
                 area: c.gymArea,
+                isPhoneVerified: c.isPhoneVerified || false,
               },
             });
           } else if (c.clientName || c.clientPhone || c.clientEmail) {
@@ -277,6 +278,7 @@ export class QuotationsService {
                 gst: c.clientGST?.trim() || null,
                 gymName: c.gymName,
                 area: c.gymArea,
+                isPhoneVerified: c.isPhoneVerified || false,
               },
             });
             customerId = newCustomer.id;
@@ -467,6 +469,7 @@ export class QuotationsService {
                   gst: c.clientGST?.trim() || null,
                   gymName: c.gymName,
                   area: c.gymArea,
+                  isPhoneVerified: c.isPhoneVerified || false,
                 },
               });
             } else if (c.clientName || c.clientPhone || c.clientEmail) {
@@ -483,6 +486,7 @@ export class QuotationsService {
                   gst: c.clientGST?.trim() || null,
                   gymName: c.gymName,
                   area: c.gymArea,
+                  isPhoneVerified: c.isPhoneVerified || false,
                 },
               });
               customerId = newCustomer.id;
@@ -595,6 +599,7 @@ export class QuotationsService {
               gst: c.clientGST?.trim() || null,
               gymName: c.gymName,
               area: c.gymArea,
+              isPhoneVerified: c.isPhoneVerified || false,
             },
           });
         } else if (c.clientName || c.clientPhone || c.clientEmail) {
@@ -611,6 +616,7 @@ export class QuotationsService {
               gst: c.clientGST?.trim() || null,
               gymName: c.gymName,
               area: c.gymArea,
+              isPhoneVerified: c.isPhoneVerified || false,
             },
           });
           customerId = newCustomer.id;

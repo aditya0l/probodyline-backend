@@ -438,6 +438,7 @@ export class QuotationsService {
         // Extract items and other fields
         const {
           items,
+          clients,
           deliveryDate,
           bookingDate,
           dispatchDate,
@@ -513,6 +514,7 @@ export class QuotationsService {
     // Simple update without items
     const {
       items,
+      clients,
       deliveryDate,
       bookingDate,
       dispatchDate,

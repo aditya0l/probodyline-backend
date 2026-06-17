@@ -7,4 +7,5 @@ export class UpdateManagerDto extends PartialType(CreateManagerDto) {
   @IsString()
   @IsNotEmpty({ message: 'Phone number is required' })
   phone: string;
+
 }

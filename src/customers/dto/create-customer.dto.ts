@@ -65,13 +65,12 @@ export class CreateCustomerDto {
   @IsString()
   gst?: string;
 
-  @ApiPropertyOptional({
-    description: 'Phone number',
-    example: '+91 9876543210',
+  @ApiProperty({
+    description: 'Customer phone number',
+    example: '+919876543210',
   })
-  @IsOptional()
   @IsString()
-  phone?: string;
+  phone: string;
 
   @ApiPropertyOptional({
     description: 'Email address',

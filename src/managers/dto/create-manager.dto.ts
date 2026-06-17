@@ -56,4 +56,24 @@ export class CreateManagerDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  panCard?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  aadharCard?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  panCardUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  aadharCardUrl?: string;
 }

@@ -24,6 +24,36 @@ export class CreateQuotationDto {
   @IsUUID()
   customerId?: string;
 
+  @ApiPropertyOptional({ description: 'Client name', example: 'John Doe' })
+  @IsOptional()
+  @IsString()
+  clientName?: string;
+
+  @ApiPropertyOptional({ description: 'Client address', example: '123 Main St' })
+  @IsOptional()
+  @IsString()
+  clientAddress?: string;
+
+  @ApiPropertyOptional({ description: 'Client city', example: 'Mumbai' })
+  @IsOptional()
+  @IsString()
+  clientCity?: string;
+
+  @ApiPropertyOptional({ description: 'Gym name', example: 'FitZone Gym' })
+  @IsOptional()
+  @IsString()
+  gymName?: string;
+
+  @ApiPropertyOptional({ description: 'Gym area/location', example: 'Andheri West' })
+  @IsOptional()
+  @IsString()
+  gymArea?: string;
+
+  @ApiPropertyOptional({ description: 'Client GST number', example: '27ABCDE1234F1Z5' })
+  @IsOptional()
+  @IsString()
+  clientGST?: string;
+
   @ApiPropertyOptional({
     description: 'Array of client details',
     type: [ClientInfoDto],

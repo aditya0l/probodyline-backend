@@ -7,4 +7,5 @@ export class UpdateTrainerDto extends PartialType(CreateTrainerDto) {
   @IsString()
   @IsNotEmpty({ message: 'Phone number is required' })
   phone: string;
+
 }

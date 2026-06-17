@@ -105,6 +105,14 @@ export class CreateProductDto {
   seriesName?: string;
 
   @ApiPropertyOptional({
+    description: 'Manual badge for media library',
+    example: 'BESTSELLER',
+  })
+  @IsOptional()
+  @IsString()
+  badge?: string;
+
+  @ApiPropertyOptional({
     description: 'Packaging description array',
     type: [String],
     example: ['Boxed', 'Assembled'],

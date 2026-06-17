@@ -76,6 +76,7 @@ model Product {
   mrpStickers          String[] // JSON array of URLs
   customDeclarations   String[] // JSON array of URLs
   cartonLabel          String? // URL
+  badge                String? // "BESTSELLER", "TRENDING", "POPULAR"
   machineArtwork       String? // URL
   brochure             String[] // JSON array of URLs
   brochureUrl          String? // URL

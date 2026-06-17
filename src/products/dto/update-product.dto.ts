@@ -17,5 +17,6 @@ export class UpdateProductMediaDto extends PartialType(
     'thumbnail',
     'instagramLink',
     'youtubeLink',
+    'badge',
   ] as const),
 ) {}

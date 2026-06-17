@@ -77,6 +77,7 @@ model Product {
   customDeclarations   String[] // JSON array of URLs
   cartonLabel          String? // URL
   badge                String? // "BESTSELLER", "TRENDING", "POPULAR"
+  isFavorite           Boolean   @default(false)
   machineArtwork       String? // URL
   brochure             String[] // JSON array of URLs
   brochureUrl          String? // URL

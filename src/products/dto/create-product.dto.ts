@@ -113,6 +113,14 @@ export class CreateProductDto {
   badge?: string;
 
   @ApiPropertyOptional({
+    description: 'Favorite status for media library',
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isFavorite?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Packaging description array',
     type: [String],
     example: ['Boxed', 'Assembled'],

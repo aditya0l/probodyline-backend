@@ -74,12 +74,28 @@ export class ClientsService {
           salesInitial: true,
           phone: true,
           isPhoneVerified: true,
+          _count: {
+            select: { gyms: true },
+          },
         },
       }),
       this.prisma.client.count({ where }),
     ]);
 
-    return { data: clients, total };
+    const mappedClients = clients.map((c) => {
+      const { _count, ...rest } = c;
+      return {
+        ...rest,
+        summary: {
+          hasGym: (_count?.gyms ?? 0) > 0,
+          quoteCount: 0, // TODO: Implement
+          orderCount: 0, // TODO: Implement
+          hasPendingSpareParts: false, // TODO: Implement
+        },
+      };
+    });
+
+    return { data: mappedClients, total };
   }
 
   async findOne(id: string): Promise<any> {

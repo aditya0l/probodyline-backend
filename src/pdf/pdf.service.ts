@@ -87,6 +87,7 @@ export class PdfService implements OnModuleDestroy {
       where: { id: quotationId },
       include: {
         customer: true,
+        clients: true,
         items: {
           orderBy: { srNo: 'asc' },
         },
@@ -155,6 +156,7 @@ export class PdfService implements OnModuleDestroy {
             quotation: {
               include: {
                 customer: true,
+        clients: true,
                 items: {
                   orderBy: { srNo: 'asc' },
                 },
@@ -237,6 +239,7 @@ export class PdfService implements OnModuleDestroy {
             quotation: {
               include: {
                 customer: true,
+        clients: true,
                 items: {
                   orderBy: { srNo: 'asc' },
                 },
@@ -292,6 +295,7 @@ export class PdfService implements OnModuleDestroy {
       where: { id: quotationId },
       include: {
         customer: true,
+        clients: true,
         items: {
           orderBy: { srNo: 'asc' },
         },
@@ -308,6 +312,7 @@ export class PdfService implements OnModuleDestroy {
   private async generateQuotationHTML(
     quotation: Quotation & {
       customer?: Customer | null;
+      clients?: Customer[];
       items: QuotationItem[];
     },
     templateType: string,
@@ -445,6 +450,8 @@ export class PdfService implements OnModuleDestroy {
     // Map visibleClientFields to boolean flags. If visibleClientFields is not provided, default all to true.
     const showField = (field: string) => visibleClientFields ? visibleClientFields.includes(field) : true;
 
+    const hasMultipleClients = Boolean(quotation.clients && quotation.clients.length > 1);
+
     const data: PDFTemplateData = {
       // Company Info (denormalized from quotation)
       companyName: quotation.companyName,
@@ -479,30 +486,48 @@ export class PdfService implements OnModuleDestroy {
       isDefaultTemplate: templateType === 'default',
       titleText: titleText,
 
-      // Client Info
-      clientName: customer?.name || quotation.clientName || undefined,
-      clientAddress: customer?.address || quotation.clientAddress || undefined,
-      clientAddressLine2: customer?.addressLine2 || quotation.clientAddressLine2 || undefined,
-      clientCity: customer?.city || quotation.clientCity || undefined,
-      gymName: customer?.gymName || quotation.gymName || undefined,
-      gymArea: customer?.area || quotation.gymArea || undefined,
-      clientGST: customer?.gst || quotation.clientGST || undefined,
-      clientPanCard: customer?.panCard || quotation.clientPanCard || undefined,
-      clientAadharCard: customer?.aadharCard || quotation.clientAadharCard || undefined,
+      // Multiple Clients Logic
+      hasMultipleClients: hasMultipleClients,
+      client1Name: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].name || undefined) : (customer?.name || quotation.clientName || undefined),
+      client1Address: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].address || undefined) : (customer?.address || quotation.clientAddress || undefined),
+      client1AddressLine2: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].addressLine2 || undefined) : (customer?.addressLine2 || quotation.clientAddressLine2 || undefined),
+      client1City: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].city || undefined) : (customer?.city || quotation.clientCity || undefined),
+      client1GST: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].gst || undefined) : (customer?.gst || quotation.clientGST || undefined),
+      client1PanCard: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].panCard || undefined) : (customer?.panCard || quotation.clientPanCard || undefined),
+      client1AadharCard: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].aadharCard || undefined) : (customer?.aadharCard || quotation.clientAadharCard || undefined),
+
+      client2Name: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].name || undefined) : undefined,
+      client2Address: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].address || undefined) : undefined,
+      client2AddressLine2: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].addressLine2 || undefined) : undefined,
+      client2City: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].city || undefined) : undefined,
+      client2GST: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].gst || undefined) : undefined,
+      client2PanCard: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].panCard || undefined) : undefined,
+      client2AadharCard: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].aadharCard || undefined) : undefined,
+
+      // Client Info (Default)
+      clientName: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].name || undefined) : (customer?.name || quotation.clientName || undefined),
+      clientAddress: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].address || undefined) : (customer?.address || quotation.clientAddress || undefined),
+      clientAddressLine2: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].addressLine2 || undefined) : (customer?.addressLine2 || quotation.clientAddressLine2 || undefined),
+      clientCity: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].city || undefined) : (customer?.city || quotation.clientCity || undefined),
+      gymName: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].gymName || undefined) : (customer?.gymName || quotation.gymName || undefined),
+      gymArea: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].area || undefined) : (customer?.area || quotation.gymArea || undefined),
+      clientGST: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].gst || undefined) : (customer?.gst || quotation.clientGST || undefined),
+      clientPanCard: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].panCard || undefined) : (customer?.panCard || quotation.clientPanCard || undefined),
+      clientAadharCard: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].aadharCard || undefined) : (customer?.aadharCard || quotation.clientAadharCard || undefined),
       leadName: quotation.leadName || undefined,
       status: quotation.status || 'DRAFT',
       notes: quotation.notes || undefined,
       
       // Client Info visibility flags
-      showClientNameField: true,
-      showAddressLine1Field: showField('addressLine1'),
-      showAddressLine2Field: showField('addressLine2'),
-      showCityField: showField('city'),
-      showGstNoField: showField('gstNo'),
+      showClientNameField: !hasMultipleClients,
+      showAddressLine1Field: !hasMultipleClients && showField('addressLine1'),
+      showAddressLine2Field: !hasMultipleClients && showField('addressLine2'),
+      showCityField: !hasMultipleClients && showField('city'),
+      showGstNoField: !hasMultipleClients && showField('gstNo'),
       showBookingDateField: showField('bookingDate'),
       showDispatchDateField: showField('dispatchDate'),
-      showPanCardField: showField('panCard'),
-      showAadharCardField: showField('aadharCard'),
+      showPanCardField: !hasMultipleClients && showField('panCard'),
+      showAadharCardField: !hasMultipleClients && showField('aadharCard'),
       showGymAreaField: showField('gymArea'),
       showGymNameField: true,
 

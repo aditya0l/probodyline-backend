@@ -64,6 +64,23 @@ export interface PDFTemplateData {
   clientAadharCard?: string;
   leadName?: string;
   
+  hasMultipleClients?: boolean;
+  client1Name?: string;
+  client1Address?: string;
+  client1AddressLine2?: string;
+  client1City?: string;
+  client1GST?: string;
+  client1PanCard?: string;
+  client1AadharCard?: string;
+
+  client2Name?: string;
+  client2Address?: string;
+  client2AddressLine2?: string;
+  client2City?: string;
+  client2GST?: string;
+  client2PanCard?: string;
+  client2AadharCard?: string;
+  
   // Client Info visibility flags
   showClientNameField?: boolean;
   showAddressLine1Field?: boolean;

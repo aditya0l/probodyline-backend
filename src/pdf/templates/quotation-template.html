@@ -90,35 +90,45 @@
       {{/if}}
 
       <div class="info-grid">
+        {{#if isSingleClient}}
         {{#if showClientNameField}}
         <div class="info-row">
           <div class="info-label">CLIENT NAME</div>
           <div class="info-value">{{#if clientName}}{{clientName}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
+        {{/if}}
+        {{#if isSingleClient}}
         {{#if showAddressLine1Field}}
         <div class="info-row">
           <div class="info-label">ADDRESS LINE 1</div>
           <div class="info-value">{{#if clientAddress}}{{{clientAddress}}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
+        {{/if}}
+        {{#if isSingleClient}}
         {{#if showAddressLine2Field}}
         <div class="info-row">
           <div class="info-label">ADDRESS LINE 2</div>
           <div class="info-value">{{#if clientAddressLine2}}{{{clientAddressLine2}}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
+        {{/if}}
+        {{#if isSingleClient}}
         {{#if showCityField}}
         <div class="info-row">
           <div class="info-label">CITY</div>
           <div class="info-value">{{#if clientCity}}{{clientCity}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
+        {{/if}}
+        {{#if isSingleClient}}
         {{#if showGstNoField}}
         <div class="info-row">
           <div class="info-label">GST NO.</div>
           <div class="info-value">{{#if clientGST}}{{clientGST}}{{else}}—{{/if}}</div>
         </div>
+        {{/if}}
         {{/if}}
         {{#if showBookingDateField}}
         <div class="info-row">
@@ -132,17 +142,21 @@
           <div class="info-value">{{#if dispatchDate}}{{dispatchDate}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
+        {{#if isSingleClient}}
         {{#if showPanCardField}}
         <div class="info-row">
           <div class="info-label">PAN CARD</div>
           <div class="info-value">{{#if clientPanCard}}{{clientPanCard}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
+        {{/if}}
+        {{#if isSingleClient}}
         {{#if showAadharCardField}}
         <div class="info-row">
           <div class="info-label">AADHAR CARD</div>
           <div class="info-value">{{#if clientAadharCard}}{{clientAadharCard}}{{else}}—{{/if}}</div>
         </div>
+        {{/if}}
         {{/if}}
         {{#if showGymAreaField}}
         <div class="info-row">

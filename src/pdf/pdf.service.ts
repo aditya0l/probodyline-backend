@@ -488,6 +488,7 @@ export class PdfService implements OnModuleDestroy {
 
       // Multiple Clients Logic
       hasMultipleClients: hasMultipleClients,
+      isSingleClient: !hasMultipleClients,
       client1Name: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].name || undefined) : (customer?.name || quotation.clientName || undefined),
       client1Address: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].address || undefined) : (customer?.address || quotation.clientAddress || undefined),
       client1AddressLine2: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].addressLine2 || undefined) : (customer?.addressLine2 || quotation.clientAddressLine2 || undefined),
@@ -519,15 +520,15 @@ export class PdfService implements OnModuleDestroy {
       notes: quotation.notes || undefined,
       
       // Client Info visibility flags
-      showClientNameField: !hasMultipleClients,
-      showAddressLine1Field: !hasMultipleClients && showField('addressLine1'),
-      showAddressLine2Field: !hasMultipleClients && showField('addressLine2'),
-      showCityField: !hasMultipleClients && showField('city'),
-      showGstNoField: !hasMultipleClients && showField('gstNo'),
+      showClientNameField: true,
+      showAddressLine1Field: showField('addressLine1'),
+      showAddressLine2Field: showField('addressLine2'),
+      showCityField: showField('city'),
+      showGstNoField: showField('gstNo'),
       showBookingDateField: showField('bookingDate'),
       showDispatchDateField: showField('dispatchDate'),
-      showPanCardField: !hasMultipleClients && showField('panCard'),
-      showAadharCardField: !hasMultipleClients && showField('aadharCard'),
+      showPanCardField: showField('panCard'),
+      showAadharCardField: showField('aadharCard'),
       showGymAreaField: showField('gymArea'),
       showGymNameField: true,
 

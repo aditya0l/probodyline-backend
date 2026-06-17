@@ -83,7 +83,7 @@ export function renderTemplate(template: string, data: TemplateData): string {
   let html = template;
 
   // Handle conditionals {{#if variable}}...{{/if}}
-  const maxIterations = 50;
+  const maxIterations = 200;
   let iteration = 0;
 
   while (iteration < maxIterations) {
@@ -295,7 +295,7 @@ export function renderTemplate(template: string, data: TemplateData): string {
                   let nestedItemContent = nestedContent;
 
                   // Process from innermost to outermost by repeatedly finding and processing the deepest {{#if}}
-                  const maxIterations = 50;
+                  const maxIterations = 200;
                   let iteration = 0;
 
                   while (iteration < maxIterations) {

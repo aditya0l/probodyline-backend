@@ -65,6 +65,7 @@ export interface PDFTemplateData {
   leadName?: string;
   
   hasMultipleClients?: boolean;
+  isSingleClient?: boolean;
   client1Name?: string;
   client1Address?: string;
   client1AddressLine2?: string;

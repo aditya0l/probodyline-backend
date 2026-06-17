@@ -52,6 +52,8 @@ export class ProductsService implements OnModuleInit {
         lqip: true,
         instagramLink: true,
         youtubeLink: true,
+        badge: true,
+        isFavorite: true,
         createdAt: true,
         category: {
           select: { id: true, name: true }
@@ -183,6 +185,8 @@ export class ProductsService implements OnModuleInit {
           brochureUrl: true,
           instagramLink: true,
           youtubeLink: true,
+          badge: true,
+          isFavorite: true,
           lqip: true,
           category: {
             select: { id: true, name: true },

@@ -238,6 +238,56 @@ export class QuotationsService {
         }
       }
 
+      // Process multiple clients
+      const clientIdsToConnect: string[] = [];
+      if (data.clients && data.clients.length > 0) {
+        for (const c of data.clients) {
+          let customerId = c.id;
+          
+          if (customerId) {
+            // Update existing
+            await tx.customer.update({
+              where: { id: customerId },
+              data: {
+                name: c.clientName || 'Unknown',
+                phone: c.clientPhone || '0000000000',
+                email: c.clientEmail,
+                address: c.clientAddress,
+                addressLine2: c.clientAddressLine2,
+                city: c.clientCity,
+                panCard: c.clientPanCard,
+                aadharCard: c.clientAadharCard,
+                gst: c.clientGST,
+                gymName: c.gymName,
+                area: c.gymArea,
+              },
+            });
+          } else if (c.clientName || c.clientPhone || c.clientEmail) {
+            // Create new
+            const newCustomer = await tx.customer.create({
+              data: {
+                name: c.clientName || 'Unknown',
+                phone: c.clientPhone || '0000000000',
+                email: c.clientEmail,
+                address: c.clientAddress,
+                addressLine2: c.clientAddressLine2,
+                city: c.clientCity,
+                panCard: c.clientPanCard,
+                aadharCard: c.clientAadharCard,
+                gst: c.clientGST,
+                gymName: c.gymName,
+                area: c.gymArea,
+              },
+            });
+            customerId = newCustomer.id;
+          }
+          
+          if (customerId) {
+            clientIdsToConnect.push(customerId);
+          }
+        }
+      }
+
       // Validate products exist if productId provided
       for (const item of data.items) {
         if (item.productId) {
@@ -319,6 +369,9 @@ export class QuotationsService {
           // Metadata
           template: data.template || 'default',
           visibleColumns: data.visibleColumns || {},
+          clients: clientIdsToConnect.length > 0 ? {
+            connect: clientIdsToConnect.map(id => ({ id }))
+          } : undefined,
           items: {
             create: data.items.map((item, index) => ({
               srNo: index + 1,

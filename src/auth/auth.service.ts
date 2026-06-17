@@ -10,12 +10,14 @@ import { PrismaService } from '../common/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { SmsService } from './sms.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private smsService: SmsService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -113,5 +115,77 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async sendOtp(phone: string): Promise<{ success: boolean; message: string }> {
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
+
+    // Save to DB
+    await this.prisma.otpSession.create({
+      data: {
+        phone,
+        otp,
+        expiresAt,
+      },
+    });
+
+    // Send via SMS Service
+    const sent = await this.smsService.sendOtp(phone, otp);
+    
+    if (!sent) {
+      throw new BadRequestException('Failed to send OTP via SMS provider');
+    }
+
+    return { success: true, message: 'OTP sent successfully' };
+  }
+
+  async verifyOtp(phone: string, otp: string, userType: 'Customer' | 'Manager' | 'Trainer'): Promise<{ success: boolean; message: string }> {
+    // Find valid OTP session
+    const session = await this.prisma.otpSession.findFirst({
+      where: {
+        phone,
+        otp,
+        isUsed: false,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!session) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    // Mark session as used
+    await this.prisma.otpSession.update({
+      where: { id: session.id },
+      data: { isUsed: true },
+    });
+
+    // Mark the corresponding user's phone as verified
+    try {
+      if (userType === 'Customer') {
+        await this.prisma.customer.updateMany({
+          where: { phone },
+          data: { isPhoneVerified: true },
+        });
+      } else if (userType === 'Manager') {
+        await this.prisma.manager.updateMany({
+          where: { phone },
+          data: { isPhoneVerified: true },
+        });
+      } else if (userType === 'Trainer') {
+        await this.prisma.trainer.updateMany({
+          where: { phone },
+          data: { isPhoneVerified: true },
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to update isPhoneVerified for ${userType} with phone ${phone}:`, error);
+    }
+
+    return { success: true, message: 'Phone number verified successfully' };
   }
 }

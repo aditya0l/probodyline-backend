@@ -117,26 +117,30 @@ model Product {
 }
 
 model Customer {
-  id            String    @id @default(uuid())
-  name          String
-  gymName       String?
-  address       String?
-  addressLine2  String?
-  city          String?
-  area          String?
-  gst           String?
-  panCard       String?
-  aadharCard    String?
-  phone         String?
-  email         String?
-  contactPerson String?
-  notes         String?   @db.Text
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id              String    @id @default(uuid())
+  name            String
+  gymName         String?
+  address         String?
+  addressLine2    String?
+  city            String?
+  area            String?
+  gst             String?
+  panCard         String?
+  aadharCard      String?
+  phone           String
+  email           String?   @unique
+  contactPerson   String?
+  notes           String?   @db.Text
+  panCardUrl      String? // Image/Doc URL
+  aadharCardUrl   String? // Image/Doc URL
+  isPhoneVerified Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
   // Relations
-  quotations Quotation[]
+  primaryQuotations Quotation[] @relation("QuotationPrimaryCustomer")
+  quotations        Quotation[] @relation("QuotationMultipleClients")
 
   @@index([name])
   @@map("customers")
@@ -168,6 +172,8 @@ model Quotation {
   clientGST           String?
   clientPanCard       String?
   clientAadharCard    String?
+  clientPhone         String?
+  clientEmail         String?
   deliveryDate        DateTime?
   leadName      String?
 
@@ -197,7 +203,8 @@ model Quotation {
   deletedAt      DateTime?
 
   // Relations
-  customer    Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customer    Customer?       @relation("QuotationPrimaryCustomer", fields: [customerId], references: [id], onDelete: SetNull)
+  clients     Customer[]      @relation("QuotationMultipleClients")
   items       QuotationItem[]
   salesOrders SalesOrder[]
   challans    Challan[]
@@ -616,9 +623,10 @@ model Manager {
   id             String   @id @default(uuid())
   managerCode    String   @unique // Auto: MGR 00001
   fullName       String
-  phone          String?
+  phone          String
   alternatePhone String?
-  email          String?
+  email          String?   @unique
+  isPhoneVerified Boolean  @default(false)
   stateCode      String?
   city           String?
   address        String?  @db.Text
@@ -641,13 +649,15 @@ model Trainer {
   id             String   @id @default(uuid())
   trainerCode    String   @unique // Auto: TRN 00001
   fullName       String
-  phone          String?
+  phone          String
   alternatePhone String?
-  email          String?
+  email          String?   @unique
+  isPhoneVerified Boolean  @default(false)
   stateCode      String?
   city           String?
   address        String?  @db.Text
   specialisation String?
+  experience     Int?
   instagramLink  String?
   profilePhoto   String?
   locationLink   String?
@@ -925,4 +935,16 @@ model CalendarEvent {
 
   @@index([date])
   @@map("calendar_events")
+}
+
+model OtpSession {
+  id        String   @id @default(uuid())
+  phone     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isUsed    Boolean  @default(false)
+
+  @@index([phone, otp])
+  @@map("otp_sessions")
 }

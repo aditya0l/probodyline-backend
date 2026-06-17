@@ -13,6 +13,7 @@ import {
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateQuotationItemDto } from './create-quotation-item.dto';
+import { ClientInfoDto } from './client-info.dto';
 
 export class CreateQuotationDto {
   @ApiPropertyOptional({
@@ -23,59 +24,15 @@ export class CreateQuotationDto {
   @IsUUID()
   customerId?: string;
 
-  @ApiPropertyOptional({ description: 'Client name', example: 'John Doe' })
-  @IsOptional()
-  @IsString()
-  clientName?: string;
-
   @ApiPropertyOptional({
-    description: 'Client address',
-    example: '123 Main St',
+    description: 'Array of client details',
+    type: [ClientInfoDto],
   })
   @IsOptional()
-  @IsString()
-  clientAddress?: string;
-
-  @ApiPropertyOptional({ description: 'Client city', example: 'Mumbai' })
-  @IsOptional()
-  @IsString()
-  clientCity?: string;
-
-  @ApiPropertyOptional({ description: 'Client address line 2', example: 'Andheri West' })
-  @IsOptional()
-  @IsString()
-  clientAddressLine2?: string;
-
-  @ApiPropertyOptional({ description: 'Client PAN Card', example: 'ABCDE1234F' })
-  @IsOptional()
-  @IsString()
-  clientPanCard?: string;
-
-  @ApiPropertyOptional({ description: 'Client Aadhar Card', example: '123456789012' })
-  @IsOptional()
-  @IsString()
-  clientAadharCard?: string;
-
-  @ApiPropertyOptional({ description: 'Gym name', example: 'FitZone Gym' })
-  @IsOptional()
-  @IsString()
-  gymName?: string;
-
-  @ApiPropertyOptional({
-    description: 'Gym area/location',
-    example: 'Andheri West',
-  })
-  @IsOptional()
-  @IsString()
-  gymArea?: string;
-
-  @ApiPropertyOptional({
-    description: 'Client GST number',
-    example: '27ABCDE1234F1Z5',
-  })
-  @IsOptional()
-  @IsString()
-  clientGST?: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ClientInfoDto)
+  clients?: ClientInfoDto[];
 
   @ApiPropertyOptional({
     description: 'Delivery date (ISO string)',

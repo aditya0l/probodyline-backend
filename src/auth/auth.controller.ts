@@ -95,4 +95,26 @@ export class AuthController {
       lastLoginAt: user.lastLoginAt,
     };
   }
+
+  @Post('send-otp')
+  @ApiOperation({ summary: 'Send OTP to a phone number' })
+  @ApiResponse({ status: 200, description: 'OTP sent successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async sendOtp(@Body() body: { phone: string }) {
+    if (!body.phone) {
+      throw new Error('Phone number is required');
+    }
+    return this.authService.sendOtp(body.phone);
+  }
+
+  @Post('verify-otp')
+  @ApiOperation({ summary: 'Verify OTP for a phone number' })
+  @ApiResponse({ status: 200, description: 'OTP verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid OTP' })
+  async verifyOtp(@Body() body: { phone: string; otp: string; userType: 'Customer' | 'Manager' | 'Trainer' }) {
+    if (!body.phone || !body.otp || !body.userType) {
+      throw new Error('Phone, OTP, and userType are required');
+    }
+    return this.authService.verifyOtp(body.phone, body.otp, body.userType);
+  }
 }

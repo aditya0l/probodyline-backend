@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { CommonModule } from '../common/common.module';
+import { SmsService } from './sms.service';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { CommonModule } from '../common/common.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, SmsService],
+  exports: [AuthService, SmsService],
 })
 export class AuthModule {}

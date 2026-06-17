@@ -84,7 +84,7 @@ model Product {
   brochureFilename     String?
   brochureSize         Int?
   thumbnail            String? // URL
-  lqip                 String?  @db.Text // Base64 LQIP
+  lqip                 String?   @db.Text // Base64 LQIP
   instagramLink        String? // URL
   youtubeLink          String? // URL
   cousinMachine        String[] // Array of model numbers
@@ -163,19 +163,19 @@ model Quotation {
   companyContactPerson String
 
   // Client info
-  clientName          String?
-  clientAddress       String?
-  clientAddressLine2  String?
-  clientCity          String?
-  gymName             String?
-  gymArea             String?
-  clientGST           String?
-  clientPanCard       String?
-  clientAadharCard    String?
-  clientPhone         String?
-  clientEmail         String?
-  deliveryDate        DateTime?
-  leadName      String?
+  clientName         String?
+  clientAddress      String?
+  clientAddressLine2 String?
+  clientCity         String?
+  gymName            String?
+  gymArea            String?
+  clientGST          String?
+  clientPanCard      String?
+  clientAadharCard   String?
+  clientPhone        String?
+  clientEmail        String?
+  deliveryDate       DateTime?
+  leadName           String?
 
   // Additional dates
   bookingDate      DateTime?
@@ -449,7 +449,7 @@ model StockTransaction {
   createdBy       String? // FK to User (future)
 
   // Relations
-  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, date])
   @@index([date])
@@ -459,15 +459,17 @@ model StockTransaction {
 
 // Client Management Models
 model Client {
-  id           String    @id @default(uuid())
-  clientCode   String    @unique // Auto-generated, immutable
-  tokenDate    DateTime? // Business token/contract date, immutable
-  stateCode    String?
-  city         String?
-  clientName   String?
-  salesInitial String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              String    @id @default(uuid())
+  clientCode      String    @unique // Auto-generated, immutable
+  tokenDate       DateTime? // Business token/contract date, immutable
+  stateCode       String?
+  city            String?
+  clientName      String?
+  phone           String?
+  isPhoneVerified Boolean   @default(false)
+  salesInitial    String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   gyms     ClientGym[]
@@ -620,27 +622,27 @@ model GymTrainer {
 }
 
 model Manager {
-  id             String   @id @default(uuid())
-  managerCode    String   @unique // Auto: MGR 00001
-  fullName       String
-  phone          String
-  alternatePhone String?
-  email          String?   @unique
+  id              String   @id @default(uuid())
+  managerCode     String   @unique // Auto: MGR 00001
+  fullName        String
+  phone           String
+  alternatePhone  String?
+  email           String?  @unique
   isPhoneVerified Boolean  @default(false)
-  stateCode      String?
-  city           String?
-  address        String?  @db.Text
-  instagramLink  String?
-  profilePhoto   String?
-  locationLink   String?
-  locationQR     String?
-  notes          String?  @db.Text
-  panCard        String?
-  aadharCard     String?
-  panCardUrl     String?
-  aadharCardUrl  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  stateCode       String?
+  city            String?
+  address         String?  @db.Text
+  instagramLink   String?
+  profilePhoto    String?
+  locationLink    String?
+  locationQR      String?
+  notes           String?  @db.Text
+  panCard         String?
+  aadharCard      String?
+  panCardUrl      String?
+  aadharCardUrl   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   gyms GymManager[]
 
@@ -650,29 +652,29 @@ model Manager {
 }
 
 model Trainer {
-  id             String   @id @default(uuid())
-  trainerCode    String   @unique // Auto: TRN 00001
-  fullName       String
-  phone          String
-  alternatePhone String?
-  email          String?   @unique
+  id              String   @id @default(uuid())
+  trainerCode     String   @unique // Auto: TRN 00001
+  fullName        String
+  phone           String
+  alternatePhone  String?
+  email           String?  @unique
   isPhoneVerified Boolean  @default(false)
-  stateCode      String?
-  city           String?
-  address        String?  @db.Text
-  specialisation String?
-  experience     Int?
-  instagramLink  String?
-  profilePhoto   String?
-  locationLink   String?
-  locationQR     String?
-  notes          String?  @db.Text
-  panCard        String?
-  aadharCard     String?
-  panCardUrl     String?
-  aadharCardUrl  String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  stateCode       String?
+  city            String?
+  address         String?  @db.Text
+  specialisation  String?
+  experience      Int?
+  instagramLink   String?
+  profilePhoto    String?
+  locationLink    String?
+  locationQR      String?
+  notes           String?  @db.Text
+  panCard         String?
+  aadharCard      String?
+  panCardUrl      String?
+  aadharCardUrl   String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   gyms GymTrainer[]
 

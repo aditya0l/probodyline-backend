@@ -15,5 +15,5 @@ export class VerifyOtpDto {
 
   @IsOptional()
   @IsString()
-  entityType?: 'CUSTOMER' | 'MANAGER' | 'TRAINER' | 'LEAD';
+  entityType?: 'CUSTOMER' | 'MANAGER' | 'TRAINER' | 'LEAD' | 'CLIENT';
 }

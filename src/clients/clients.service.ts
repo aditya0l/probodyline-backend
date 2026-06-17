@@ -72,6 +72,8 @@ export class ClientsService {
           stateCode: true,
           tokenDate: true,
           salesInitial: true,
+          phone: true,
+          isPhoneVerified: true,
         },
       }),
       this.prisma.client.count({ where }),

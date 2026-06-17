@@ -36,7 +36,7 @@ export class PdfController {
     @Query('visibleClientFields') visibleClientFields: string | undefined,
     @Res() res: Response,
   ) {
-    const parsedFields = visibleClientFields ? visibleClientFields.split(',') : undefined;
+    const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
     console.log('[PdfController.generatePDF] Request received:', {
       quotationId,
       template,
@@ -86,7 +86,7 @@ export class PdfController {
     @Query('visibleClientFields') visibleClientFields: string | undefined,
     @Res() res: Response,
   ) {
-    const parsedFields = visibleClientFields ? visibleClientFields.split(',') : undefined;
+    const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
 
     const html = await this.pdfService.generateQuotationHTMLPreview(
       quotationId,
@@ -120,7 +120,7 @@ export class PdfController {
     @Query('visibleClientFields') visibleClientFields: string | undefined,
     @Res() res: Response,
   ) {
-    const parsedFields = visibleClientFields ? visibleClientFields.split(',') : undefined;
+    const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
 
     const pdfBuffer = await this.pdfService.generateSOSplitPDF(
       soId,
@@ -158,7 +158,7 @@ export class PdfController {
     @Query('visibleClientFields') visibleClientFields: string | undefined,
     @Res() res: Response,
   ) {
-    const parsedFields = visibleClientFields ? visibleClientFields.split(',') : undefined;
+    const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
 
     const html = await this.pdfService.generateSOSplitHTMLPreview(
       soId,

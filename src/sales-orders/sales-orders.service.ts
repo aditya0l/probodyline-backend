@@ -318,7 +318,9 @@ export class SalesOrdersService {
     page?: number;
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
-    const whereClause: Prisma.SalesOrderWhereInput = {};
+    const whereClause: Prisma.SalesOrderWhereInput = {
+      status: { not: 'UNBOOKED' }
+    };
     
     if (filters?.gymName || filters?.clientName || filters?.search) {
       whereClause.quotation = {};

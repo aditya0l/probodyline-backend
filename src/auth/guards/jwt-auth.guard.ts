@@ -14,23 +14,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    const isAuthDisabled = this.configService.get<boolean>(
-      'auth.disabled',
-      false,
-    );
-
-    if (isAuthDisabled) {
-      // Auth is disabled - inject mock user and skip JWT validation
-      request.user = {
-        id: 'dev-user-id',
-        email: 'dev@probodyline.com',
-        name: 'Development User',
-        role: 'ADMIN',
-        isActive: true,
-      };
-      return true;
-    }
-
     return super.canActivate(context);
   }
 }

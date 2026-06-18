@@ -62,28 +62,12 @@ export class AuthController {
   }
 
   @Get('profile')
-  @UseGuards(DevAuthBypassGuard, JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'User profile' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@CurrentUser() user: any) {
-    // If auth is disabled, DevAuthBypassGuard will inject mock user
-    const isAuthDisabled = this.configService.get<boolean>(
-      'auth.disabled',
-      false,
-    );
-
-    if (isAuthDisabled && !user) {
-      // Return mock user for development
-      return {
-        id: 'dev-user-id',
-        email: 'dev@probodyline.com',
-        name: 'Development User',
-        role: 'ADMIN',
-        lastLoginAt: new Date(),
-      };
-    }
 
     return {
       id: user.id,

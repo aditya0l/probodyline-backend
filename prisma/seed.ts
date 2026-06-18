@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, UserRole } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -49,6 +50,30 @@ function generatePlaceholderImage(
 
 async function main() {
   console.log('🌱 Starting seed...');
+
+  // --- Seed Users ---
+  console.log('Seeding users...');
+  const passwordHash = await bcrypt.hash('logo@1234', 10);
+
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@probodyline.com' },
+    update: { role: UserRole.ADMIN, password: passwordHash, name: 'Admin' },
+    create: { email: 'admin@probodyline.com', role: UserRole.ADMIN, password: passwordHash, name: 'Admin' },
+  });
+
+  const sanjay = await prisma.user.upsert({
+    where: { email: 'sanjay@probodyline.com' },
+    update: { role: UserRole.HOD_TECHNICAL, password: passwordHash, name: 'Sanjay', managerId: admin.id },
+    create: { email: 'sanjay@probodyline.com', role: UserRole.HOD_TECHNICAL, password: passwordHash, name: 'Sanjay', managerId: admin.id },
+  });
+
+  const yash = await prisma.user.upsert({
+    where: { email: 'yash@probodyline.com' },
+    update: { role: UserRole.SALES, password: passwordHash, name: 'Yash', managerId: admin.id },
+    create: { email: 'yash@probodyline.com', role: UserRole.SALES, password: passwordHash, name: 'Yash', managerId: admin.id },
+  });
+  console.log('Users seeded.');
+  // ------------------
 
   // Load logo as base64 so PDFs don't depend on filesystem at runtime
   let logoDataUri: string | null = null;

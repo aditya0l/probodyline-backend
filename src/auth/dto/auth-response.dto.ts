@@ -11,5 +11,6 @@ export class AuthResponseDto {
     name: string;
     role: string;
     organizationId?: string;
+    managerId?: string | null;
   };
 }

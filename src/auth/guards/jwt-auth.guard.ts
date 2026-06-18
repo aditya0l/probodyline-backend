@@ -10,7 +10,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
-    if (request.url.includes('/api/auth/login') || request.url.includes('/api/auth/register') || request.url.includes('/api/auth/verify')) {
+    if (
+      request.url.includes('/api/auth/login') || 
+      request.url.includes('/api/auth/register') || 
+      request.url.includes('/api/auth/verify') ||
+      request.url.includes('/api/files')
+    ) {
       return true;
     }
 

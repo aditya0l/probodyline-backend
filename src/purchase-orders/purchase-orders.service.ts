@@ -361,6 +361,23 @@ export class PurchaseOrdersService {
         newSplits.push(split);
       }
 
+      // If no splits exist, fallback to Master PO stock transactions
+      if (newSplits.length === 0 && po.jaipurArrival && po.status !== 'CANCELLED') {
+        const stockTxs = po.items
+          .filter(item => item.productId)
+          .map((item) => ({
+            productId: item.productId as string,
+            quantity: item.quantity,
+            transactionType: 'IN' as const,
+            referenceType: 'PURCHASE_ORDER',
+            referenceId: id,
+            date: po.jaipurArrival!,
+          }));
+        if (stockTxs.length > 0) {
+          await tx.stockTransaction.createMany({ data: stockTxs });
+        }
+      }
+
       this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
 
       const productIdsToSync = new Set<string>();

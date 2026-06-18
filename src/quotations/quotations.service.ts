@@ -158,6 +158,7 @@ export class QuotationsService {
       where: { id },
       include: {
         customer: true,
+        clients: true,
         items: {
           orderBy: { srNo: 'asc' },
           include: {
@@ -579,6 +580,7 @@ export class QuotationsService {
             clients: clientIdsToConnect.length > 0 ? {
               set: clientIdsToConnect.map(id => ({ id }))
             } : undefined,
+            customerId: clientIdsToConnect.length > 0 ? clientIdsToConnect[0] : undefined,
             items: {
               create: itemsToCreate.map((item, index) => ({
                 srNo: index + 1,
@@ -609,6 +611,7 @@ export class QuotationsService {
           include: {
             items: true,
             customer: true,
+            clients: true,
           },
         });
       });
@@ -710,8 +713,9 @@ export class QuotationsService {
           leadName:
             updateData.leadName !== undefined ? updateData.leadName : undefined,
           clients: clientIdsToConnect.length > 0 ? {
-            set: clientIdsToConnect.map(id => ({ id }))
-          } : undefined,
+          set: clientIdsToConnect.map(id => ({ id }))
+        } : undefined,
+        customerId: clientIdsToConnect.length > 0 ? clientIdsToConnect[0] : undefined,
         },
       });
     } catch (err) {

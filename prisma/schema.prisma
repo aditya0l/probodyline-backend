@@ -198,6 +198,8 @@ model Quotation {
   // Metadata
   visibleColumns Json? // Column visibility settings
   template       String    @default("default") // enum: default, wholesale, retail, loading, price-list
+  createdBy      String?
+  createdByUser  User?     @relation(fields: [createdBy], references: [id])
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -280,6 +282,8 @@ model SalesOrder {
   splits       DispatchSplit[]
   serviceCards ServiceCard[]
   challans     Challan[]
+  user         User?           @relation(fields: [userId], references: [id])
+  userId       String?
 
   @@index([quotationId])
   @@index([status])
@@ -343,6 +347,8 @@ model PurchaseOrder {
   // Relations
   items  PurchaseOrderItem[]
   splits PurchaseOrderSplit[]
+  user   User?                @relation(fields: [userId], references: [id])
+  userId String?
 
   @@index([poNumber])
   @@index([status])
@@ -446,7 +452,8 @@ model StockTransaction {
   date            DateTime
   notes           String?              @db.Text
   createdAt       DateTime             @default(now())
-  createdBy       String? // FK to User (future)
+  createdBy       String?
+  createdByUser   User?                @relation(fields: [createdBy], references: [id])
 
   // Relations
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -477,6 +484,8 @@ model Client {
   aadharCardUrl   String?
   isPhoneVerified Boolean   @default(false)
   salesInitial    String?
+  createdBy       String?
+  createdByUser   User?     @relation(fields: [createdBy], references: [id])
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -545,6 +554,8 @@ model Gym {
   instagramLink    String?
   locationLink     String?
   locationQR       String? // Auto-generated from locationLink
+  createdBy        String?
+  createdByUser    User?     @relation(fields: [createdBy], references: [id])
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -565,14 +576,15 @@ model Gym {
 }
 
 model InaugurationCommitment {
-  id           String   @id @default(uuid())
-  gymId        String
-  committedOn  DateTime @default(now())
-  committedFor DateTime
-  source       String // 'SYSTEM' | 'USER'
-  note         String?
-  createdBy    String?
-  createdAt    DateTime @default(now())
+  id            String   @id @default(uuid())
+  gymId         String
+  committedOn   DateTime @default(now())
+  committedFor  DateTime
+  source        String // 'SYSTEM' | 'USER'
+  note          String?
+  createdBy     String?
+  createdByUser User?    @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
 
   gym Gym @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
@@ -694,17 +706,19 @@ model Trainer {
 
 // Lead Management Models
 model Lead {
-  id         String    @id @default(uuid())
-  leadNumber String    @unique
-  name       String
-  phone      String?
-  email      String?
-  source     String?
-  status     String    @default("NEW")
-  notes      String?   @db.Text
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime?
+  id            String    @id @default(uuid())
+  leadNumber    String    @unique
+  name          String
+  phone         String?
+  email         String?
+  source        String?
+  status        String    @default("NEW")
+  notes         String?   @db.Text
+  createdBy     String?
+  createdByUser User?     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   // Relations
   clients       ClientLead[]
@@ -784,8 +798,9 @@ model AuditLog {
 // Authentication Models
 enum UserRole {
   ADMIN
-  MANAGER
-  USER
+  HOD_TECHNICAL
+  SALES
+  STAFF
 }
 
 model User {
@@ -794,14 +809,28 @@ model User {
   email          String    @unique
   password       String // Hashed password
   name           String
-  role           UserRole  @default(USER)
+  role           UserRole  @default(STAFF)
   isActive       Boolean   @default(true)
   lastLoginAt    DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   // Relations
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  managerId                      String?
+  manager                        User?                    @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
+  team                           User[]                   @relation("UserManager")
+  organization                   Organization?            @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  createdQuotations              Quotation[]
+  createdSalesOrders             SalesOrder[]
+  createdPurchaseOrders          PurchaseOrder[]
+  createdServiceCards            ServiceCard[]
+  createdLeads                   Lead[]
+  createdClients                 Client[]
+  createdGyms                    Gym[]
+  createdChallans                Challan[]
+  createdStockTransactions       StockTransaction[]
+  createdInaugurationCommitments InaugurationCommitment[]
+  createdCalendarEvents          CalendarEvent[]
 
   @@index([email])
   @@index([organizationId])
@@ -864,8 +893,10 @@ model ServiceCard {
   status       ServiceCardStatus @default(STARTED)
   productNotes Json? // Stores notes specific to products for this service card
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdBy     String?
+  createdByUser User?    @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   gym        Gym?        @relation(fields: [gymId], references: [id], onDelete: SetNull)
@@ -910,8 +941,10 @@ model Challan {
 
   editHistory Json? // Stores { fieldName: ["oldVal1", "oldVal2"] }
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdBy     String?
+  createdByUser User?    @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
   salesOrder SalesOrder?   @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
@@ -943,14 +976,15 @@ model ChallanItem {
 
 // Calendar Events
 model CalendarEvent {
-  id        String   @id @default(uuid())
-  date      DateTime
-  title     String
-  notes     String?  @db.Text
-  color     String   @default("#FAC775")
-  createdBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  date          DateTime
+  title         String
+  notes         String?  @db.Text
+  color         String   @default("#FAC775")
+  createdBy     String?
+  createdByUser User?    @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@index([date])
   @@map("calendar_events")

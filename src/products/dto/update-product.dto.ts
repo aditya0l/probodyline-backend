@@ -19,5 +19,7 @@ export class UpdateProductMediaDto extends PartialType(
     'youtubeLink',
     'badge',
     'isFavorite',
+    'image',
+    'images',
   ] as const),
 ) {}

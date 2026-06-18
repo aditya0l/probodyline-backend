@@ -629,10 +629,15 @@ export class QuotationsService {
 
           const existing = await this.prisma.customer.findUnique({ where: { id: customerId } });
           if (existing) {
-            await this.prisma.customer.update({
-              where: { id: customerId },
-              data: customerData,
-            });
+            try {
+              await this.prisma.customer.update({
+                where: { id: customerId },
+                data: customerData,
+              });
+            } catch (err) {
+              console.error(`FAILED CUSTOMER UPDATE. customerId: ${customerId}, exists: ${!!existing}`, err);
+              throw err;
+            }
           } else {
             const newCustomer = await this.prisma.customer.create({ data: customerData });
             customerId = newCustomer.id;
@@ -648,26 +653,32 @@ export class QuotationsService {
       }
     }
 
-    const result = await this.prisma.quotation.update({
-      where: { id },
-      data: {
-        ...updateData,
-        deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
-        bookingDate: bookingDate ? new Date(bookingDate) : undefined,
-        dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
-        installationDate: installationDate
-          ? new Date(installationDate)
-          : undefined,
-        inaugurationDate: inaugurationDate
-          ? new Date(inaugurationDate)
-          : undefined,
-        leadName:
-          updateData.leadName !== undefined ? updateData.leadName : undefined,
-        clients: clientIdsToConnect.length > 0 ? {
-          set: clientIdsToConnect.map(id => ({ id }))
-        } : undefined,
-      },
-    });
+    let result;
+    try {
+      result = await this.prisma.quotation.update({
+        where: { id },
+        data: {
+          ...updateData,
+          deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
+          bookingDate: bookingDate ? new Date(bookingDate) : undefined,
+          dispatchDate: dispatchDate ? new Date(dispatchDate) : undefined,
+          installationDate: installationDate
+            ? new Date(installationDate)
+            : undefined,
+          inaugurationDate: inaugurationDate
+            ? new Date(inaugurationDate)
+            : undefined,
+          leadName:
+            updateData.leadName !== undefined ? updateData.leadName : undefined,
+          clients: clientIdsToConnect.length > 0 ? {
+            set: clientIdsToConnect.map(id => ({ id }))
+          } : undefined,
+        },
+      });
+    } catch (err) {
+      console.error(`FAILED QUOTATION UPDATE. id: ${id}, clientIdsToConnect:`, clientIdsToConnect, err);
+      throw err;
+    }
 
     // Propagate Dispatch Date to Stock Transactions and Bookings if changed
     if (dispatchDate) {

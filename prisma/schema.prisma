@@ -466,6 +466,15 @@ model Client {
   city            String?
   clientName      String?
   phone           String?
+  email           String?
+  address         String?
+  addressLine2    String?
+  area            String?
+  gst             String?
+  panCard         String?
+  aadharCard      String?
+  panCardUrl      String?
+  aadharCardUrl   String?
   isPhoneVerified Boolean   @default(false)
   salesInitial    String?
   createdAt       DateTime  @default(now())

@@ -260,6 +260,24 @@ export class QuotationsService {
           };
 
           if (customerId) {
+            // SYNC WITH CLIENT DIRECTORY: 
+            // If the ID belongs to a master Client, update their profile with the newly filled details
+            const existingClient = await tx.client.findUnique({ where: { id: customerId } });
+            if (existingClient) {
+              await tx.client.update({
+                where: { id: customerId },
+                data: {
+                  address: customerData.address,
+                  addressLine2: customerData.addressLine2,
+                  area: customerData.area,
+                  email: customerData.email,
+                  gst: customerData.gst,
+                  panCard: customerData.panCard,
+                  aadharCard: customerData.aadharCard,
+                }
+              });
+            }
+
             const existing = await tx.customer.findUnique({ where: { id: customerId } });
             if (existing) {
               await tx.customer.update({
@@ -591,6 +609,24 @@ export class QuotationsService {
         };
 
         if (customerId) {
+          // SYNC WITH CLIENT DIRECTORY: 
+          // If the ID belongs to a master Client, update their profile with the newly filled details
+          const existingClient = await this.prisma.client.findUnique({ where: { id: customerId } });
+          if (existingClient) {
+            await this.prisma.client.update({
+              where: { id: customerId },
+              data: {
+                address: customerData.address,
+                addressLine2: customerData.addressLine2,
+                area: customerData.area,
+                email: customerData.email,
+                gst: customerData.gst,
+                panCard: customerData.panCard,
+                aadharCard: customerData.aadharCard,
+              }
+            });
+          }
+
           const existing = await this.prisma.customer.findUnique({ where: { id: customerId } });
           if (existing) {
             await this.prisma.customer.update({

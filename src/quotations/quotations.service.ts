@@ -244,43 +244,34 @@ export class QuotationsService {
         for (const c of data.clients) {
           let customerId = c.id;
           
+          const customerData = {
+            name: c.clientName?.trim() || 'Unknown',
+            phone: c.clientPhone?.trim() || '0000000000',
+            email: c.clientEmail?.trim() || null,
+            address: c.clientAddress,
+            addressLine2: c.clientAddressLine2,
+            city: c.clientCity,
+            panCard: c.clientPanCard?.trim() || null,
+            aadharCard: c.clientAadharCard?.trim() || null,
+            gst: c.clientGST?.trim() || null,
+            gymName: c.gymName,
+            area: c.gymArea,
+            isPhoneVerified: c.isPhoneVerified || false,
+          };
+
           if (customerId) {
-            // Update existing
-            await tx.customer.update({
-              where: { id: customerId },
-              data: {
-                name: c.clientName?.trim() || 'Unknown',
-                phone: c.clientPhone?.trim() || '0000000000',
-                email: c.clientEmail?.trim() || null,
-                address: c.clientAddress,
-                addressLine2: c.clientAddressLine2,
-                city: c.clientCity,
-                panCard: c.clientPanCard?.trim() || null,
-                aadharCard: c.clientAadharCard?.trim() || null,
-                gst: c.clientGST?.trim() || null,
-                gymName: c.gymName,
-                area: c.gymArea,
-                isPhoneVerified: c.isPhoneVerified || false,
-              },
-            });
+            const existing = await tx.customer.findUnique({ where: { id: customerId } });
+            if (existing) {
+              await tx.customer.update({
+                where: { id: customerId },
+                data: customerData,
+              });
+            } else {
+              const newCustomer = await tx.customer.create({ data: customerData });
+              customerId = newCustomer.id;
+            }
           } else if (c.clientName || c.clientPhone || c.clientEmail) {
-            // Create new
-            const newCustomer = await tx.customer.create({
-              data: {
-                name: c.clientName?.trim() || 'Unknown',
-                phone: c.clientPhone?.trim() || '0000000000',
-                email: c.clientEmail?.trim() || null,
-                address: c.clientAddress,
-                addressLine2: c.clientAddressLine2,
-                city: c.clientCity,
-                panCard: c.clientPanCard?.trim() || null,
-                aadharCard: c.clientAadharCard?.trim() || null,
-                gst: c.clientGST?.trim() || null,
-                gymName: c.gymName,
-                area: c.gymArea,
-                isPhoneVerified: c.isPhoneVerified || false,
-              },
-            });
+            const newCustomer = await tx.customer.create({ data: customerData });
             customerId = newCustomer.id;
           }
           
@@ -584,41 +575,34 @@ export class QuotationsService {
       for (const c of clients) {
         let customerId = c.id;
         
+        const customerData = {
+          name: c.clientName?.trim() || 'Unknown',
+          phone: c.clientPhone?.trim() || '0000000000',
+          email: c.clientEmail?.trim() || null,
+          address: c.clientAddress,
+          addressLine2: c.clientAddressLine2,
+          city: c.clientCity,
+          panCard: c.clientPanCard?.trim() || null,
+          aadharCard: c.clientAadharCard?.trim() || null,
+          gst: c.clientGST?.trim() || null,
+          gymName: c.gymName,
+          area: c.gymArea,
+          isPhoneVerified: c.isPhoneVerified || false,
+        };
+
         if (customerId) {
-          await this.prisma.customer.update({
-            where: { id: customerId },
-            data: {
-              name: c.clientName?.trim() || 'Unknown',
-              phone: c.clientPhone?.trim() || '0000000000',
-              email: c.clientEmail?.trim() || null,
-              address: c.clientAddress,
-              addressLine2: c.clientAddressLine2,
-              city: c.clientCity,
-              panCard: c.clientPanCard?.trim() || null,
-              aadharCard: c.clientAadharCard?.trim() || null,
-              gst: c.clientGST?.trim() || null,
-              gymName: c.gymName,
-              area: c.gymArea,
-              isPhoneVerified: c.isPhoneVerified || false,
-            },
-          });
+          const existing = await this.prisma.customer.findUnique({ where: { id: customerId } });
+          if (existing) {
+            await this.prisma.customer.update({
+              where: { id: customerId },
+              data: customerData,
+            });
+          } else {
+            const newCustomer = await this.prisma.customer.create({ data: customerData });
+            customerId = newCustomer.id;
+          }
         } else if (c.clientName || c.clientPhone || c.clientEmail) {
-          const newCustomer = await this.prisma.customer.create({
-            data: {
-              name: c.clientName?.trim() || 'Unknown',
-              phone: c.clientPhone?.trim() || '0000000000',
-              email: c.clientEmail?.trim() || null,
-              address: c.clientAddress,
-              addressLine2: c.clientAddressLine2,
-              city: c.clientCity,
-              panCard: c.clientPanCard?.trim() || null,
-              aadharCard: c.clientAadharCard?.trim() || null,
-              gst: c.clientGST?.trim() || null,
-              gymName: c.gymName,
-              area: c.gymArea,
-              isPhoneVerified: c.isPhoneVerified || false,
-            },
-          });
+          const newCustomer = await this.prisma.customer.create({ data: customerData });
           customerId = newCustomer.id;
         }
         

@@ -12,6 +12,7 @@ import { UpdateQuotationItemDto } from './dto/update-quotation-item.dto';
 import { Quotation, Prisma, StockTransactionType } from '@prisma/client';
 import { SalesOrdersService } from '../sales-orders/sales-orders.service';
 import { EventsGateway } from '../events/events.gateway';
+import { userContext } from '../common/context';
 
 @Injectable()
 export class QuotationsService {
@@ -108,6 +109,11 @@ export class QuotationsService {
     if (filters?.clientName) {
       whereClause.clientName = filters.clientName;
     }
+    const user = userContext.getStore();
+    if (user && user.role === 'SALES') {
+      whereClause.createdBy = user.id;
+    }
+
     if (filters?.search) {
       whereClause.OR = [
         { quoteNumber: { contains: filters.search, mode: 'insensitive' } },

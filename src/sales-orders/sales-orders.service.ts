@@ -8,6 +8,7 @@ import { syncProductStock } from '../utils/stock-sync';
 import { Prisma } from '@prisma/client';
 
 import { EventsGateway } from '../events/events.gateway';
+import { userContext } from '../common/context';
 
 @Injectable()
 export class SalesOrdersService {
@@ -322,10 +323,15 @@ export class SalesOrdersService {
       status: { not: 'UNBOOKED' }
     };
     
+    const user = userContext.getStore();
+    if (user && user.role === 'SALES') {
+      whereClause.quotation = { createdBy: user.id };
+    }
+
     if (filters?.gymName || filters?.clientName || filters?.search) {
-      whereClause.quotation = {};
-      if (filters.gymName) whereClause.quotation.gymName = filters.gymName;
-      if (filters.clientName) whereClause.quotation.clientName = filters.clientName;
+      whereClause.quotation = whereClause.quotation || {};
+      if (filters.gymName) (whereClause.quotation as any).gymName = filters.gymName;
+      if (filters.clientName) (whereClause.quotation as any).clientName = filters.clientName;
       if (filters.search) {
         whereClause.OR = [
           { soNumber: { contains: filters.search, mode: 'insensitive' } },

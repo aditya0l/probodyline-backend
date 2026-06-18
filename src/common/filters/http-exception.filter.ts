@@ -25,6 +25,13 @@ export enum ErrorCode {
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
+    console.error('\n==== EXCEPTION THROWN ====');
+    if (exception instanceof Error) {
+      console.error(exception.stack || exception.message);
+    } else {
+      console.error(exception);
+    }
+    console.error('==========================\n');
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest();

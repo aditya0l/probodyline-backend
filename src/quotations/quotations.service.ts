@@ -464,23 +464,62 @@ export class QuotationsService {
             let customerId = c.id;
             
             if (customerId) {
-              await tx.customer.update({
-                where: { id: customerId },
-                data: {
-                  name: c.clientName?.trim() || 'Unknown',
-                  phone: c.clientPhone?.trim() || '0000000000',
-                  email: c.clientEmail?.trim() || null,
-                  address: c.clientAddress,
-                  addressLine2: c.clientAddressLine2,
-                  city: c.clientCity,
-                  panCard: c.clientPanCard?.trim() || null,
-                  aadharCard: c.clientAadharCard?.trim() || null,
-                  gst: c.clientGST?.trim() || null,
-                  gymName: c.gymName,
-                  area: c.gymArea,
-                  isPhoneVerified: c.isPhoneVerified || false,
-                },
-              });
+              // SYNC WITH CLIENT DIRECTORY: 
+              // If the ID belongs to a master Client, update their profile with the newly filled details
+              const existingClient = await tx.client.findUnique({ where: { id: customerId } });
+              if (existingClient) {
+                await tx.client.update({
+                  where: { id: customerId },
+                  data: {
+                    address: c.clientAddress,
+                    addressLine2: c.clientAddressLine2,
+                    area: c.gymArea,
+                    email: c.clientEmail?.trim() || null,
+                    gst: c.clientGST?.trim() || null,
+                    panCard: c.clientPanCard?.trim() || null,
+                    aadharCard: c.clientAadharCard?.trim() || null,
+                  }
+                });
+              }
+
+              const existing = await tx.customer.findUnique({ where: { id: customerId } });
+              if (existing) {
+                await tx.customer.update({
+                  where: { id: customerId },
+                  data: {
+                    name: c.clientName?.trim() || 'Unknown',
+                    phone: c.clientPhone?.trim() || '0000000000',
+                    email: c.clientEmail?.trim() || null,
+                    address: c.clientAddress,
+                    addressLine2: c.clientAddressLine2,
+                    city: c.clientCity,
+                    panCard: c.clientPanCard?.trim() || null,
+                    aadharCard: c.clientAadharCard?.trim() || null,
+                    gst: c.clientGST?.trim() || null,
+                    gymName: c.gymName,
+                    area: c.gymArea,
+                    isPhoneVerified: c.isPhoneVerified || false,
+                  },
+                });
+              } else {
+                const newCustomer = await tx.customer.create({
+                  data: {
+                    name: c.clientName?.trim() || 'Unknown',
+                    phone: c.clientPhone?.trim() || '0000000000',
+                    email: c.clientEmail?.trim() || null,
+                    address: c.clientAddress,
+                    addressLine2: c.clientAddressLine2,
+                    city: c.clientCity,
+                    panCard: c.clientPanCard?.trim() || null,
+                    aadharCard: c.clientAadharCard?.trim() || null,
+                    gst: c.clientGST?.trim() || null,
+                    gymName: c.gymName,
+                    area: c.gymArea,
+                    isPhoneVerified: c.isPhoneVerified || false,
+                  },
+                });
+                customerId = newCustomer.id;
+              }
             } else if (c.clientName || c.clientPhone || c.clientEmail) {
               const newCustomer = await tx.customer.create({
                 data: {

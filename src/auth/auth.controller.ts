@@ -12,7 +12,6 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { DevAuthBypassGuard } from './guards/dev-auth-bypass.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 
 @ApiTags('auth')

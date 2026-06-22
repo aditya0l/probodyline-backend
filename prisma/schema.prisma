@@ -490,9 +490,10 @@ model Client {
   updatedAt       DateTime  @updatedAt
 
   // Relations
-  gyms     ClientGym[]
-  leads    ClientLead[]
-  partners ClientPartner[]
+  gyms         ClientGym[]
+  leads        ClientLead[]
+  partners     ClientPartner[]
+  serviceCards ServiceCard[]
 
   @@index([clientCode])
   @@index([stateCode, city])
@@ -848,6 +849,8 @@ model ServiceCard {
   city             String?
   gymId            String?
   gymName          String?
+  clientId         String?
+  clientName       String?
   branchCode       Float?
   branchTitle      String?
   salesInitial     String?
@@ -900,6 +903,7 @@ model ServiceCard {
 
   // Relations
   gym        Gym?        @relation(fields: [gymId], references: [id], onDelete: SetNull)
+  client     Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
   salesOrder SalesOrder? @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
 
   @@index([serialNumber])

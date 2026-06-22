@@ -52,10 +52,17 @@ export class ServiceCardsService {
       accountsActualExpense: createDto.accountsActualExpense,
       accountsReimbursement: createDto.accountsReimbursement,
       netCtc: createDto.netCtc,
+      status: createDto.status as Prisma.ServiceCardCreateInput['status'],
+      productNotes: createDto.productNotes as Prisma.InputJsonValue,
+      clientName: createDto.clientName,
     };
 
     if (createDto.gymId) {
       data.gym = { connect: { id: createDto.gymId } };
+    }
+
+    if (createDto.clientId) {
+      data.client = { connect: { id: createDto.clientId } };
     }
 
     if (createDto.salesOrderId) {
@@ -153,6 +160,9 @@ export class ServiceCardsService {
       accountsActualExpense: updateDto.accountsActualExpense,
       accountsReimbursement: updateDto.accountsReimbursement,
       netCtc: updateDto.netCtc,
+      status: updateDto.status as Prisma.ServiceCardUpdateInput['status'],
+      productNotes: updateDto.productNotes as Prisma.InputJsonValue,
+      clientName: updateDto.clientName,
     };
 
     if (updateDto.gymId !== undefined) {
@@ -160,6 +170,14 @@ export class ServiceCardsService {
         data.gym = { connect: { id: updateDto.gymId } };
       } else {
         data.gym = { disconnect: true };
+      }
+    }
+
+    if (updateDto.clientId !== undefined) {
+      if (updateDto.clientId) {
+        data.client = { connect: { id: updateDto.clientId } };
+      } else {
+        data.client = { disconnect: true };
       }
     }
 

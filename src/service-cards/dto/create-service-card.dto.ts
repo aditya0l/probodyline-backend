@@ -23,6 +23,8 @@ export class CreateServiceCardDto {
   @IsOptional() @IsString() city?: string;
   @IsOptional() @IsString() gymId?: string;
   @IsOptional() @IsString() gymName?: string;
+  @IsOptional() @IsString() clientId?: string;
+  @IsOptional() @IsString() clientName?: string;
   @IsOptional() @IsNumber() branchCode?: number;
   @IsOptional() @IsString() branchTitle?: string;
   @IsOptional() @IsString() salesInitial?: string;

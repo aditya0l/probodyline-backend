@@ -88,10 +88,13 @@ export class ServiceCardsService {
         serialNumber: true,
         filledOnDate: true,
         gymName: true,
+        city: true,
+        stateCode: true,
         engineers: true,
         techEngineerName: true,
         visitType: true,
         installationDate: true,
+        status: true,
       },
     });
   }

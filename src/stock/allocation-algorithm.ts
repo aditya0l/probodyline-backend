@@ -112,6 +112,11 @@ export async function getLedgerTransactions(
       currentOutQty: type === 'OUT' ? Math.abs(t.quantity) : null,
       outQty: type === 'OUT' ? Math.abs(t.quantity) : null,
       qty: Math.abs(t.quantity), // For calculations
+      quantity: t.quantity, // Backwards-compatibility for StockDetailClient
+      transactionType: t.transactionType, // Backwards-compatibility for StockDetailClient
+      createdAt: t.createdAt, // Backwards-compatibility
+      referenceId: t.referenceId, // Backwards-compatibility
+      referenceType: t.referenceType, // Backwards-compatibility
       todaysPhysicalStock: 0,
       factoryName: po?.supplierName ?? '—',
       customerName: quotation?.clientName ?? quotation?.customer?.name ?? '—',

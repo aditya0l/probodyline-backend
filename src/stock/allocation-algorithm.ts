@@ -102,29 +102,40 @@ export async function getLedgerTransactions(
       bookedOnStr = formatInTimeZone(quotation.bookingDate, IST, 'yyyy-MM-dd/HH:mm');
     }
 
-    return {
-      id: t.id,
-      date: dateStr, 
-      dispatchDate: dateStr, // Used generically below
-      type,
-      inQty: type === 'IN' ? t.quantity : null,
-      originalOutQty: type === 'OUT' ? Math.abs(t.quantity) : null,
-      currentOutQty: type === 'OUT' ? Math.abs(t.quantity) : null,
-      outQty: type === 'OUT' ? Math.abs(t.quantity) : null,
-      qty: Math.abs(t.quantity), // For calculations
-      quantity: t.quantity, // Backwards-compatibility for StockDetailClient
-      transactionType: t.transactionType, // Backwards-compatibility for StockDetailClient
-      createdAt: t.createdAt, // Backwards-compatibility
-      referenceId: t.referenceId, // Backwards-compatibility
-      referenceType: t.referenceType, // Backwards-compatibility
-      todaysPhysicalStock: 0,
-      factoryName: po?.supplierName ?? '—',
-      customerName: quotation?.clientName ?? quotation?.customer?.name ?? '—',
-      gymName: quotation?.gymName ?? '—',
-      orderNumber: quotation?.quoteNumber ?? po?.poNumber ?? '—',
-      bookedOn: bookedOnStr,
-      stateCode: quotation?.customer?.stateCode ?? '—',
-      city: quotation?.clientCity ?? '—',
+      let parsedState = '—';
+      let parsedCity = quotation?.clientCity || '—';
+      
+      if (quotation?.clientName) {
+        const parts = quotation.clientName.split('/');
+        if (parts.length >= 3) {
+          parsedState = parts[1] || '—';
+          parsedCity = parts[2] || parsedCity;
+        }
+      }
+
+      return {
+        id: t.id,
+        date: dateStr, 
+        dispatchDate: dateStr, // Used generically below
+        type,
+        inQty: type === 'IN' ? t.quantity : null,
+        originalOutQty: type === 'OUT' ? Math.abs(t.quantity) : null,
+        currentOutQty: type === 'OUT' ? Math.abs(t.quantity) : null,
+        outQty: type === 'OUT' ? Math.abs(t.quantity) : null,
+        qty: Math.abs(t.quantity), // For calculations
+        quantity: t.quantity, // Backwards-compatibility for StockDetailClient
+        transactionType: t.transactionType, // Backwards-compatibility for StockDetailClient
+        createdAt: t.createdAt, // Backwards-compatibility
+        referenceId: t.referenceId, // Backwards-compatibility
+        referenceType: t.referenceType, // Backwards-compatibility
+        todaysPhysicalStock: 0,
+        factoryName: po?.supplierName ?? '—',
+        customerName: quotation?.clientName ?? quotation?.customer?.name ?? '—',
+        gymName: quotation?.gymName ?? '—',
+        orderNumber: quotation?.quoteNumber ?? po?.poNumber ?? '—',
+        bookedOn: bookedOnStr,
+        stateCode: parsedState,
+        city: parsedCity,
       stockOnDispatchDate: 0,
       status: type === 'OUT' ? 'CONFIRM' : null,
       statusQty: type === 'OUT' ? 0 : null,

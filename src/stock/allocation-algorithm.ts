@@ -99,7 +99,7 @@ export async function getLedgerTransactions(
     const dateStr = formatInTimeZone(t.date, IST, 'yyyy-MM-dd');
     let bookedOnStr: string | null = null;
     if (quotation?.bookingDate) {
-      bookedOnStr = formatInTimeZone(quotation.bookingDate, IST, 'yyyy-MM-dd');
+      bookedOnStr = formatInTimeZone(quotation.bookingDate, IST, 'yyyy-MM-dd/HH:mm');
     }
 
     return {

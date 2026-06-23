@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({
   cors: {
@@ -26,12 +27,24 @@ export class EventsGateway
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('EventsGateway');
 
+  constructor(private readonly jwtService: JwtService) {}
+
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`Client connected: ${client.id}`);
+  async handleConnection(client: Socket, ...args: any[]) {
+    try {
+      const token = client.handshake.auth?.token;
+      if (!token) {
+        throw new Error('No token provided');
+      }
+      const payload = await this.jwtService.verifyAsync(token);
+      this.logger.log(`Client connected: ${client.id} (User: ${payload.sub || payload.id})`);
+    } catch (error) {
+      this.logger.warn(`Unauthorized connection attempt rejected: ${client.id} - ${error.message}`);
+      client.disconnect(true);
+    }
   }
 
   handleDisconnect(client: Socket) {

@@ -24,12 +24,8 @@ export async function getLedgerTransactions(
     }
   }
 
-  // 2. Fetch product opening stock
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { openingStock: true }
-  });
-  const openingStock = product?.openingStock || 0;
+  // 2. Fetch product (No openingStock field exists on Prisma model, default to 0)
+  const openingStock = 0;
 
   // 3. Fetch all transactions for this product, strict date ascending
   // Secondary sort by createdAt ascending to ensure deterministic order for same date

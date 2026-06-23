@@ -53,7 +53,7 @@ export async function getLedgerTransactions(
         quoteNumber: true,
         bookingDate: true,
         clientCity: true,
-        customer: { select: { stateCode: true, name: true } },
+        customer: { select: { name: true } },
       }
     });
   }

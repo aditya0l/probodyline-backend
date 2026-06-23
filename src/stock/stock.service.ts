@@ -9,7 +9,7 @@ import { UpdateStockTransactionDto } from './dto/update-stock-transaction.dto';
 import { StockTransaction, Prisma, StockTransactionType } from '@prisma/client';
 import { EventsGateway } from '../events/events.gateway';
 import { fromZonedTime } from 'date-fns-tz';
-import { calculateFifoAllocation, processStrictFifoLedger } from '../utils/fifo-allocator';
+import { getLedgerTransactions, invalidateLedgerCache } from './allocation-algorithm';
 
 @Injectable()
 export class StockService {
@@ -217,6 +217,7 @@ export class StockService {
 
     // Broadcast stock update globally
     this.eventsGateway.broadcastEntityUpdate('STOCK', data.productId);
+    invalidateLedgerCache(data.productId);
 
     return transaction;
   }
@@ -231,69 +232,17 @@ export class StockService {
       limit?: number;
     },
   ): Promise<{ data: any[]; total: number }> {
-    // Build date filter using date-fns-tz for correct IST parsing
-    const dateFilter: { gte?: Date; lte?: Date } = {};
-    const timeZone = 'Asia/Kolkata';
-
-    if (filters?.startDate) {
-      dateFilter.gte = fromZonedTime(`${filters.startDate}T00:00:00`, timeZone);
-    }
-    if (filters?.endDate) {
-      // If date is in YYYY-MM-DD format, append time to get end of day
-      const endDateStr = filters.endDate.includes('T')
-        ? filters.endDate
-        : `${filters.endDate}T23:59:59.999`;
-      dateFilter.lte = fromZonedTime(endDateStr, timeZone);
+    if (productId) {
+      return getLedgerTransactions(this.prisma, productId, filters);
     }
 
-    const where: Prisma.StockTransactionWhereInput = {
-      ...(productId && { productId }),
-      ...((filters?.startDate || filters?.endDate) && {
-        date: dateFilter,
-      }),
-      ...(filters?.transactionType && {
-        transactionType: filters.transactionType as any,
-      }),
-    };
-
-    // Calculate start balance before the requested date range
-    let startBalance = 0;
-    if (productId && dateFilter.gte) {
-      const startBalanceResult = await this.prisma.stockTransaction.aggregate({
-        where: {
-          productId,
-          date: { lt: dateFilter.gte },
-        },
-        _sum: { quantity: true },
-      });
-      startBalance = startBalanceResult._sum.quantity || 0;
-    }
-
-    const [dataRaw, total] = await Promise.all([
-      this.prisma.stockTransaction.findMany({
-        where,
-        skip: (filters?.page || 0) * (filters?.limit || 10000), // Default high limit for ledger
-        take: filters?.limit || 10000,
-        orderBy: [{ date: 'asc' }, { createdAt: 'asc' }], // Initial fetch order doesn't matter much as we resort in memory
-        include: {
-          product: {
-            select: { id: true, name: true, modelNumber: true },
-          },
-        },
-      }),
-      this.prisma.stockTransaction.count({ where }),
-    ]);
-
-    // 1. Fully enrich data first to ensure we have 'bookedOn' and other dates for ALL reference types
-    const fullyEnrichedData = await this.enrichStockTransactions(dataRaw);
-
-    // 2. Process strict FIFO simulation using the fully enriched data
-    const resultsAsc = processStrictFifoLedger(fullyEnrichedData, startBalance);
-
-    // 3. For display, we return strictly ascending (oldest first) to match user requested FIFO display
-    const data = resultsAsc;
-
-    return { data, total };
+    // Fallback if no productId is provided (unlikely in allocation ledger view, but for safety)
+    const dataRaw = await this.prisma.stockTransaction.findMany({
+      skip: (filters?.page || 0) * (filters?.limit || 10000),
+      take: filters?.limit || 10000,
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+    });
+    return { data: dataRaw, total: dataRaw.length };
   }
 
   async findOne(id: string): Promise<StockTransaction | null> {
@@ -453,6 +402,10 @@ export class StockService {
       data: { todaysStock: currentStock },
     });
 
+    // Broadcast stock update globally
+    this.eventsGateway.broadcastEntityUpdate('STOCK', transaction.productId);
+    invalidateLedgerCache(transaction.productId);
+
     return updated;
   }
 
@@ -487,6 +440,10 @@ export class StockService {
       where: { id: transaction.productId },
       data: { todaysStock: currentStock },
     });
+
+    // Broadcast stock update globally
+    this.eventsGateway.broadcastEntityUpdate('STOCK', transaction.productId);
+    invalidateLedgerCache(transaction.productId);
 
     return deleted;
   }

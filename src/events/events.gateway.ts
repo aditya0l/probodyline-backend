@@ -8,6 +8,7 @@ import {
 import { Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
+import { invalidateLedgerCache } from '../stock/allocation-algorithm';
 
 @WebSocketGateway({
   cors: {
@@ -58,6 +59,9 @@ export class EventsGateway
    */
   broadcastEntityUpdate(type: string, id: string) {
     this.logger.log(`Broadcasting entity update: ${type} - ${id}`);
+    if (type === 'STOCK') {
+      invalidateLedgerCache(id);
+    }
     this.server.emit('entityUpdated', { type, id });
   }
 }

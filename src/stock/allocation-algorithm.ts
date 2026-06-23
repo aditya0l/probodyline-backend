@@ -241,7 +241,12 @@ export async function getLedgerTransactions(
     city: r.city,
     stockOnDispatchDate: r.stockOnDispatchDate,
     status: r.status,
-    statusQty: r.statusQty
+    statusQty: r.statusQty,
+    quantity: r.quantity, // Backwards-compatibility
+    transactionType: r.transactionType, // Backwards-compatibility
+    createdAt: r.createdAt, // Backwards-compatibility
+    referenceId: r.referenceId, // Backwards-compatibility
+    referenceType: r.referenceType, // Backwards-compatibility
   })).reverse(); // Reverse for display so newest is first
 
   // Filter if dates provided

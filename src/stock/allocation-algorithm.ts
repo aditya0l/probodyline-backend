@@ -144,14 +144,12 @@ export async function getLedgerTransactions(
     row.todaysPhysicalStock = runningBalance;
   }
 
-  // 7. Calculate Stock on Dispatch Date (Direct Array Lookup)
+  // 7. Calculate Stock on Selected Date (Available Stock)
   for (const row of ledgerRows) {
-    const targetDate = row.date;
-    // Find the last row in the ledger on or before this transaction's date
-    const previousRows = ledgerRows.filter(r => r.date <= targetDate);
-    row.stockOnDispatchDate = previousRows.length > 0 
-      ? previousRows[previousRows.length - 1].todaysPhysicalStock 
-      : openingStock;
+    const futureRows = ledgerRows.filter(r => r.date >= row.date);
+    row.stockOnDispatchDate = futureRows.length > 0
+      ? Math.min(...futureRows.map(r => r.todaysPhysicalStock))
+      : row.todaysPhysicalStock;
   }
 
   // 8. Run Rollback Algorithm
@@ -175,11 +173,10 @@ export async function getLedgerTransactions(
     }
 
     for (const row of rows) {
-      const targetDate = row.date;
-      const previousRows = rows.filter(r => r.date <= targetDate);
-      row.stockOnDispatchDate = previousRows.length > 0 
-        ? previousRows[previousRows.length - 1].todaysPhysicalStock 
-        : openingStock;
+      const futureRows = rows.filter(r => r.date >= row.date);
+      row.stockOnDispatchDate = futureRows.length > 0
+        ? Math.min(...futureRows.map(r => r.todaysPhysicalStock))
+        : row.todaysPhysicalStock;
     }
   };
 

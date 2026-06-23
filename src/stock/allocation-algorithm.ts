@@ -248,6 +248,7 @@ export async function getLedgerTransactions(
     bookedOn: r.bookedOn,
     stateCode: r.stateCode,
     city: r.city,
+    notes: r.notes,
     stockOnDispatchDate: r.stockOnDispatchDate,
     status: r.status,
     statusQty: r.statusQty,

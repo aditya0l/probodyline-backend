@@ -1,0 +1,1 @@
+{"success":false,"statusCode":401,"errorCode":"UNAUTHORIZED","timestamp":"2026-06-23T21:49:19.858Z","path":"/api/stock/transactions?productId=52bd2de9-8704-43cb-a10e-6f0bee0fd903","method":"GET","requestId":"df67031b-02d0-426d-96c0-c2446119236d","message":"Unauthorized","error":"{\"message\":\"Unauthorized\",\"statusCode\":401}"}

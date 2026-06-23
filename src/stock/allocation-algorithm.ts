@@ -35,17 +35,24 @@ export async function getLedgerTransactions(
   });
 
   // 4. Single Batch Query Enrichment
-  const quotationIds = Array.from(new Set(
+  const directQuotationIds = Array.from(new Set(
     transactionsRaw
-      .filter(t => ['PI_BOOKING', 'QUOTATION', 'DISPATCH_SPLIT', 'UNBOOK_SO', 'REVERT_DISPATCH_SPLIT'].includes(t.referenceType))
+      .filter(t => ['PI_BOOKING', 'QUOTATION'].includes(t.referenceType))
       .map(t => t.referenceId)
-      .filter(Boolean)
+      .filter(Boolean) as string[]
+  ));
+
+  const splitIds = Array.from(new Set(
+    transactionsRaw
+      .filter(t => ['DISPATCH_SPLIT', 'UNBOOK_SO', 'REVERT_DISPATCH_SPLIT'].includes(t.referenceType))
+      .map(t => t.referenceId)
+      .filter(Boolean) as string[]
   ));
 
   let quotations: any[] = [];
-  if (quotationIds.length > 0) {
+  if (directQuotationIds.length > 0) {
     quotations = await prisma.quotation.findMany({
-      where: { id: { in: quotationIds } },
+      where: { id: { in: directQuotationIds } },
       select: {
         id: true,
         clientName: true,
@@ -54,6 +61,30 @@ export async function getLedgerTransactions(
         bookingDate: true,
         clientCity: true,
         customer: { select: { name: true } },
+      }
+    });
+  }
+
+  let splitsWithQuotations: any[] = [];
+  if (splitIds.length > 0) {
+    splitsWithQuotations = await prisma.dispatchSplit.findMany({
+      where: { id: { in: splitIds } },
+      include: {
+        salesOrder: {
+          include: {
+            quotation: {
+              select: {
+                id: true,
+                clientName: true,
+                gymName: true,
+                quoteNumber: true,
+                bookingDate: true,
+                clientCity: true,
+                customer: { select: { name: true } },
+              }
+            }
+          }
+        }
       }
     });
   }
@@ -78,6 +109,15 @@ export async function getLedgerTransactions(
   }
 
   const quotationMap = new Map(quotations.map(q => [q.id, q]));
+  
+  // Also map split references directly to their quotations for easy lookup
+  const splitToQuotationMap = new Map();
+  for (const split of splitsWithQuotations) {
+    if (split.salesOrder?.quotation) {
+      splitToQuotationMap.set(split.id, split.salesOrder.quotation);
+    }
+  }
+
   const poMap = new Map(purchaseOrders.map(p => [p.id, p]));
 
   // 5. Build Enriched Rows Map
@@ -86,8 +126,10 @@ export async function getLedgerTransactions(
     let quotation: any = null;
     let po: any = null;
 
-    if (['PI_BOOKING', 'QUOTATION', 'DISPATCH_SPLIT', 'UNBOOK_SO', 'REVERT_DISPATCH_SPLIT'].includes(t.referenceType)) {
+    if (['PI_BOOKING', 'QUOTATION'].includes(t.referenceType)) {
       quotation = quotationMap.get(t.referenceId);
+    } else if (['DISPATCH_SPLIT', 'UNBOOK_SO', 'REVERT_DISPATCH_SPLIT'].includes(t.referenceType)) {
+      quotation = splitToQuotationMap.get(t.referenceId);
     }
     if (['PURCHASE_ORDER', 'PURCHASE_ORDER_SPLIT'].includes(t.referenceType)) {
       po = poMap.get(t.referenceId);

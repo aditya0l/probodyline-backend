@@ -136,6 +136,7 @@ export async function getLedgerTransactions(
         bookedOn: bookedOnStr,
         stateCode: parsedState,
         city: parsedCity,
+        notes: t.notes,
       stockOnDispatchDate: 0,
       status: type === 'OUT' ? 'CONFIRM' : null,
       statusQty: type === 'OUT' ? 0 : null,

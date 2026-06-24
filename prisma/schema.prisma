@@ -391,6 +391,7 @@ model PurchaseOrderSplit {
   splitNumber     Int // 1, 2, 3...
   jaipurArrival   DateTime?
   label           String? // e.g., "JAIPUR DATE 24-26 JUNE 1HQ"
+  sortDate        DateTime?
   status          String    @default("DRAFT")
 
   createdAt DateTime @default(now())

@@ -312,6 +312,7 @@ export class PurchaseOrdersService {
               ? new Date(String(splitInput.jaipurArrival || splitInput.date))
               : null,
             label: splitInput.label,
+            sortDate: splitInput.sortDate ? new Date(splitInput.sortDate) : null,
             status: 'CONFIRMED', // Auto-confirm PO splits for stock
           },
         });

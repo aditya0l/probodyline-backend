@@ -349,6 +349,8 @@ model PurchaseOrder {
   splits PurchaseOrderSplit[]
   user   User?                @relation(fields: [userId], references: [id])
   userId String?
+  factory Factory?            @relation(fields: [factoryId], references: [id])
+  factoryId String?
 
   @@index([poNumber])
   @@index([status])
@@ -404,13 +406,15 @@ model PurchaseOrderSplit {
 
 model PurchaseOrderSplitItem {
   id                   String @id @default(uuid())
-  purchaseOrderSplitId String
+  purchaseOrderSplitId String?
+  factorySplitId       String?
   purchaseOrderItemId  String
   quantity             Int // Allocated quantity for this split
 
   // Relations
-  split             PurchaseOrderSplit @relation(fields: [purchaseOrderSplitId], references: [id], onDelete: Cascade)
-  purchaseOrderItem PurchaseOrderItem  @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  split             PurchaseOrderSplit? @relation(fields: [purchaseOrderSplitId], references: [id], onDelete: Cascade)
+  factorySplit      FactorySplit?       @relation(fields: [factorySplitId], references: [id], onDelete: Cascade)
+  purchaseOrderItem PurchaseOrderItem   @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderSplitId])
   @@index([purchaseOrderItemId])
@@ -418,6 +422,36 @@ model PurchaseOrderSplitItem {
 }
 
 // Phase 4 Models
+model Factory {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastActiveAt DateTime?
+
+  purchaseOrders PurchaseOrder[]
+  splits         FactorySplit[]
+
+  @@map("factories")
+}
+
+model FactorySplit {
+  id             String    @id @default(uuid())
+  factoryId      String
+  dateRangeLabel String    // e.g. "22-24 JUL"
+  tag            String?   // e.g. "1HQ"
+  color          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  items   PurchaseOrderSplitItem[]
+
+  @@index([factoryId])
+  @@unique([factoryId, dateRangeLabel])
+  @@map("factory_splits")
+}
+
 model Vendor {
   id            String    @id @default(uuid())
   name          String

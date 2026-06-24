@@ -11,6 +11,7 @@ export class FactoriesService {
       include: {
         purchaseOrders: {
           where: { status: 'DRAFT' },
+          include: { items: true },
         },
         splits: true,
       },
@@ -19,9 +20,16 @@ export class FactoriesService {
     // Compute basic stats for the landing page
     return factories.map(f => {
       const activePoCount = f.purchaseOrders.length;
+      let totalPendingQty = 0;
+      for (const po of f.purchaseOrders) {
+        for (const item of po.items) {
+          totalPendingQty += item.quantity || 0;
+        }
+      }
       return {
         ...f,
         activePoCount,
+        totalPendingQty,
       };
     });
   }

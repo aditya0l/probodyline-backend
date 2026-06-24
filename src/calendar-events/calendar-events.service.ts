@@ -47,6 +47,7 @@ export class CalendarEventsService {
         include: {
           salesOrder: {
             select: {
+              id: true,
               soNumber: true,
               quotationId: true,
               quotation: {
@@ -85,6 +86,7 @@ export class CalendarEventsService {
     return {
       salesOrders: salesOrders.map(so => ({
         id: so.id,
+        salesOrderId: so.id,
         soNumber: so.soNumber,
         quotationId: so.quotationId,
         gymName: so.quotation?.gymName || so.quotation?.clientName || 'Unknown Gym',
@@ -93,6 +95,7 @@ export class CalendarEventsService {
       })),
       dispatchSplits: dispatchSplits.map(ds => ({
         id: ds.id,
+        salesOrderId: ds.salesOrder?.id,
         soNumber: ds.salesOrder?.soNumber,
         quotationId: ds.salesOrder?.quotationId,
         gymName: ds.salesOrder?.quotation?.gymName || 'Unknown Gym',

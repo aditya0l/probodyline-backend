@@ -37,6 +37,7 @@ import { ChallansModule } from './challans/challans.module';
 import { SearchModule } from './search/search.module';
 import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 import { OtpModule } from './otp/otp.module';
+import { FactoriesModule } from './factories/factories.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { OtpModule } from './otp/otp.module';
     SearchModule,
     CalendarEventsModule,
     OtpModule,
+    FactoriesModule,
   ],
   controllers: [AppController],
   providers: [

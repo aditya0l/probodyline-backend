@@ -349,8 +349,8 @@ model PurchaseOrder {
   splits PurchaseOrderSplit[]
   user   User?                @relation(fields: [userId], references: [id])
   userId String?
-  factory Factory?            @relation(fields: [factoryId], references: [id])
-  factoryId String?
+  factory Factory             @relation(fields: [factoryId], references: [id])
+  factoryId String
 
   @@index([poNumber])
   @@index([status])

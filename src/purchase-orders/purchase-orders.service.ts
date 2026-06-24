@@ -37,6 +37,7 @@ export class PurchaseOrdersService {
         data: {
           poNumber,
           supplierName: data.supplierName,
+          factoryId: data.factoryId,
           bookedOn: data.bookedOn ? new Date(data.bookedOn) : new Date(),
           jaipurArrival: data.jaipurArrival
             ? new Date(data.jaipurArrival)
@@ -100,15 +101,10 @@ export class PurchaseOrdersService {
     const [data, total] = await Promise.all([
       this.prisma.purchaseOrder.findMany({
         where: whereClause,
-        select: {
-          id: true,
-          poNumber: true,
-          createdAt: true,
-          status: true,
-          bookedOn: true,
-          jaipurArrival: true,
-          supplierName: true,
+        include: {
           items: true,
+          splits: true,
+          factory: true,
         },
         skip: page * limit,
         take: limit,
@@ -125,9 +121,11 @@ export class PurchaseOrdersService {
       include: {
         items: true,
         splits: {
-          include: { items: true },
-          orderBy: { splitNumber: 'asc' },
+          include: {
+            items: true,
+          },
         },
+        factory: true,
       },
     });
   }

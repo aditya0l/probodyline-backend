@@ -316,11 +316,42 @@ export class PurchaseOrdersService {
           },
         });
 
+        // DUAL-WRITE: Find or Create FactorySplit
+        let factorySplitId: string | undefined = undefined;
+        if (po.factoryId && splitInput.label) {
+          const sortDate = splitInput.sortDate ? new Date(splitInput.sortDate) : null;
+          let fs = await tx.factorySplit.findFirst({
+            where: {
+              factoryId: po.factoryId,
+              dateRangeLabel: splitInput.label,
+            }
+          });
+
+          if (!fs) {
+            fs = await tx.factorySplit.create({
+              data: {
+                factoryId: po.factoryId,
+                dateRangeLabel: splitInput.label,
+                sortDate: sortDate,
+                // Assign color logic if needed, we'll keep it simple or inherit
+              }
+            });
+          } else if (sortDate && fs.sortDate?.getTime() !== sortDate.getTime()) {
+            // Update sortDate if it changed
+            fs = await tx.factorySplit.update({
+              where: { id: fs.id },
+              data: { sortDate }
+            });
+          }
+          factorySplitId = fs.id;
+        }
+
         // Create items
         if (splitInput.items && splitInput.items.length > 0) {
           const itemsToCreate = splitInput.items
             .map((item) => ({
               purchaseOrderSplitId: split.id,
+              factorySplitId: factorySplitId,
               purchaseOrderItemId: item.itemId || item.purchaseOrderItemId,
               quantity: item.quantity,
             }))

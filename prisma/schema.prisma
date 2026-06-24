@@ -442,6 +442,7 @@ model FactorySplit {
   dateRangeLabel String    // e.g. "22-24 JUL"
   tag            String?   // e.g. "1HQ"
   color          String?
+  sortDate       DateTime? // For chronological sorting of columns
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

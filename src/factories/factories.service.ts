@@ -38,9 +38,16 @@ export class FactoriesService {
     const factory = await this.prisma.factory.findUnique({
       where: { id },
       include: {
-        splits: {
-          orderBy: { createdAt: 'desc' },
-        },
+        splits: true, // We don't sort by createdAt anymore as per user request, we will sort semantically on frontend or here. Let's just return them.
+        purchaseOrders: {
+          orderBy: { bookedOn: 'desc' },
+          include: {
+            items: true,
+            splits: {
+              include: { items: true }
+            }
+          }
+        }
       },
     });
 

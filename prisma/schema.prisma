@@ -337,6 +337,7 @@ model PurchaseOrder {
   jaipurArrival       DateTime?
   jaipurArrivalManual Boolean   @default(false)
   piNo                String?
+  piDate              DateTime?
   approvedOn          DateTime?
   status              String    @default("DRAFT") // DRAFT, COMPLETED
   notes               String?   @db.Text

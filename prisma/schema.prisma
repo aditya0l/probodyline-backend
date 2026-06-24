@@ -285,10 +285,28 @@ model SalesOrder {
   user         User?           @relation(fields: [userId], references: [id])
   userId       String?
 
+  activities   SalesOrderActivity[]
+
   @@index([quotationId])
   @@index([status])
   @@index([createdAt, status])
   @@map("sales_orders")
+}
+
+model SalesOrderActivity {
+  id           String     @id @default(uuid())
+  salesOrderId String
+  action       String     // e.g. "Order Created", "Order Booked", "Splits Modified"
+  changedBy    String?    // User ID
+  changedAt    DateTime   @default(now())
+  details      Json?      // Additional details
+
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  user         User?      @relation(fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([salesOrderId])
+  @@index([changedAt])
+  @@map("sales_order_activities")
 }
 
 model DispatchSplit {

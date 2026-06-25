@@ -44,7 +44,7 @@ export class SalesOrdersService {
         },
       });
 
-      const user = userContext.getStore()?.user;
+      const user = userContext.getStore();
       await db.salesOrderActivity.create({
         data: {
           salesOrderId: so.id,
@@ -110,7 +110,7 @@ export class SalesOrdersService {
         });
       }
 
-      const user = userContext.getStore()?.user;
+      const user = userContext.getStore();
       await tx.salesOrderActivity.create({
         data: {
           salesOrderId: salesOrderId,
@@ -172,8 +172,8 @@ export class SalesOrdersService {
         }
       }
 
-      const user = userContext.getStore()?.user;
-      const detailParts = [];
+      const user = userContext.getStore();
+      const detailParts: string[] = [];
       if (updates.dispatchDate) detailParts.push(`Date changed to ${updates.dispatchDate}`);
       if (updates.items) detailParts.push(`Quantities updated`);
       
@@ -319,7 +319,7 @@ export class SalesOrdersService {
         },
       });
 
-      const user = userContext.getStore()?.user;
+      const user = userContext.getStore();
       await tx.salesOrderActivity.create({
         data: {
           salesOrderId: split.salesOrderId,
@@ -559,7 +559,7 @@ export class SalesOrdersService {
         data: { status: 'UNBOOKED' },
       });
 
-      const user = userContext.getStore()?.user;
+      const user = userContext.getStore();
       await tx.salesOrderActivity.create({
         data: {
           salesOrderId: salesOrderId,

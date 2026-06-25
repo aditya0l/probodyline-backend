@@ -99,6 +99,18 @@ export class SalesOrdersController {
     });
   }
 
+  @Get(':id/detail')
+  @ApiOperation({ summary: 'Get full details of a Sales Order' })
+  getSalesOrderDetail(@Param('id') id: string) {
+    return this.salesOrdersService.getSalesOrderDetail(id);
+  }
+
+  @Get(':id/stock-status')
+  @ApiOperation({ summary: 'Get stock allocation status for a Sales Order' })
+  getSalesOrderStockStatus(@Param('id') id: string) {
+    return this.salesOrdersService.getSalesOrderStockStatus(id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single Master Sales Order with Splits' })
   findOne(@Param('id') id: string) {

@@ -64,6 +64,39 @@ export class PdfController {
     res.send(pdfBuffer);
   }
 
+  @Post('sales-orders/:id/generate')
+  @ApiOperation({ summary: 'Generate PDF for a sales order' })
+  @ApiParam({ name: 'id', description: 'Sales Order UUID' })
+  @ApiResponse({
+    status: 200,
+    description: 'PDF file generated successfully',
+    content: { 'application/pdf': {} },
+  })
+  @ApiResponse({ status: 404, description: 'Sales Order not found' })
+  async generateSalesOrderPDF(
+    @Param('id') soId: string,
+    @Res() res: Response,
+  ) {
+    console.log('[PdfController.generateSalesOrderPDF] Request received:', {
+      soId,
+      timestamp: new Date().toISOString(),
+    });
+
+    const pdfBuffer = await this.pdfService.generateSalesOrderPDF(soId);
+
+    console.log('[PdfController.generateSalesOrderPDF] PDF generated successfully:', {
+      soId,
+      pdfSize: pdfBuffer.length,
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="sales-order-${soId}.pdf"`,
+    );
+    res.send(pdfBuffer);
+  }
+
   @Get('quotations/:id/preview')
   @ApiOperation({ summary: 'Preview HTML for a quotation PDF' })
   @ApiParam({ name: 'id', description: 'Quotation UUID' })

@@ -141,6 +141,68 @@ export class PdfService implements OnModuleDestroy {
     }
   }
 
+  async generateSalesOrderPDF(
+    soId: string,
+  ): Promise<Buffer> {
+    const so = await this.prisma.salesOrder.findUnique({
+      where: { id: soId },
+      include: {
+        quotation: {
+          include: {
+            customer: true,
+            clients: true,
+            items: {
+              orderBy: { srNo: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!so || !so.quotation) {
+      throw new NotFoundException('Sales Order not found');
+    }
+
+    // Replace the quote number with the SO number
+    const mockedQuotation = {
+      ...so.quotation,
+      quoteNumber: so.soNumber,
+    };
+
+    // Use salesOrder template, which mimics wholesale but overrides the title
+    const html = await this.generateQuotationHTML(mockedQuotation, 'salesOrder', false);
+
+    const browser = await this.getBrowser();
+    const page = await browser.newPage();
+
+    try {
+      await page.setContent(html, {
+        waitUntil: 'domcontentloaded',
+        timeout: 15000,
+      });
+
+      const pdf = await page.pdf({
+        format: 'A4',
+        landscape: false, // Sales order (wholesale template) is always portrait
+        printBackground: true,
+        displayHeaderFooter: true,
+        headerTemplate: '<span></span>',
+        footerTemplate: '<span></span>',
+        margin: {
+          top: '10mm',
+          right: '10mm',
+          bottom: '30mm',
+          left: '10mm',
+        },
+      });
+
+      console.log('PDF Generated (Sales Order). Size:', (pdf.length / 1024).toFixed(2), 'KB');
+      return Buffer.from(pdf);
+    } finally {
+      await page.close();
+    }
+  }
+
   async generateSOSplitPDF(
     soId: string,
     splitId: string,

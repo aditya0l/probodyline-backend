@@ -43,6 +43,16 @@ export class SalesOrdersService {
           grandTotal: quotation.grandTotal,
         },
       });
+
+      const user = userContext.getStore()?.user;
+      await db.salesOrderActivity.create({
+        data: {
+          salesOrderId: so.id,
+          action: 'Sales Order initialized',
+          changedBy: user?.id,
+          details: `Generated from Quotation ${quotation.quoteNumber}`,
+        },
+      });
     }
 
     // Return with FULL details
@@ -100,6 +110,16 @@ export class SalesOrdersService {
         });
       }
 
+      const user = userContext.getStore()?.user;
+      await tx.salesOrderActivity.create({
+        data: {
+          salesOrderId: salesOrderId,
+          action: 'Split Created',
+          changedBy: user?.id,
+          details: `Split #${splitNumber} created`,
+        },
+      });
+
       return this.getSplitWithDetails(split.id, tx);
     });
   }
@@ -150,6 +170,22 @@ export class SalesOrdersService {
             data: { quantity: item.quantity },
           });
         }
+      }
+
+      const user = userContext.getStore()?.user;
+      const detailParts = [];
+      if (updates.dispatchDate) detailParts.push(`Date changed to ${updates.dispatchDate}`);
+      if (updates.items) detailParts.push(`Quantities updated`);
+      
+      if (detailParts.length > 0) {
+        await tx.salesOrderActivity.create({
+          data: {
+            salesOrderId: split.salesOrderId,
+            action: `Split #${split.splitNumber} Updated`,
+            changedBy: user?.id,
+            details: detailParts.join(', '),
+          },
+        });
       }
 
       const result = await this.getSplitWithDetails(splitId, tx);
@@ -280,6 +316,16 @@ export class SalesOrdersService {
         data: {
           status: 'BOOKED',
           bookedAt: new Date(),
+        },
+      });
+
+      const user = userContext.getStore()?.user;
+      await tx.salesOrderActivity.create({
+        data: {
+          salesOrderId: split.salesOrderId,
+          action: `Split #${split.splitNumber} Booked`,
+          changedBy: user?.id,
+          details: `${finalItems.length} items booked for dispatch on ${split.dispatchDate?.toISOString().split('T')[0]}`,
         },
       });
 
@@ -511,6 +557,16 @@ export class SalesOrdersService {
       const result = await tx.salesOrder.update({
         where: { id: salesOrderId },
         data: { status: 'UNBOOKED' },
+      });
+
+      const user = userContext.getStore()?.user;
+      await tx.salesOrderActivity.create({
+        data: {
+          salesOrderId: salesOrderId,
+          action: 'Sales Order Unbooked',
+          changedBy: user?.id,
+          details: 'All splits unbooked and stock reservations released',
+        },
       });
 
       // Physically delete all PI_BOOKING Stock OUT transactions and Bookings for this Quotation

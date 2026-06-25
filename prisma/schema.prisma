@@ -257,6 +257,7 @@ model QuotationItem {
   quotation          Quotation           @relation(fields: [quotationId], references: [id], onDelete: Cascade)
   product            Product?            @relation(fields: [productId], references: [id], onDelete: SetNull)
   dispatchSplitItems DispatchSplitItem[]
+  salesOrderItems    SalesOrderItem[]
 
   @@index([quotationId])
   @@index([productId])
@@ -286,11 +287,65 @@ model SalesOrder {
   userId       String?
 
   activities   SalesOrderActivity[]
+  items        SalesOrderItem[]
+  quantityRequests QuantityChangeRequest[]
 
   @@index([quotationId])
   @@index([status])
   @@index([createdAt, status])
   @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id               String   @id @default(uuid())
+  salesOrderId     String
+  quotationItemId  String?  // Reference to original quotation item, if derived from it
+  productId        String?
+  productName      String
+  modelNumber      String?
+  quantity         Int
+  rate             Decimal  @db.Decimal(12, 2)
+  mrp              Decimal? @db.Decimal(12, 2)
+  totalAmount      Decimal  @db.Decimal(12, 2)
+  notes            String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  salesOrder       SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  quotationItem    QuotationItem? @relation(fields: [quotationItemId], references: [id], onDelete: SetNull)
+  product          Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  quantityRequests QuantityChangeRequest[]
+
+  @@index([salesOrderId])
+  @@index([quotationItemId])
+  @@index([productId])
+  @@map("sales_order_items")
+}
+
+model QuantityChangeRequest {
+  id               String   @id @default(uuid())
+  salesOrderId     String
+  salesOrderItemId String
+  requestedBy      String
+  requestType      String   @default("DECREASE")
+  currentQty       Int
+  requestedQty     Int
+  reason           String   @db.Text
+  status           String   @default("PENDING") // PENDING, APPROVED, REJECTED, SUPERSEDED
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  salesOrder       SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  salesOrderItem   SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
+  user             User           @relation("RequestCreator", fields: [requestedBy], references: [id], onDelete: Cascade)
+  reviewer         User?          @relation("RequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([salesOrderId])
+  @@index([status])
+  @@map("quantity_change_requests")
 }
 
 model SalesOrderActivity {
@@ -888,6 +943,8 @@ model User {
   createdStockTransactions       StockTransaction[]
   createdInaugurationCommitments InaugurationCommitment[]
   createdCalendarEvents          CalendarEvent[]
+  createdQuantityRequests        QuantityChangeRequest[] @relation("RequestCreator")
+  reviewedQuantityRequests       QuantityChangeRequest[] @relation("RequestReviewer")
 
   @@index([email])
   @@index([organizationId])

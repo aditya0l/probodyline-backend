@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { syncProductStock } from '../utils/stock-sync';
@@ -1082,6 +1083,8 @@ export class SalesOrdersService {
     );
 
     return statuses.filter(Boolean);
+  }
+
   // Quantity Management Methods
   async createQuantityRequest(salesOrderId: string, body: any) {
     const user = userContext.getStore();

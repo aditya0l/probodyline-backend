@@ -3,6 +3,7 @@ import {
   IsDateString,
   IsNotEmpty,
   IsOptional,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -37,4 +38,54 @@ export class CreateClientDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @ApiPropertyOptional({ description: 'Email address' })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiPropertyOptional({ description: 'Primary Address' })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiPropertyOptional({ description: 'Secondary Address' })
+  @IsOptional()
+  @IsString()
+  addressLine2?: string;
+
+  @ApiPropertyOptional({ description: 'Area/Region' })
+  @IsOptional()
+  @IsString()
+  area?: string;
+
+  @ApiPropertyOptional({ description: 'GST Number' })
+  @IsOptional()
+  @IsString()
+  gst?: string;
+
+  @ApiPropertyOptional({ description: 'PAN Card Number' })
+  @IsOptional()
+  @IsString()
+  panCard?: string;
+
+  @ApiPropertyOptional({ description: 'Aadhar Card Number' })
+  @IsOptional()
+  @IsString()
+  aadharCard?: string;
+
+  @ApiPropertyOptional({ description: 'PAN Card Image URL' })
+  @IsOptional()
+  @IsString()
+  panCardUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Aadhar Card Image URL' })
+  @IsOptional()
+  @IsString()
+  aadharCardUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Is phone verified' })
+  @IsOptional()
+  @IsBoolean()
+  isPhoneVerified?: boolean;
 }

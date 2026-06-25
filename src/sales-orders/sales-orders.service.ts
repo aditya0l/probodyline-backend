@@ -889,4 +889,113 @@ export class SalesOrdersService {
       },
     });
   }
+
+  async getSalesOrderDetail(id: string) {
+    const so = await this.prisma.salesOrder.findUnique({
+      where: { id },
+      include: {
+        quotation: {
+          include: {
+            customer: true,
+            clients: true,
+            items: {
+              include: { product: true },
+              orderBy: { srNo: 'asc' },
+            },
+          },
+        },
+        splits: {
+          include: {
+            items: {
+              include: { quotationItem: true },
+            },
+          },
+        },
+        activities: {
+          include: { user: true },
+          orderBy: { changedAt: 'desc' },
+        },
+      },
+    });
+
+    if (!so) throw new NotFoundException('Sales Order not found');
+    return so;
+  }
+
+  async getSalesOrderStockStatus(id: string) {
+    const so = await this.prisma.salesOrder.findUnique({
+      where: { id },
+      include: {
+        quotation: {
+          include: {
+            items: {
+              include: { product: true },
+              orderBy: { srNo: 'asc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!so) throw new NotFoundException('Sales Order not found');
+
+    const masterDispatchDate = so.quotation?.dispatchDate;
+    if (!masterDispatchDate) return [];
+
+    const statuses = await Promise.all(
+      so.quotation.items.map(async (item) => {
+        const product = item.product;
+        if (!product) return null;
+
+        const ledgerTransactions = await this.prisma.stockTransaction.findMany({
+          where: { productId: product.id },
+          orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+        });
+
+        let runningStock = 0;
+        let todaysStock = 0;
+        let stockOnDispatchDate = 0;
+
+        const today = new Date();
+        today.setHours(23, 59, 59, 999);
+
+        for (const tx of ledgerTransactions) {
+          if (tx.transactionType === 'IN') runningStock += tx.quantity;
+          else if (tx.transactionType === 'OUT') runningStock -= tx.quantity;
+
+          if (tx.date <= today) {
+            todaysStock = runningStock;
+          }
+          if (tx.date <= masterDispatchDate) {
+            stockOnDispatchDate = runningStock;
+          }
+        }
+
+        const requiredQty = item.quantity;
+        let status = 'WAITING LIST';
+        let statusQty = 0;
+
+        if (stockOnDispatchDate >= requiredQty) {
+          status = 'CONFIRM';
+          statusQty = requiredQty;
+        } else if (stockOnDispatchDate > 0) {
+          status = 'PARTIAL';
+          statusQty = stockOnDispatchDate;
+        }
+
+        return {
+          productId: product.id,
+          productName: product.name,
+          modelNo: product.modelNumber,
+          currentQty: requiredQty,
+          todaysStock,
+          stockOnDispatchDate,
+          status,
+          statusQty,
+        };
+      })
+    );
+
+    return statuses.filter(Boolean);
+  }
 }

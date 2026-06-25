@@ -53,6 +53,30 @@ export class SalesOrdersService {
           details: `Generated from Quotation ${quotation.quoteNumber}`,
         },
       });
+
+      // Copy QuotationItems to SalesOrderItems
+      const quotationItems = await db.quotationItem.findMany({
+        where: { quotationId },
+      });
+
+      if (quotationItems.length > 0) {
+        const salesOrderItemsData = quotationItems.map(qi => ({
+          salesOrderId: so.id,
+          quotationItemId: qi.id,
+          productId: qi.productId,
+          productName: qi.productName,
+          modelNumber: qi.modelNumber,
+          quantity: qi.quantity,
+          rate: qi.rate,
+          mrp: qi.rate, // fallback mrp
+          totalAmount: qi.totalAmount,
+          notes: qi.notes
+        }));
+
+        await db.salesOrderItem.createMany({
+          data: salesOrderItemsData
+        });
+      }
     }
 
     // Return with FULL details

@@ -62,7 +62,7 @@ export class SalesOrdersService {
 
       if (quotationItems.length > 0) {
         const salesOrderItemsData = quotationItems.map(qi => ({
-          salesOrderId: so.id,
+          salesOrderId: so!.id,
           quotationItemId: qi.id,
           productId: qi.productId,
           productName: qi.productName,

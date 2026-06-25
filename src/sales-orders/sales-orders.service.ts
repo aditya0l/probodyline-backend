@@ -974,6 +974,14 @@ export class SalesOrdersService {
     const so = await this.prisma.salesOrder.findUnique({
       where: { id },
       include: {
+        items: {
+          include: { product: true, quantityRequests: true },
+          orderBy: { createdAt: 'asc' }, // Or whatever order is appropriate
+        },
+        quantityRequests: {
+          include: { user: true, reviewer: true },
+          orderBy: { createdAt: 'desc' }
+        },
         quotation: {
           include: {
             customer: true,
@@ -1006,14 +1014,11 @@ export class SalesOrdersService {
     const so = await this.prisma.salesOrder.findUnique({
       where: { id },
       include: {
-        quotation: {
-          include: {
-            items: {
-              include: { product: true },
-              orderBy: { srNo: 'asc' },
-            },
-          },
+        items: {
+          include: { product: true },
+          orderBy: { createdAt: 'asc' },
         },
+        quotation: true,
       },
     });
 
@@ -1023,7 +1028,7 @@ export class SalesOrdersService {
     if (!masterDispatchDate) return [];
 
     const statuses = await Promise.all(
-      so.quotation.items.map(async (item) => {
+      so.items.map(async (item) => {
         const product = item.product;
         if (!product) return null;
 
@@ -1077,5 +1082,219 @@ export class SalesOrdersService {
     );
 
     return statuses.filter(Boolean);
+  // Quantity Management Methods
+  async createQuantityRequest(salesOrderId: string, body: any) {
+    const user = userContext.getStore();
+    if (!user) throw new UnauthorizedException();
+
+    const request = await this.prisma.quantityChangeRequest.create({
+      data: {
+        salesOrderId,
+        salesOrderItemId: body.salesOrderItemId,
+        requestedBy: user.id,
+        currentQty: body.currentQty,
+        requestedQty: body.requestedQty,
+        reason: body.reason,
+        status: 'PENDING',
+      },
+      include: {
+        salesOrder: true,
+      }
+    });
+
+    this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
+    return request;
+  }
+
+  async getPendingQuantityRequests() {
+    return this.prisma.quantityChangeRequest.findMany({
+      where: { status: 'PENDING' },
+      include: {
+        salesOrder: true,
+        salesOrderItem: true,
+        user: true,
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async getQuantityRequestsForSO(salesOrderId: string) {
+    return this.prisma.quantityChangeRequest.findMany({
+      where: { salesOrderId },
+      include: {
+        user: true,
+        reviewer: true,
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async approveQuantityRequest(salesOrderId: string, requestId: string) {
+    const user = userContext.getStore();
+    if (user?.role !== 'ADMIN') throw new UnauthorizedException('Only ADMIN can approve requests');
+
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.quantityChangeRequest.findUnique({
+        where: { id: requestId },
+        include: { salesOrderItem: true, salesOrder: true }
+      });
+
+      if (!request || request.status !== 'PENDING') throw new BadRequestException('Invalid request');
+
+      // 1. Update Request
+      await tx.quantityChangeRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'APPROVED',
+          reviewedBy: user.id,
+          reviewedAt: new Date()
+        }
+      });
+
+      // 2. Update SalesOrderItem
+      const rateNum = Number(request.salesOrderItem.rate);
+      const totalAmount = rateNum * request.requestedQty;
+      
+      const updatedItem = await tx.salesOrderItem.update({
+        where: { id: request.salesOrderItemId },
+        data: {
+          quantity: request.requestedQty,
+          totalAmount
+        }
+      });
+
+      // Recalculate SO Totals
+      await this.recalculateSOTotals(salesOrderId, tx);
+
+      // Log Activity
+      await tx.salesOrderActivity.create({
+        data: {
+          salesOrderId,
+          action: 'Quantity Reduction Approved',
+          changedBy: user.id,
+          details: `Approved reduction of ${request.salesOrderItem.productName} from ${request.currentQty} to ${request.requestedQty}`,
+        }
+      });
+
+      this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+      return request;
+    });
+  }
+
+  async rejectQuantityRequest(salesOrderId: string, requestId: string) {
+    const user = userContext.getStore();
+    if (user?.role !== 'ADMIN') throw new UnauthorizedException('Only ADMIN can reject requests');
+
+    const request = await this.prisma.quantityChangeRequest.update({
+      where: { id: requestId },
+      data: {
+        status: 'REJECTED',
+        reviewedBy: user.id,
+        reviewedAt: new Date()
+      }
+    });
+
+    this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
+    return request;
+  }
+
+  async directUpdateItems(salesOrderId: string, body: any) {
+    const user = userContext.getStore();
+    if (user?.role !== 'ADMIN') throw new UnauthorizedException('Only ADMIN can edit orders');
+
+    return this.prisma.$transaction(async (tx) => {
+      const existingItems = await tx.salesOrderItem.findMany({ where: { salesOrderId }});
+      const incomingItemIds = body.items.filter((i: any) => i.id).map((i: any) => i.id);
+
+      // 1. Delete removed items
+      for (const item of existingItems) {
+        if (!incomingItemIds.includes(item.id)) {
+          await tx.salesOrderItem.delete({ where: { id: item.id } });
+        }
+      }
+
+      // 2. Auto-supersede pending requests
+      const pendingRequests = await tx.quantityChangeRequest.findMany({
+        where: { salesOrderId, status: 'PENDING' }
+      });
+      if (pendingRequests.length > 0) {
+        await tx.quantityChangeRequest.updateMany({
+          where: { salesOrderId, status: 'PENDING' },
+          data: { status: 'SUPERSEDED', reviewedBy: user.id, reviewedAt: new Date() }
+        });
+        await tx.salesOrderActivity.create({
+          data: {
+            salesOrderId,
+            action: 'Requests Superseded',
+            changedBy: user.id,
+            details: `Pending reduction requests superseded by direct Admin edit`,
+          }
+        });
+      }
+
+      // 3. Upsert items
+      for (const item of body.items) {
+        const rateNum = Number(item.rate);
+        const qtyNum = parseInt(item.quantity, 10);
+        const totalAmount = rateNum * qtyNum;
+        
+        if (item.id) {
+          await tx.salesOrderItem.update({
+            where: { id: item.id },
+            data: { quantity: qtyNum, rate: rateNum, totalAmount }
+          });
+        } else {
+          await tx.salesOrderItem.create({
+            data: {
+              salesOrderId,
+              productId: item.productId,
+              productName: item.productName,
+              modelNumber: item.modelNumber,
+              quantity: qtyNum,
+              rate: rateNum,
+              mrp: rateNum,
+              totalAmount,
+            }
+          });
+        }
+      }
+
+      // 4. Recalculate SO Totals
+      await this.recalculateSOTotals(salesOrderId, tx);
+
+      // 5. Activity Log
+      await tx.salesOrderActivity.create({
+        data: {
+          salesOrderId,
+          action: 'Order Edited by Admin',
+          changedBy: user.id,
+          details: `Directly modified items list`,
+        }
+      });
+
+      this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+      return { success: true };
+    });
+  }
+
+  private async recalculateSOTotals(salesOrderId: string, tx: Prisma.TransactionClient) {
+    const so = await tx.salesOrder.findUnique({
+      where: { id: salesOrderId },
+      include: { quotation: true }
+    });
+    if (!so) return;
+
+    const items = await tx.salesOrderItem.findMany({ where: { salesOrderId } });
+    const subtotal = items.reduce((sum, item) => sum + Number(item.totalAmount), 0);
+    const gstRate = so.quotation ? Number(so.quotation.gstRate) : 18;
+    const gstAmount = subtotal * (gstRate / 100);
+    const grandTotal = subtotal + gstAmount;
+
+    await tx.salesOrder.update({
+      where: { id: salesOrderId },
+      data: { subtotal, gstAmount, grandTotal }
+    });
   }
 }

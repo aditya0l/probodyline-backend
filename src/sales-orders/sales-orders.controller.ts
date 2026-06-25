@@ -110,6 +110,11 @@ export class SalesOrdersController {
   getSalesOrderStockStatus(@Param('id') id: string) {
     return this.salesOrdersService.getSalesOrderStockStatus(id);
   }
+  @Get('quantity-requests/pending')
+  @ApiOperation({ summary: 'Get all pending quantity requests globally' })
+  getPendingQuantityRequests() {
+    return this.salesOrdersService.getPendingQuantityRequests();
+  }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single Master Sales Order with Splits' })
@@ -136,5 +141,44 @@ export class SalesOrdersController {
     @Body() body: { createdAt: string },
   ) {
     return this.salesOrdersService.updateGeneratedDate(id, body.createdAt);
+  }
+
+  // --- Quantity Management ---
+
+  @Post(':id/quantity-requests')
+  @ApiOperation({ summary: 'Submit a quantity reduction request' })
+  createQuantityRequest(@Param('id') id: string, @Body() body: any) {
+    return this.salesOrdersService.createQuantityRequest(id, body);
+  }
+
+
+  @Get(':id/quantity-requests')
+  @ApiOperation({ summary: 'Get quantity requests for a specific Sales Order' })
+  getQuantityRequestsForSO(@Param('id') id: string) {
+    return this.salesOrdersService.getQuantityRequestsForSO(id);
+  }
+
+  @Patch(':id/quantity-requests/:requestId/approve')
+  @ApiOperation({ summary: 'Approve a quantity request (Admin only)' })
+  approveQuantityRequest(
+    @Param('id') id: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.salesOrdersService.approveQuantityRequest(id, requestId);
+  }
+
+  @Patch(':id/quantity-requests/:requestId/reject')
+  @ApiOperation({ summary: 'Reject a quantity request (Admin only)' })
+  rejectQuantityRequest(
+    @Param('id') id: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.salesOrdersService.rejectQuantityRequest(id, requestId);
+  }
+
+  @Patch(':id/items')
+  @ApiOperation({ summary: 'Directly edit Sales Order items (Admin only)' })
+  directUpdateItems(@Param('id') id: string, @Body() body: any) {
+    return this.salesOrdersService.directUpdateItems(id, body);
   }
 }

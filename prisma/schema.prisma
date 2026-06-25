@@ -104,6 +104,7 @@ model Product {
   stockTransactions  StockTransaction[]
   bookings           Booking[]
   purchaseOrderItems PurchaseOrderItem[]
+  salesOrderItems    SalesOrderItem[]
 
   @@index([name])
   @@index([modelNumber])

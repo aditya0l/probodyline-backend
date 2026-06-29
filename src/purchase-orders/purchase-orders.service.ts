@@ -140,51 +140,89 @@ export class PurchaseOrdersService {
   }
 
   async update(id: string, data: any) {
-    const txResult = await this.prisma.$transaction(async (tx) => {
-      const po = await tx.purchaseOrder.findUnique({
-        where: { id },
-        include: { items: true },
-      });
-      if (!po) throw new NotFoundException('Purchase Order not found');
+    const po = await this.prisma.purchaseOrder.findUnique({
+      where: { id },
+      include: { items: true, splits: { include: { items: true } } },
+    });
+    if (!po) throw new NotFoundException('Purchase Order not found');
 
+    // 1. Validate over-allocation if items are being updated
+    if (data.items) {
+      const overAllocationErrors: any[] = [];
+      for (const incoming of data.items) {
+        if (!incoming.productId) continue;
+        const allocatedQty = po.splits.reduce((sum, split) => {
+          const existingPoItem = po.items.find(i => i.productId === incoming.productId);
+          if (existingPoItem) {
+            const splitItem = split.items.find(i => i.purchaseOrderItemId === existingPoItem.id);
+            return sum + (splitItem?.quantity ?? 0);
+          }
+          return sum;
+        }, 0);
+
+        if (incoming.quantity < allocatedQty) {
+          overAllocationErrors.push({
+            productId: incoming.productId,
+            productName: incoming.productName,
+            newTotalQty: incoming.quantity,
+            allocatedInSplits: allocatedQty,
+            overAllocatedBy: allocatedQty - incoming.quantity
+          });
+        }
+      }
+
+      if (overAllocationErrors.length > 0) {
+        throw new BadRequestException({
+          error: 'OVER_ALLOCATED',
+          items: overAllocationErrors
+        });
+      }
+    }
+
+    const txResult = await this.prisma.$transaction(async (tx) => {
       const updatedPo = await tx.purchaseOrder.update({
         where: { id },
         data: {
-          supplierName:
-            data.supplierName !== undefined
-              ? data.supplierName
-              : po.supplierName,
-          bookedOn:
-            data.bookedOn !== undefined ? new Date(data.bookedOn) : po.bookedOn,
-          jaipurArrival:
-            data.jaipurArrival !== undefined
-              ? new Date(data.jaipurArrival)
-              : po.jaipurArrival,
-          jaipurArrivalManual:
-            data.jaipurArrivalManual !== undefined
-              ? data.jaipurArrivalManual
-              : po.jaipurArrivalManual,
+          supplierName: data.supplierName !== undefined ? data.supplierName : po.supplierName,
+          bookedOn: data.bookedOn !== undefined ? new Date(data.bookedOn) : po.bookedOn,
+          jaipurArrival: data.jaipurArrival !== undefined ? new Date(data.jaipurArrival) : po.jaipurArrival,
+          jaipurArrivalManual: data.jaipurArrivalManual !== undefined ? data.jaipurArrivalManual : po.jaipurArrivalManual,
           piNo: data.piNo !== undefined ? data.piNo : po.piNo,
-          approvedOn:
-            data.approvedOn !== undefined
-              ? data.approvedOn
-                ? new Date(data.approvedOn)
-                : null
-              : po.approvedOn,
+          approvedOn: data.approvedOn !== undefined ? (data.approvedOn ? new Date(data.approvedOn) : null) : po.approvedOn,
           status: data.status !== undefined ? data.status : po.status,
           notes: data.notes !== undefined ? data.notes : po.notes,
         },
-        include: { items: true, splits: { include: { items: true } } },
       });
 
-      // Update items if provided
-      if (data.items) {
-        await tx.purchaseOrderItem.deleteMany({
-          where: { purchaseOrderId: id },
-        });
+      const affectedProductIds = new Set<string>();
 
+      let editedProductIds: string[] = [];
+      let newProductIds: string[] = [];
+      let removedProductIds: string[] = [];
+      const jaipurArrivalChanged = data.jaipurArrival !== undefined && 
+        new Date(data.jaipurArrival).getTime() !== po.jaipurArrival?.getTime();
+
+      if (data.items) {
+        editedProductIds = data.items
+          .filter((incoming: any) => {
+            if (!incoming.productId) return false;
+            const existing = po.items.find(e => e.productId === incoming.productId);
+            return existing && (existing.quantity !== incoming.quantity || existing.rate !== incoming.rate);
+          })
+          .map((i: any) => i.productId);
+
+        newProductIds = data.items
+          .filter((incoming: any) => incoming.productId && !po.items.find(e => e.productId === incoming.productId))
+          .map((i: any) => i.productId);
+
+        removedProductIds = po.items
+          .filter(existing => existing.productId && !data.items.find((i: any) => i.productId === existing.productId))
+          .map(i => i.productId!);
+
+        // Delete items and recreate
+        await tx.purchaseOrderItem.deleteMany({ where: { purchaseOrderId: id } });
         await tx.purchaseOrderItem.createMany({
-          data: data.items.map((item) => ({
+          data: data.items.map((item: any) => ({
             purchaseOrderId: id,
             productId: item.productId,
             productName: item.productName,
@@ -195,86 +233,106 @@ export class PurchaseOrdersService {
             amount: item.amount,
           })),
         });
+      } else if (jaipurArrivalChanged) {
+        editedProductIds = po.items.map(i => i.productId!).filter(Boolean);
       }
 
-      // Determine which product IDs need master transaction resync
-      // Surgical: only resync products whose qty changed, or ALL if dates changed
-      const jaipurArrivalChanged = data.jaipurArrival !== undefined &&
-        new Date(data.jaipurArrival).getTime() !== po.jaipurArrival?.getTime();
+      [...editedProductIds, ...newProductIds, ...removedProductIds].forEach(pid => affectedProductIds.add(pid));
 
-      const productIdsToSync = new Set<string>();
-      po.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
+      // Handle removed products
+      if (removedProductIds.length > 0) {
+        await tx.stockTransaction.deleteMany({
+          where: {
+            referenceType: 'PURCHASE_ORDER',
+            referenceId: id,
+            productId: { in: removedProductIds }
+          }
+        });
+        
+        const splitIds = po.splits.map(s => s.id);
+        if (splitIds.length > 0) {
+          await tx.stockTransaction.deleteMany({
+            where: {
+              referenceType: 'PURCHASE_ORDER_SPLIT',
+              referenceId: { in: splitIds },
+              productId: { in: removedProductIds }
+            }
+          });
+        }
+      }
 
-      // Refresh PO with current items and splits from DB
       const refreshedPo = await tx.purchaseOrder.findUnique({
         where: { id },
         include: { items: true, splits: { include: { items: true } } },
       });
 
-      if (refreshedPo) {
-        refreshedPo.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
+      // Handle new products
+      if (newProductIds.length > 0 && refreshedPo && refreshedPo.jaipurArrival && refreshedPo.status !== 'CANCELLED') {
+        for (const pid of newProductIds) {
+          const poItem = refreshedPo.items.find(i => i.productId === pid);
+          if (poItem) {
+            await tx.stockTransaction.create({
+              data: {
+                productId: pid,
+                transactionType: 'IN',
+                quantity: poItem.quantity,
+                referenceType: 'PURCHASE_ORDER',
+                referenceId: id,
+                date: refreshedPo.jaipurArrival,
+                notes: `PO Pending — ${refreshedPo.poNumber} (${poItem.quantity} of ${poItem.quantity} unallocated)`,
+              }
+            });
+          }
+        }
       }
 
-      // Determine which products actually changed qty
-      let changedProductIds: Set<string>;
-      if (data.items || jaipurArrivalChanged) {
-        // If items were replaced or jaipur date changed, resync ALL products
-        changedProductIds = productIdsToSync;
-      } else {
-        // Only date/status/notes changed — still resync all if date changed
-        changedProductIds = productIdsToSync;
-      }
-
-      // Delete master PO stock transactions for affected products
-      if (changedProductIds.size > 0) {
+      // Handle edited products
+      if (editedProductIds.length > 0) {
+        // Always delete old master tx
         await tx.stockTransaction.deleteMany({
           where: {
             referenceType: 'PURCHASE_ORDER',
             referenceId: id,
-            productId: { in: Array.from(changedProductIds) },
-          },
-        });
-      }
-
-      // Recreate master transactions with correct pending qty
-      if (refreshedPo && refreshedPo.jaipurArrival && refreshedPo.status !== 'CANCELLED') {
-        for (const poItem of refreshedPo.items.filter(i => i.productId && changedProductIds.has(i.productId!))) {
-          // Calculate allocated qty from existing splits
-          const allocatedQty = refreshedPo.splits.reduce((sum, split) => {
-            const splitItem = split.items.find(
-              i => i.purchaseOrderItemId === poItem.id
-            );
-            return sum + (splitItem?.quantity ?? 0);
-          }, 0);
-
-          const pendingQty = poItem.quantity - allocatedQty;
-
-          if (pendingQty > 0) {
-            await tx.stockTransaction.create({
-              data: {
-                productId: poItem.productId!,
-                transactionType: 'IN',
-                quantity: pendingQty,
-                referenceType: 'PURCHASE_ORDER',
-                referenceId: id,
-                date: refreshedPo.jaipurArrival,
-                notes: `PO Pending — ${refreshedPo.poNumber} (${pendingQty} of ${poItem.quantity} unallocated)`,
-              },
-            });
+            productId: { in: editedProductIds }
           }
-          // If pendingQty <= 0, splits cover 100% — no master entry
+        });
+
+        if (refreshedPo && refreshedPo.jaipurArrival && refreshedPo.status !== 'CANCELLED') {
+          for (const pid of editedProductIds) {
+            const poItem = refreshedPo.items.find(i => i.productId === pid);
+            if (poItem) {
+              const allocatedQty = refreshedPo.splits.reduce((sum, split) => {
+                const splitItem = split.items.find(i => i.purchaseOrderItemId === poItem.id);
+                return sum + (splitItem?.quantity ?? 0);
+              }, 0);
+
+              const pendingQty = poItem.quantity - allocatedQty;
+
+              if (pendingQty > 0) {
+                await tx.stockTransaction.create({
+                  data: {
+                    productId: pid,
+                    transactionType: 'IN',
+                    quantity: pendingQty,
+                    referenceType: 'PURCHASE_ORDER',
+                    referenceId: id,
+                    date: refreshedPo.jaipurArrival,
+                    notes: `PO Pending — ${refreshedPo.poNumber} (${pendingQty} of ${poItem.quantity} unallocated)`,
+                  }
+                });
+              }
+            }
+          }
         }
       }
 
-      // Sync all involved product stock totals
-      for (const pid of productIdsToSync) {
+      for (const pid of Array.from(affectedProductIds)) {
         await syncProductStock(tx, pid);
       }
 
-      return { updatedPo, affectedProductIds: Array.from(productIdsToSync) };
+      return { updatedPo, affectedProductIds: Array.from(affectedProductIds) };
     });
 
-    // Broadcast OUTSIDE the transaction — only after commit
     this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
     for (const pid of txResult.affectedProductIds) {
       this.eventsGateway.broadcastEntityUpdate('STOCK', pid);

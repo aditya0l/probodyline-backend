@@ -445,27 +445,34 @@ export class PurchaseOrdersService {
       for (let i = 0; i < splitsData.length; i++) {
         const splitInput = splitsData[i];
 
+        const jaipurArrivalStr = String(splitInput.jaipurArrival || splitInput.date || '');
+        const jaipurDate = (splitInput.jaipurArrival || splitInput.date)
+              ? new Date(jaipurArrivalStr)
+              : null;
+
+        const formattedDateLabel = jaipurArrivalStr;
+
         const split = await tx.purchaseOrderSplit.create({
           data: {
             purchaseOrderId: id,
             splitNumber: splitInput.splitNumber || i + 1,
-            jaipurArrival: (splitInput.jaipurArrival || splitInput.date)
-              ? new Date(String(splitInput.jaipurArrival || splitInput.date))
-              : null,
-            label: splitInput.label,
-            sortDate: splitInput.sortDate ? new Date(splitInput.sortDate) : null,
+            jaipurArrival: jaipurDate,
+            label: null, // Label is deprecated in favor of Jaipur Date
+            sortDate: jaipurDate, // Implicitly sort by Jaipur Date
+            containerNumber: splitInput.containerNumber,
+            invoiceNumber: splitInput.invoiceNumber,
             status: 'CONFIRMED', // Auto-confirm PO splits for stock
           },
         });
 
         // DUAL-WRITE: Find or Create FactorySplit
         let factorySplitId: string | undefined = undefined;
-        if (po.factoryId && splitInput.label) {
-          const sortDate = splitInput.sortDate ? new Date(splitInput.sortDate) : null;
+        if (po.factoryId && formattedDateLabel) {
+          const sortDate = jaipurDate;
           let fs = await tx.factorySplit.findFirst({
             where: {
               factoryId: po.factoryId,
-              dateRangeLabel: splitInput.label,
+              dateRangeLabel: formattedDateLabel,
             }
           });
 
@@ -473,7 +480,7 @@ export class PurchaseOrdersService {
             fs = await tx.factorySplit.create({
               data: {
                 factoryId: po.factoryId,
-                dateRangeLabel: splitInput.label,
+                dateRangeLabel: formattedDateLabel,
                 sortDate: sortDate,
               }
             });

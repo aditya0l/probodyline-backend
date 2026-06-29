@@ -89,21 +89,47 @@ export async function getLedgerTransactions(
     });
   }
 
-  const poIds = Array.from(new Set(
+  // Separate PO and PO_SPLIT reference IDs — they map to different tables
+  const directPoIds = Array.from(new Set(
     transactionsRaw
-      .filter(t => ['PURCHASE_ORDER', 'PURCHASE_ORDER_SPLIT'].includes(t.referenceType))
+      .filter(t => t.referenceType === 'PURCHASE_ORDER')
+      .map(t => t.referenceId)
+      .filter(Boolean)
+  ));
+
+  const poSplitRefIds = Array.from(new Set(
+    transactionsRaw
+      .filter(t => t.referenceType === 'PURCHASE_ORDER_SPLIT')
       .map(t => t.referenceId)
       .filter(Boolean)
   ));
 
   let purchaseOrders: any[] = [];
-  if (poIds.length > 0) {
+  if (directPoIds.length > 0) {
     purchaseOrders = await prisma.purchaseOrder.findMany({
-      where: { id: { in: poIds } },
+      where: { id: { in: directPoIds } },
       select: {
         id: true,
         supplierName: true,
-        poNumber: true
+        poNumber: true,
+        factory: { select: { name: true } }
+      }
+    });
+  }
+
+  let poSplitsWithPO: any[] = [];
+  if (poSplitRefIds.length > 0) {
+    poSplitsWithPO = await prisma.purchaseOrderSplit.findMany({
+      where: { id: { in: poSplitRefIds } },
+      include: {
+        purchaseOrder: {
+          select: {
+            id: true,
+            poNumber: true,
+            supplierName: true,
+            factory: { select: { name: true } }
+          }
+        }
       }
     });
   }
@@ -119,6 +145,7 @@ export async function getLedgerTransactions(
   }
 
   const poMap = new Map(purchaseOrders.map(p => [p.id, p]));
+  const poSplitMap = new Map(poSplitsWithPO.map(s => [s.id, s]));
 
   // 5. Build Enriched Rows Map
   let ledgerRows = transactionsRaw.map(t => {
@@ -131,8 +158,11 @@ export async function getLedgerTransactions(
     } else if (['DISPATCH_SPLIT', 'UNBOOK_SO', 'REVERT_DISPATCH_SPLIT'].includes(t.referenceType)) {
       quotation = splitToQuotationMap.get(t.referenceId);
     }
-    if (['PURCHASE_ORDER', 'PURCHASE_ORDER_SPLIT'].includes(t.referenceType)) {
+    if (t.referenceType === 'PURCHASE_ORDER') {
       po = poMap.get(t.referenceId);
+    } else if (t.referenceType === 'PURCHASE_ORDER_SPLIT') {
+      const splitRecord = poSplitMap.get(t.referenceId);
+      po = splitRecord?.purchaseOrder;
     }
 
     const type = t.quantity > 0 ? 'IN' : 'OUT';
@@ -171,7 +201,7 @@ export async function getLedgerTransactions(
         referenceId: t.referenceId, // Backwards-compatibility
         referenceType: t.referenceType, // Backwards-compatibility
         todaysPhysicalStock: 0,
-        factoryName: po?.supplierName ?? '—',
+        factoryName: po?.supplierName ?? po?.factory?.name ?? '—',
         customerName: quotation?.clientName ?? quotation?.customer?.name ?? '—',
         gymName: quotation?.gymName ?? '—',
         orderNumber: quotation?.quoteNumber ?? po?.poNumber ?? '—',

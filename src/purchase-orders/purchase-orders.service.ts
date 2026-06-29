@@ -32,7 +32,7 @@ export class PurchaseOrdersService {
     }
     const poNumber = `PO_${currentYear}${nextNumber.toString().padStart(4, '0')}`;
 
-    return this.prisma.$transaction(async (tx) => {
+    const po = await this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.create({
         data: {
           poNumber,
@@ -81,9 +81,18 @@ export class PurchaseOrdersService {
         }
       }
 
-      this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', po.id);
       return po;
     });
+
+    // Broadcast OUTSIDE the transaction — only after commit
+    this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', po.id);
+    for (const item of po.items) {
+      if (item.productId) {
+        this.eventsGateway.broadcastEntityUpdate('STOCK', item.productId);
+      }
+    }
+
+    return po;
   }
 
   async findAll(search?: string, page: number = 0, limit: number = 100): Promise<{ data: any[]; total: number }> {
@@ -131,7 +140,7 @@ export class PurchaseOrdersService {
   }
 
   async update(id: string, data: any) {
-    return this.prisma.$transaction(async (tx) => {
+    const txResult = await this.prisma.$transaction(async (tx) => {
       const po = await tx.purchaseOrder.findUnique({
         where: { id },
         include: { items: true },
@@ -188,64 +197,109 @@ export class PurchaseOrdersService {
         });
       }
 
-      // Handle stock transactions
-      await tx.stockTransaction.deleteMany({
-        where: { referenceType: 'PURCHASE_ORDER', referenceId: id },
-      });
+      // Determine which product IDs need master transaction resync
+      // Surgical: only resync products whose qty changed, or ALL if dates changed
+      const jaipurArrivalChanged = data.jaipurArrival !== undefined &&
+        new Date(data.jaipurArrival).getTime() !== po.jaipurArrival?.getTime();
 
-      const refreshedPo = await tx.purchaseOrder.findUnique({
-        where: { id },
-        include: { items: true, splits: true }
-      });
-
-      if (refreshedPo && refreshedPo.splits.length === 0 && refreshedPo.jaipurArrival && refreshedPo.status !== 'CANCELLED') {
-        const stockTxs = refreshedPo.items
-          .filter(item => item.productId)
-          .map((item) => ({
-          productId: item.productId as string,
-          quantity: item.quantity,
-          transactionType: 'IN' as const,
-          referenceType: 'PURCHASE_ORDER',
-          referenceId: id,
-          date: refreshedPo.jaipurArrival!,
-        }));
-        if (stockTxs.length > 0) {
-          await tx.stockTransaction.createMany({ data: stockTxs });
-        }
-      }
-
-      // Sync all involved products
       const productIdsToSync = new Set<string>();
       po.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
+
+      // Refresh PO with current items and splits from DB
+      const refreshedPo = await tx.purchaseOrder.findUnique({
+        where: { id },
+        include: { items: true, splits: { include: { items: true } } },
+      });
+
       if (refreshedPo) {
         refreshedPo.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
       }
+
+      // Determine which products actually changed qty
+      let changedProductIds: Set<string>;
+      if (data.items || jaipurArrivalChanged) {
+        // If items were replaced or jaipur date changed, resync ALL products
+        changedProductIds = productIdsToSync;
+      } else {
+        // Only date/status/notes changed — still resync all if date changed
+        changedProductIds = productIdsToSync;
+      }
+
+      // Delete master PO stock transactions for affected products
+      if (changedProductIds.size > 0) {
+        await tx.stockTransaction.deleteMany({
+          where: {
+            referenceType: 'PURCHASE_ORDER',
+            referenceId: id,
+            productId: { in: Array.from(changedProductIds) },
+          },
+        });
+      }
+
+      // Recreate master transactions with correct pending qty
+      if (refreshedPo && refreshedPo.jaipurArrival && refreshedPo.status !== 'CANCELLED') {
+        for (const poItem of refreshedPo.items.filter(i => i.productId && changedProductIds.has(i.productId!))) {
+          // Calculate allocated qty from existing splits
+          const allocatedQty = refreshedPo.splits.reduce((sum, split) => {
+            const splitItem = split.items.find(
+              i => i.purchaseOrderItemId === poItem.id
+            );
+            return sum + (splitItem?.quantity ?? 0);
+          }, 0);
+
+          const pendingQty = poItem.quantity - allocatedQty;
+
+          if (pendingQty > 0) {
+            await tx.stockTransaction.create({
+              data: {
+                productId: poItem.productId!,
+                transactionType: 'IN',
+                quantity: pendingQty,
+                referenceType: 'PURCHASE_ORDER',
+                referenceId: id,
+                date: refreshedPo.jaipurArrival,
+                notes: `PO Pending — ${refreshedPo.poNumber} (${pendingQty} of ${poItem.quantity} unallocated)`,
+              },
+            });
+          }
+          // If pendingQty <= 0, splits cover 100% — no master entry
+        }
+      }
+
+      // Sync all involved product stock totals
       for (const pid of productIdsToSync) {
         await syncProductStock(tx, pid);
       }
 
-      this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
-      return updatedPo;
+      return { updatedPo, affectedProductIds: Array.from(productIdsToSync) };
     });
+
+    // Broadcast OUTSIDE the transaction — only after commit
+    this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
+    for (const pid of txResult.affectedProductIds) {
+      this.eventsGateway.broadcastEntityUpdate('STOCK', pid);
+    }
+
+    return txResult.updatedPo;
   }
 
   async delete(id: string) {
-    return this.prisma.$transaction(async (tx) => {
-      // Delete stock transactions
+    const txResult = await this.prisma.$transaction(async (tx) => {
+      // Fetch PO with items and splits before deletion
+      const po = await tx.purchaseOrder.findUnique({
+        where: { id },
+        include: { items: true, splits: true },
+      });
+      if (!po) throw new NotFoundException('Purchase Order not found');
+
+      const splitIds = po.splits.map((s) => s.id);
+
+      // Delete all stock transactions for master PO
       await tx.stockTransaction.deleteMany({
         where: { referenceType: 'PURCHASE_ORDER', referenceId: id },
       });
-      await tx.stockTransaction.deleteMany({
-        where: {
-          referenceType: 'PURCHASE_ORDER_SPLIT',
-          referenceId: { startsWith: id },
-        }, // approximate, better to fetch splits
-      });
 
-      const splits = await tx.purchaseOrderSplit.findMany({
-        where: { purchaseOrderId: id },
-      });
-      const splitIds = splits.map((s) => s.id);
+      // Delete all stock transactions for splits
       if (splitIds.length > 0) {
         await tx.stockTransaction.deleteMany({
           where: {
@@ -255,16 +309,28 @@ export class PurchaseOrdersService {
         });
       }
 
-      const po = await tx.purchaseOrder.findUnique({ where: { id }, include: { items: true } });
-      if (po) {
-        await tx.purchaseOrder.delete({ where: { id } });
-        for (const item of po.items) {
-          if (item.productId) await syncProductStock(tx, item.productId);
+      // Delete the PO (cascades to items, splits, split items)
+      await tx.purchaseOrder.delete({ where: { id } });
+
+      // Sync stock totals for all affected products
+      const affectedProductIds: string[] = [];
+      for (const item of po.items) {
+        if (item.productId) {
+          await syncProductStock(tx, item.productId);
+          affectedProductIds.push(item.productId);
         }
       }
-      this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
-      return po;
+
+      return { po, affectedProductIds };
     });
+
+    // Broadcast OUTSIDE the transaction — only after commit
+    this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
+    for (const pid of txResult.affectedProductIds) {
+      this.eventsGateway.broadcastEntityUpdate('STOCK', pid);
+    }
+
+    return txResult.po;
   }
 
   async updateMatrixSplits(id: string, splitsData: any[]) {
@@ -294,7 +360,7 @@ export class PurchaseOrdersService {
         });
       }
 
-      // Delete master PO stock transactions since splits are taking over
+      // Delete master PO stock transactions — will be recreated with correct pending qty
       await tx.stockTransaction.deleteMany({
         where: { referenceType: 'PURCHASE_ORDER', referenceId: id },
       });
@@ -334,7 +400,6 @@ export class PurchaseOrdersService {
                 factoryId: po.factoryId,
                 dateRangeLabel: splitInput.label,
                 sortDate: sortDate,
-                // Assign color logic if needed, we'll keep it simple or inherit
               }
             });
           } else if (sortDate && fs.sortDate?.getTime() !== sortDate.getTime()) {
@@ -363,7 +428,7 @@ export class PurchaseOrdersService {
               data: itemsToCreate,
             });
 
-            // Create Stock Transactions (IN)
+            // Create Stock Transactions (IN) for each split item
             for (const splitItem of itemsToCreate) {
               const poItem = po.items.find(
                 (pi) => pi.id === splitItem.purchaseOrderItemId,
@@ -372,7 +437,7 @@ export class PurchaseOrdersService {
                 await tx.stockTransaction.create({
                   data: {
                     productId: poItem.productId,
-                    transactionType: 'IN', // PO means stock is coming IN
+                    transactionType: 'IN',
                     quantity: splitItem.quantity,
                     referenceType: 'PURCHASE_ORDER_SPLIT',
                     referenceId: split.id,
@@ -380,10 +445,6 @@ export class PurchaseOrdersService {
                     notes: `PO: ${po.poNumber} / Sp-${split.splitNumber} / ${split.label || ''}`,
                   },
                 });
-                this.eventsGateway.broadcastEntityUpdate(
-                  'STOCK',
-                  poItem.productId,
-                );
               }
             }
           }
@@ -391,32 +452,46 @@ export class PurchaseOrdersService {
         newSplits.push(split);
       }
 
-      // If no splits exist, fallback to Master PO stock transactions
-      if (newSplits.length === 0 && po.jaipurArrival && po.status !== 'CANCELLED') {
-        const stockTxs = po.items
-          .filter(item => item.productId)
-          .map((item) => ({
-            productId: item.productId as string,
-            quantity: item.quantity,
-            transactionType: 'IN' as const,
-            referenceType: 'PURCHASE_ORDER',
-            referenceId: id,
-            date: po.jaipurArrival!,
-          }));
-        if (stockTxs.length > 0) {
-          await tx.stockTransaction.createMany({ data: stockTxs });
+      // 3. Sync master pending qty — read from DB, not from request payload
+      const savedSplits = await tx.purchaseOrderSplit.findMany({
+        where: { purchaseOrderId: id },
+        include: { items: true },
+      });
+
+      for (const poItem of po.items.filter(i => i.productId)) {
+        const allocatedQty = savedSplits.reduce((sum, split) => {
+          const splitItem = split.items.find(
+            i => i.purchaseOrderItemId === poItem.id
+          );
+          return sum + (splitItem?.quantity ?? 0);
+        }, 0);
+
+        const pendingQty = poItem.quantity - allocatedQty;
+
+        if (pendingQty > 0 && po.jaipurArrival && po.status !== 'CANCELLED') {
+          await tx.stockTransaction.create({
+            data: {
+              productId: poItem.productId!,
+              transactionType: 'IN',
+              quantity: pendingQty,
+              referenceType: 'PURCHASE_ORDER',
+              referenceId: id,
+              date: po.jaipurArrival,
+              notes: `PO Pending — ${po.poNumber} (${pendingQty} of ${poItem.quantity} unallocated)`,
+            },
+          });
         }
+        // If pendingQty <= 0, no master entry — splits cover 100%
       }
 
-      this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
-
+      // 4. Sync product stock totals
       const productIdsToSync = new Set<string>();
       po.items.forEach(i => i.productId && productIdsToSync.add(i.productId));
       for (const pid of productIdsToSync) {
         await syncProductStock(tx, pid);
       }
 
-      return tx.purchaseOrder.findUnique({
+      const result = await tx.purchaseOrder.findUnique({
         where: { id },
         include: {
           items: true,
@@ -426,6 +501,15 @@ export class PurchaseOrdersService {
           },
         },
       });
+
+      return { result, affectedProductIds: Array.from(productIdsToSync) };
+    }).then(({ result, affectedProductIds }) => {
+      // 5. Broadcast OUTSIDE the transaction — only after commit
+      this.eventsGateway.broadcastEntityUpdate('PURCHASE_ORDER', id);
+      for (const pid of affectedProductIds) {
+        this.eventsGateway.broadcastEntityUpdate('STOCK', pid);
+      }
+      return result;
     });
   }
 }

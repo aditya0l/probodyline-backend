@@ -566,6 +566,16 @@ export class PurchaseOrdersService {
         // If pendingQty <= 0, no master entry — splits cover 100%
       }
 
+      // Clean up orphaned factory splits (ghost columns)
+      if (po.factoryId) {
+        await tx.factorySplit.deleteMany({
+          where: {
+            factoryId: po.factoryId,
+            items: { none: {} }
+          }
+        });
+      }
+
       // 4. Sync product stock totals
       const productIdsToSync = new Set<string>();
       po.items.forEach(i => i.productId && productIdsToSync.add(i.productId));

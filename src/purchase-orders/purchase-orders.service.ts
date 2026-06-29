@@ -196,43 +196,60 @@ export class PurchaseOrdersService {
 
       const affectedProductIds = new Set<string>();
 
-      let editedProductIds: string[] = [];
-      let newProductIds: string[] = [];
-      let removedProductIds: string[] = [];
+      let editedProductIds: string[] = data.changedProductIds ?? [];
+      let newProductIds: string[] = data.newProductIds ?? [];
+      let removedProductIds: string[] = data.removedProductIds ?? [];
       const jaipurArrivalChanged = data.jaipurArrival !== undefined && 
         new Date(data.jaipurArrival).getTime() !== po.jaipurArrival?.getTime();
 
       if (data.items) {
-        editedProductIds = data.items
-          .filter((incoming: any) => {
-            if (!incoming.productId) return false;
-            const existing = po.items.find(e => e.productId === incoming.productId);
-            return existing && (existing.quantity !== incoming.quantity || existing.rate !== incoming.rate);
-          })
-          .map((i: any) => i.productId);
+        if (!data.changedProductIds && !data.newProductIds && !data.removedProductIds) {
+          editedProductIds = data.items
+            .filter((incoming: any) => {
+              if (!incoming.productId) return false;
+              const existing = po.items.find(e => e.productId === incoming.productId);
+              return existing && (existing.quantity !== incoming.quantity || Number(existing.rate) !== Number(incoming.rate));
+            })
+            .map((i: any) => i.productId);
 
-        newProductIds = data.items
-          .filter((incoming: any) => incoming.productId && !po.items.find(e => e.productId === incoming.productId))
-          .map((i: any) => i.productId);
+          newProductIds = data.items
+            .filter((incoming: any) => incoming.productId && !po.items.find(e => e.productId === incoming.productId))
+            .map((i: any) => i.productId);
 
-        removedProductIds = po.items
-          .filter(existing => existing.productId && !data.items.find((i: any) => i.productId === existing.productId))
-          .map(i => i.productId!);
+          removedProductIds = po.items
+            .filter(existing => existing.productId && !data.items.find((i: any) => i.productId === existing.productId))
+            .map(i => i.productId!);
+        }
 
-        // Delete items and recreate
-        await tx.purchaseOrderItem.deleteMany({ where: { purchaseOrderId: id } });
-        await tx.purchaseOrderItem.createMany({
-          data: data.items.map((item: any) => ({
-            purchaseOrderId: id,
-            productId: item.productId,
-            productName: item.productName,
-            productImage: item.productImage,
-            modelNumber: item.modelNumber,
-            rate: item.rate,
-            quantity: item.quantity,
-            amount: item.amount,
-          })),
-        });
+        // Upsert items surgically instead of drop and recreate
+        await Promise.all(data.items.map((item: any) => {
+          if (!item.productId) return Promise.resolve();
+          const existingItem = po.items.find(e => e.productId === item.productId);
+          return tx.purchaseOrderItem.upsert({
+            where: { id: existingItem?.id || 'new' },
+            update: {
+              quantity: item.quantity,
+              rate: item.rate,
+              amount: item.amount,
+            },
+            create: {
+              purchaseOrderId: id,
+              productId: item.productId,
+              productName: item.productName,
+              productImage: item.productImage,
+              modelNumber: item.modelNumber,
+              rate: item.rate,
+              quantity: item.quantity,
+              amount: item.amount,
+            }
+          });
+        }));
+
+        if (removedProductIds.length > 0) {
+          await tx.purchaseOrderItem.deleteMany({
+            where: { purchaseOrderId: id, productId: { in: removedProductIds } }
+          });
+        }
       } else if (jaipurArrivalChanged) {
         editedProductIds = po.items.map(i => i.productId!).filter(Boolean);
       }

@@ -20,7 +20,9 @@ import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UseGuards, Request } from '@nestjs/common';
+import { UseGuards, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateJourneyEventDto } from './dto/create-journey-event.dto';
 import * as fs from 'fs';
 
 @ApiTags('clients')
@@ -305,5 +307,47 @@ export class ClientsController {
   @ApiResponse({ status: 404, description: 'Client not found' })
   getClientSummary(@Param('id') id: string) {
     return this.clientsService.getClientSummary(id);
+  }
+
+  @Post(':id/smart-upload-photo')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Smart upload profile photo (Entry Gate App)' })
+  smartUploadPhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @Request() req,
+  ) {
+    return this.clientsService.smartUploadPhoto(id, file, req.user);
+  }
+
+  @Post(':id/manual-upload-photo')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Manual upload profile photo' })
+  manualUploadPhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @Request() req,
+  ) {
+    return this.clientsService.manualUploadPhoto(id, file, req.user);
+  }
+
+  @Get(':id/journey')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get client journey events' })
+  getJourney(@Param('id') id: string) {
+    return this.clientsService.getJourney(id);
+  }
+
+  @Post(':id/journey')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create manual journey event' })
+  createJourneyEvent(
+    @Param('id') id: string,
+    @Body() dto: CreateJourneyEventDto,
+    @Request() req,
+  ) {
+    return this.clientsService.createJourneyEvent(id, dto, req.user);
   }
 }

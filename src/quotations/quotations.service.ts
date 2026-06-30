@@ -424,6 +424,18 @@ export class QuotationsService {
         },
       });
 
+      // Create QO_SENT event for each linked master client
+      for (const clientId of clientIdsToConnect) {
+        await tx.clientJourneyEvent.create({
+          data: {
+            clientId,
+            eventType: 'QO_SENT',
+            linkedName: quotation.quoteNumber,
+            createdBy: 'SYS',
+          }
+        });
+      }
+
       this.eventsGateway.broadcastEntityUpdate('QUOTATION', quotation.id);
       return quotation;
     });

@@ -1,9 +1,11 @@
 import { Module, OnModuleInit } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { ClientsController } from './clients.controller';
+import { FilesModule } from '../files/files.module';
 import * as fs from 'fs';
 
 @Module({
+  imports: [FilesModule],
   controllers: [ClientsController],
   providers: [ClientsService],
   exports: [ClientsService],

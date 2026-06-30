@@ -10,12 +10,15 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { generateClientCode } from '../common/utils/client-code.util';
 
 import { EventsGateway } from '../events/events.gateway';
+import { FilesService } from '../files/files.service';
+import { CreateJourneyEventDto } from './dto/create-journey-event.dto';
 
 @Injectable()
 export class ClientsService {
   constructor(
     private prisma: PrismaService,
     private eventsGateway: EventsGateway,
+    private filesService: FilesService,
   ) {}
 
   async findAll(filters?: {
@@ -122,6 +125,9 @@ export class ClientsService {
           },
         },
         partners: true,
+        journeyEvents: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 
@@ -184,6 +190,14 @@ export class ClientsService {
         // salesPerson removed
         salesInitial: salesTeam,
       } as any,
+    });
+
+    await this.prisma.clientJourneyEvent.create({
+      data: {
+        clientId: client.id,
+        eventType: 'CREATED',
+        createdBy: user?.name || 'SYS',
+      },
     });
 
     this.eventsGateway.broadcastEntityUpdate('CLIENT', client.id);
@@ -308,6 +322,15 @@ export class ClientsService {
       },
     });
 
+    await this.prisma.clientJourneyEvent.create({
+      data: {
+        clientId: clientId,
+        eventType: 'LINKED_TO_GYM_PARTNER',
+        linkedName: gym.gymName,
+        createdBy: 'SYS', // Or user if we add user param later
+      }
+    });
+
     return link;
   }
 
@@ -320,6 +343,9 @@ export class ClientsService {
           gymId,
         },
       },
+      include: {
+        gym: true,
+      }
     });
 
     if (!link) {
@@ -334,6 +360,15 @@ export class ClientsService {
           gymId,
         },
       },
+    });
+
+    await this.prisma.clientJourneyEvent.create({
+      data: {
+        clientId: clientId,
+        eventType: 'DELINKED_FROM_GYM',
+        linkedName: link.gym.gymName,
+        createdBy: 'SYS',
+      }
     });
   }
 
@@ -528,5 +563,74 @@ export class ClientsService {
       orderCount: 0, // TODO: Implement
       hasPendingSpareParts: false, // TODO: Implement
     };
+  }
+
+  async smartUploadPhoto(clientId: string, file: any, user: any): Promise<any> {
+    const client = await this.prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) throw new NotFoundException('Client not found');
+
+    const result = await this.filesService.saveFile(file, `clients/${clientId}/visits`);
+    
+    // Update profile photo
+    await this.prisma.client.update({
+      where: { id: clientId },
+      data: { profilePhoto: result.url },
+    });
+
+    // Create SHOWROOM_VISIT event
+    const event = await this.prisma.clientJourneyEvent.create({
+      data: {
+        clientId,
+        eventType: 'SHOWROOM_VISIT',
+        photoUrl: result.url,
+        createdBy: user?.name || 'SYS',
+      }
+    });
+
+    this.eventsGateway.broadcastEntityUpdate('CLIENT', clientId);
+    return { client: await this.findOne(clientId), journeyEvent: event };
+  }
+
+  async manualUploadPhoto(clientId: string, file: any, user: any): Promise<any> {
+    const client = await this.prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) throw new NotFoundException('Client not found');
+
+    const result = await this.filesService.saveFile(file, `clients/${clientId}/visits`);
+    
+    // Update profile photo
+    const updatedClient = await this.prisma.client.update({
+      where: { id: clientId },
+      data: { profilePhoto: result.url },
+    });
+
+    this.eventsGateway.broadcastEntityUpdate('CLIENT', clientId);
+    return this.findOne(clientId);
+  }
+
+  async getJourney(clientId: string): Promise<any[]> {
+    return this.prisma.clientJourneyEvent.findMany({
+      where: { clientId },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async createJourneyEvent(clientId: string, dto: CreateJourneyEventDto, user: any): Promise<any> {
+    const client = await this.prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) throw new NotFoundException('Client not found');
+
+    const event = await this.prisma.clientJourneyEvent.create({
+      data: {
+        clientId,
+        eventType: dto.eventType,
+        eventDate: dto.eventDate ? new Date(dto.eventDate) : null,
+        details: dto.details,
+        linkedName: dto.linkedName,
+        relationship: dto.relationship,
+        createdBy: user?.name || 'SYS',
+      }
+    });
+
+    this.eventsGateway.broadcastEntityUpdate('CLIENT', clientId);
+    return event;
   }
 }

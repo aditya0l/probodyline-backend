@@ -595,6 +595,7 @@ model Client {
   aadharCard      String?
   panCardUrl      String?
   aadharCardUrl   String?
+  profilePhoto    String?
   isPhoneVerified Boolean   @default(false)
   salesInitial    String?
   createdBy       String?
@@ -603,10 +604,11 @@ model Client {
   updatedAt       DateTime  @updatedAt
 
   // Relations
-  gyms         ClientGym[]
-  leads        ClientLead[]
-  partners     ClientPartner[]
-  serviceCards ServiceCard[]
+  gyms            ClientGym[]
+  leads           ClientLead[]
+  partners        ClientPartner[]
+  serviceCards    ServiceCard[]
+  journeyEvents   ClientJourneyEvent[]
 
   @@index([clientCode])
   @@index([stateCode, city])
@@ -651,6 +653,40 @@ model ClientPartner {
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@map("client_partners")
+}
+
+model ClientJourneyEvent {
+  id            String           @id @default(uuid())
+  clientId      String
+  client        Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  eventType     JourneyEventType
+  eventDate     DateTime?
+  details       String?
+  linkedName    String?
+  relationship  String?
+
+  photoUrl      String?
+
+  createdBy     String
+  createdAt     DateTime         @default(now())
+
+  @@index([clientId])
+  @@index([clientId, eventType])
+  @@map("client_journey_events")
+}
+
+enum JourneyEventType {
+  CREATED
+  PICKUP_SCHEDULED
+  LINKED_TO_CLIENT
+  LINKED_TO_GYM_PARTNER
+  LINKED_TO_GYM_TRAINER
+  DELINKED_FROM_GYM
+  SHOWROOM_VISIT
+  VIDEO_CALL_SCHEDULED
+  QO_SENT
+  MANUAL_NOTE
 }
 
 // Gym Management Models

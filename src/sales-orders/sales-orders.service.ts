@@ -81,59 +81,7 @@ export class SalesOrdersService {
         });
       }
     } else {
-      // SO already exists - resync it from current quotation
-      const quotation = await db.quotation.findUnique({
-        where: { id: quotationId },
-        include: { items: true },
-      });
-      if (quotation) {
-        const soNumber = quotation.quoteNumber
-          .replace('QO', 'SO')
-          .replace('Q', 'SO'); // Handle both old and new formats
-
-        await db.salesOrder.update({
-          where: { id: so.id },
-          data: {
-            soNumber,
-            status: 'DRAFT',
-            subtotal: quotation.subtotal,
-            gstAmount: quotation.gstAmount,
-            grandTotal: quotation.grandTotal,
-            needsResync: false,
-          },
-        });
-
-        const itemCount = await db.salesOrderItem.count({
-          where: { salesOrderId: so.id },
-        });
-
-        if (itemCount > 0) {
-          // Delete old stale items
-          await db.salesOrderItem.deleteMany({
-            where: { salesOrderId: so.id },
-          });
-        }
-        
-        if (quotation.items.length > 0) {
-          const salesOrderItemsData = quotation.items.map((qi, index) => ({
-            salesOrderId: so!.id,
-            quotationItemId: qi.id,
-            productId: qi.productId,
-            productName: qi.productName,
-            modelNumber: qi.modelNumber,
-            quantity: qi.quantity,
-            rate: qi.rate,
-            mrp: qi.rate, // fallback mrp
-            totalAmount: qi.totalAmount,
-            notes: qi.notes,
-            sortOrder: index + 1
-          }));
-
-          await db.salesOrderItem.createMany({
-            data: salesOrderItemsData
-          });
-        }
-      }
+      // SO already exists - no resync needed as SO is decoupled from QO after creation.
     }
 
     // Return with FULL details

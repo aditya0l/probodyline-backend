@@ -1515,80 +1515,86 @@ export class SalesOrdersService {
 
     return this.prisma.$transaction(async (tx) => {
       const existingItems = await tx.salesOrderItem.findMany({ where: { salesOrderId }});
-      const items = body.items || [];
-      const incomingItemIds = items.filter((i: any) => i.id).map((i: any) => i.id);
+      if (body.items !== undefined) {
+        const items = body.items || [];
+        const incomingItemIds = items.filter((i: any) => i.id).map((i: any) => i.id);
 
-      // 1. Delete removed items
-      for (const item of existingItems) {
-        if (!incomingItemIds.includes(item.id)) {
-          await tx.salesOrderItem.delete({ where: { id: item.id } });
+        // 1. Delete removed items
+        for (const item of existingItems) {
+          if (!incomingItemIds.includes(item.id)) {
+            await tx.salesOrderItem.delete({ where: { id: item.id } });
+          }
         }
-      }
 
-      // 2. Auto-supersede pending qty requests
-      const pendingRequests = await tx.quantityChangeRequest.findMany({
-        where: { salesOrderId, status: 'PENDING' }
-      });
-      if (pendingRequests.length > 0) {
-        await tx.quantityChangeRequest.updateMany({
-          where: { salesOrderId, status: 'PENDING' },
-          data: { status: 'SUPERSEDED', reviewedBy: user?.id, reviewedAt: new Date() }
+        // 2. Auto-supersede pending qty requests
+        const pendingRequests = await tx.quantityChangeRequest.findMany({
+          where: { salesOrderId, status: 'PENDING' }
         });
-        await tx.salesOrderActivity.create({
-          data: {
-            salesOrderId,
-            action: 'Requests Superseded',
-            changedBy: user?.id,
-            details: `Pending reduction requests superseded by direct edit`,
-          }
-        });
-      }
-
-      const productIdsToBroadcast = new Set<string>();
-
-      // 3. Upsert items
-      for (const [index, item] of items.entries()) {
-        const rateNum = Number(item.rate);
-        const qtyNum = parseInt(item.quantity, 10);
-        const totalAmount = rateNum * qtyNum;
-        
-        if (item.id) {
-          const existingItem = existingItems.find(i => i.id === item.id);
-          await tx.salesOrderItem.update({
-            where: { id: item.id },
-            data: { quantity: qtyNum, rate: rateNum, totalAmount, sortOrder: index + 1 }
+        if (pendingRequests.length > 0) {
+          await tx.quantityChangeRequest.updateMany({
+            where: { salesOrderId, status: 'PENDING' },
+            data: { status: 'SUPERSEDED', reviewedBy: user?.id, reviewedAt: new Date() }
           });
-
-          if (existingItem && existingItem.quantity !== qtyNum) {
-            const productId = await this.cascadeQtyChangeToSplits(
-              salesOrderId,
-              item.id,
-              existingItem.quantity,
-              qtyNum,
-              tx
-            );
-            if (productId) productIdsToBroadcast.add(productId);
-          }
-        } else {
-          await tx.salesOrderItem.create({
+          await tx.salesOrderActivity.create({
             data: {
               salesOrderId,
-              productId: item.productId,
-              productName: item.productName,
-              modelNumber: item.modelNumber,
-              quantity: qtyNum,
-              rate: rateNum,
-              mrp: rateNum,
-              totalAmount,
-              sortOrder: index + 1
+              action: 'Requests Superseded',
+              changedBy: user?.id,
+              details: `Pending reduction requests superseded by direct edit`,
             }
           });
-          if (item.productId) productIdsToBroadcast.add(item.productId);
+        }
+
+        const productIdsToBroadcast = new Set<string>();
+
+        // 3. Upsert items
+        for (const [index, item] of items.entries()) {
+          const rateNum = Number(item.rate);
+          const qtyNum = parseInt(item.quantity, 10);
+          const totalAmount = rateNum * qtyNum;
+          
+          if (item.id) {
+            const existingItem = existingItems.find(i => i.id === item.id);
+            await tx.salesOrderItem.update({
+              where: { id: item.id },
+              data: { quantity: qtyNum, rate: rateNum, totalAmount, sortOrder: index + 1 }
+            });
+
+            if (existingItem && existingItem.quantity !== qtyNum) {
+              const productId = await this.cascadeQtyChangeToSplits(
+                salesOrderId,
+                item.id,
+                existingItem.quantity,
+                qtyNum,
+                tx
+              );
+              if (productId) productIdsToBroadcast.add(productId);
+            }
+          } else {
+            await tx.salesOrderItem.create({
+              data: {
+                salesOrderId,
+                productId: item.productId,
+                productName: item.productName,
+                modelNumber: item.modelNumber,
+                quantity: qtyNum,
+                rate: rateNum,
+                mrp: rateNum,
+                totalAmount,
+                sortOrder: index + 1
+              }
+            });
+            if (item.productId) productIdsToBroadcast.add(item.productId);
+          }
+        }
+
+        // 4. Recalculate SO Totals
+        await this.recalculateSOTotals(salesOrderId, tx);
+
+        for (const productId of productIdsToBroadcast) {
+          this.eventsGateway.broadcastEntityUpdate('STOCK', productId);
         }
       }
-
-      // 4. Recalculate SO Totals
-      await this.recalculateSOTotals(salesOrderId, tx);
 
       // 5. Update Dispatch/Booking Date if provided
       if (body.dispatchDate || body.bookingDate) {

@@ -644,10 +644,7 @@ export class SalesOrdersService {
         where: { id: salesOrderId },
         data: { 
           status: 'UNBOOKED',
-          needsResync: true,
-          subtotal: 0,
-          gstAmount: 0,
-          grandTotal: 0
+          needsResync: true
         },
       });
 
@@ -682,7 +679,7 @@ export class SalesOrdersService {
       if (so.quotationId) {
         await tx.quotation.update({
           where: { id: so.quotationId },
-          data: { status: 'DRAFT' },
+          data: { status: 'DRAFT', bookingDate: null },
         });
         this.eventsGateway.broadcastEntityUpdate('QUOTATION', so.quotationId);
       }
@@ -698,6 +695,49 @@ export class SalesOrdersService {
           }
         }
       }
+      return result;
+    });
+  }
+
+  async rebookSalesOrder(salesOrderId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const so = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: { quotation: true }
+      });
+
+      if (!so) throw new NotFoundException('Sales Order not found');
+      if (so.status !== 'UNBOOKED')
+        throw new BadRequestException('Only unbooked Sales Orders can be re-booked');
+
+      // Update SO Status to DRAFT and set Quotation Booking Date to now
+      const result = await tx.salesOrder.update({
+        where: { id: salesOrderId },
+        data: { status: 'DRAFT', needsResync: true },
+      });
+
+      if ((so as any).quotationId) {
+        await tx.quotation.update({
+          where: { id: (so as any).quotationId },
+          data: { bookingDate: new Date() }
+        });
+      }
+
+      const user = userContext.getStore();
+      await tx.salesOrderActivity.create({
+        data: {
+          salesOrderId: salesOrderId,
+          action: 'Sales Order Rebooked',
+          changedBy: user?.id,
+          details: 'Sales order status changed back to DRAFT and booked on date reset to now',
+        },
+      });
+
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+      if (so.quotationId) {
+        this.eventsGateway.broadcastEntityUpdate('QUOTATION', so.quotationId);
+      }
+
       return result;
     });
   }

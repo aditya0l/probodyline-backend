@@ -76,6 +76,12 @@ export class SalesOrdersController {
     return this.salesOrdersService.unbookSalesOrder(id);
   }
 
+  @Post(':id/rebook')
+  @ApiOperation({ summary: 'Re-book an unbooked Sales Order' })
+  rebookSalesOrder(@Param('id') id: string) {
+    return this.salesOrdersService.rebookSalesOrder(id);
+  }
+
   @Post(':id/sync-from-quotation')
   @ApiOperation({ summary: 'Sync Sales Order from current Quotation state' })
   syncFromQuotation(@Param('id') id: string) {

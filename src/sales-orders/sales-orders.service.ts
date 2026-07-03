@@ -1620,10 +1620,6 @@ export class SalesOrdersService {
         }
       });
 
-      for (const productId of productIdsToBroadcast) {
-        this.eventsGateway.broadcastEntityUpdate('STOCK', productId);
-      }
-
       this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
       this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
       return { success: true };

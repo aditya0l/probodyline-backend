@@ -775,6 +775,20 @@ export class QuotationsService {
   }
 
   async remove(id: string): Promise<Quotation> {
+    const quotation = await this.prisma.quotation.findUnique({
+      where: { id },
+    });
+
+    if (!quotation) {
+      throw new NotFoundException('Quotation not found');
+    }
+
+    if (quotation.status === 'CONFIRMED') {
+      throw new BadRequestException(
+        'Cannot delete a confirmed QO. Please go to Sales Orders and Unbook the order first.',
+      );
+    }
+
     // Soft delete
     const result = await this.prisma.quotation.update({
       where: { id },
@@ -823,6 +837,10 @@ export class QuotationsService {
     quotationId: string,
     item: CreateQuotationItemDto,
   ): Promise<any> {
+    const quotation = await this.prisma.quotation.findUnique({ where: { id: quotationId } });
+    if (quotation?.status === 'CONFIRMED') {
+      throw new BadRequestException('Cannot modify a confirmed QO. Please go to Sales Orders and Unbook the order first.');
+    }
     return this.prisma.$transaction(async (tx) => {
       // Get current item count
       const itemCount = await tx.quotationItem.count({
@@ -870,6 +888,10 @@ export class QuotationsService {
     itemId: string,
     data: UpdateQuotationItemDto,
   ): Promise<any> {
+    const quotation = await this.prisma.quotation.findUnique({ where: { id: quotationId } });
+    if (quotation?.status === 'CONFIRMED') {
+      throw new BadRequestException('Cannot modify a confirmed QO. Please go to Sales Orders and Unbook the order first.');
+    }
     return this.prisma.$transaction(async (tx) => {
       const updatedItem = await tx.quotationItem.update({
         where: { id: itemId },
@@ -888,6 +910,10 @@ export class QuotationsService {
   }
 
   async removeItem(quotationId: string, itemId: string): Promise<void> {
+    const quotation = await this.prisma.quotation.findUnique({ where: { id: quotationId } });
+    if (quotation?.status === 'CONFIRMED') {
+      throw new BadRequestException('Cannot modify a confirmed QO. Please go to Sales Orders and Unbook the order first.');
+    }
     await this.prisma.$transaction(async (tx) => {
       // Delete item
       await tx.quotationItem.delete({

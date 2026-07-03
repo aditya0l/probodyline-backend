@@ -187,4 +187,42 @@ export class SalesOrdersController {
   directUpdateItems(@Param('id') id: string, @Body() body: any) {
     return this.salesOrdersService.directUpdateItems(id, body);
   }
+
+  // --- Dispatch Date Change Management ---
+
+  @Post(':id/dispatch-date-requests')
+  @ApiOperation({ summary: 'Submit a dispatch date change request' })
+  createDispatchDateRequest(@Param('id') id: string, @Body() body: any) {
+    return this.salesOrdersService.createDispatchDateChangeRequest({
+      salesOrderId: id,
+      currentDate: body.currentDate,
+      requestedDate: body.requestedDate,
+      requestType: body.requestType,
+      requestedBy: body.requestedBy,
+    });
+  }
+
+  @Get(':id/dispatch-date-requests')
+  @ApiOperation({ summary: 'Get dispatch date requests for a specific Sales Order' })
+  getDispatchDateRequests(@Param('id') id: string) {
+    return this.salesOrdersService.getDispatchDateRequests(id);
+  }
+
+  @Patch(':id/dispatch-date-requests/:requestId/approve')
+  @ApiOperation({ summary: 'Approve a dispatch date request (Admin only)' })
+  approveDispatchDateRequest(
+    @Param('id') id: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.salesOrdersService.approveDispatchDateRequest(id, requestId);
+  }
+
+  @Patch(':id/dispatch-date-requests/:requestId/reject')
+  @ApiOperation({ summary: 'Reject a dispatch date request (Admin only)' })
+  rejectDispatchDateRequest(
+    @Param('id') id: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.salesOrdersService.rejectDispatchDateRequest(id, requestId);
+  }
 }

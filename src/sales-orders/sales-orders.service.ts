@@ -61,7 +61,7 @@ export class SalesOrdersService {
       });
 
       if (quotationItems.length > 0) {
-        const salesOrderItemsData = quotationItems.map(qi => ({
+        const salesOrderItemsData = quotationItems.map((qi, index) => ({
           salesOrderId: so!.id,
           quotationItemId: qi.id,
           productId: qi.productId,
@@ -71,7 +71,8 @@ export class SalesOrdersService {
           rate: qi.rate,
           mrp: qi.rate, // fallback mrp
           totalAmount: qi.totalAmount,
-          notes: qi.notes
+          notes: qi.notes,
+          sortOrder: index + 1
         }));
 
         await db.salesOrderItem.createMany({
@@ -113,7 +114,7 @@ export class SalesOrdersService {
         }
         
         if (quotation.items.length > 0) {
-          const salesOrderItemsData = quotation.items.map(qi => ({
+          const salesOrderItemsData = quotation.items.map((qi, index) => ({
             salesOrderId: so!.id,
             quotationItemId: qi.id,
             productId: qi.productId,
@@ -123,7 +124,8 @@ export class SalesOrdersService {
             rate: qi.rate,
             mrp: qi.rate, // fallback mrp
             totalAmount: qi.totalAmount,
-            notes: qi.notes
+            notes: qi.notes,
+            sortOrder: index + 1
           }));
 
           await db.salesOrderItem.createMany({
@@ -137,7 +139,33 @@ export class SalesOrdersService {
     return db.salesOrder.findUnique({
       where: { id: so.id },
       include: {
-        quotation: { include: { items: true } },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                modelNo: true,
+                thumbnail: true,
+                mrp: true,
+              },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+        quotation: {
+          select: {
+            id: true,
+            quoteNumber: true,
+            clientName: true,
+            gymName: true,
+            clientCity: true,
+            clientStateCode: true,
+            bookingDate: true,
+            dispatchDate: true,
+            status: true,
+          },
+        },
         splits: {
           include: {
             items: {
@@ -513,15 +541,50 @@ export class SalesOrdersService {
     return this.prisma.salesOrder.findUnique({
       where: { id },
       include: {
-        quotation: { include: { items: true } },
-        splits: {
+        items: {
           include: {
-            items: {
-              include: { quotationItem: true },
-              orderBy: { quotationItem: { srNo: 'asc' } },
+            product: {
+              select: {
+                id: true,
+                name: true,
+                modelNo: true,
+                thumbnail: true,
+                mrp: true,
+              },
             },
           },
+          orderBy: { sortOrder: 'asc' },
+        },
+        quotation: {
+          select: {
+            id: true,
+            quoteNumber: true,
+            clientName: true,
+            gymName: true,
+            clientCity: true,
+            clientStateCode: true,
+            bookingDate: true,
+            dispatchDate: true,
+            status: true,
+          },
+        },
+        splits: {
+          include: {
+            items: true,
+          },
           orderBy: { splitNumber: 'asc' },
+        },
+        activities: {
+          orderBy: { changedAt: 'desc' },
+          take: 50,
+        },
+        quantityRequests: {
+          where: { status: 'PENDING' },
+          include: {
+            user: {
+              select: { id: true, name: true, role: true },
+            },
+          },
         },
       },
     });
@@ -1267,9 +1330,239 @@ export class SalesOrdersService {
     return request;
   }
 
+  async validateSOEdit(
+    salesOrderId: string,
+    changes: any,
+    currentUser: any
+  ) {
+    const isAdmin = currentUser.role === 'ADMIN';
+
+    for (const change of changes.items ?? []) {
+      if (change.id) {
+        const existing = await this.prisma.salesOrderItem.findUnique({
+          where: { id: change.id }
+        });
+        
+        if (existing) {
+          const isIncrease = change.quantity > existing.quantity;
+          const isDecrease = change.quantity < existing.quantity;
+          
+          if (!isAdmin) {
+            if (isIncrease) {
+              throw new ForbiddenException('You do not have permission to increase quantities.');
+            }
+          }
+        }
+      } else {
+        const isNewItem = true;
+        if (!isAdmin && isNewItem) {
+          throw new ForbiddenException('You do not have permission to add new products.');
+        }
+      }
+    }
+
+    if (changes.bookingDate && !isAdmin) {
+      throw new ForbiddenException('You do not have permission to change the booking date.');
+    }
+
+    if (changes.dispatchDate && !isAdmin) {
+      const so = await this.prisma.salesOrder.findUnique({
+        where: { id: salesOrderId }
+      });
+      if (so && so.dispatchDate) {
+        const isPrepone = new Date(changes.dispatchDate) < new Date(so.dispatchDate);
+        if (isPrepone) {
+          await this.createDispatchDateChangeRequest({
+            salesOrderId,
+            currentDate: so.dispatchDate,
+            requestedDate: changes.dispatchDate,
+            requestType: 'PREPONE',
+            requestedBy: currentUser.id
+          });
+          throw new BadRequestException({
+            error: 'APPROVAL_REQUIRED',
+            message: 'Dispatch date prepone requires Admin approval. Your request has been submitted.'
+          });
+        }
+      }
+    }
+  }
+
+  async cascadeQtyChangeToSplits(
+    salesOrderId: string,
+    salesOrderItemId: string,
+    oldQty: number,
+    newQty: number,
+    prisma: Prisma.TransactionClient
+  ) {
+    const diff = newQty - oldQty;
+    if (diff === 0) return null;
+
+    const soItem = await prisma.salesOrderItem.findUnique({
+      where: { id: salesOrderItemId },
+      select: { quotationItemId: true, productId: true }
+    });
+
+    if (!soItem || !soItem.quotationItemId) return null;
+
+    const splitItems = await prisma.dispatchSplitItem.findMany({
+      where: { quotationItemId: soItem.quotationItemId },
+      include: {
+        dispatchSplit: {
+          select: { id: true, dispatchDate: true, salesOrderId: true }
+        }
+      }
+    });
+
+    const relevantSplitItems = splitItems.filter(
+      si => si.dispatchSplit.salesOrderId === salesOrderId
+    );
+
+    relevantSplitItems.sort(
+      (a, b) => new Date(b.dispatchSplit.dispatchDate).getTime() - 
+                 new Date(a.dispatchSplit.dispatchDate).getTime()
+    );
+
+    let remainingDiff = Math.abs(diff);
+
+    for (const splitItem of relevantSplitItems) {
+      if (remainingDiff === 0) break;
+
+      if (diff < 0) {
+        const canRemove = Math.min(splitItem.quantity, remainingDiff);
+        const newSplitQty = splitItem.quantity - canRemove;
+
+        await prisma.dispatchSplitItem.update({
+          where: { id: splitItem.id },
+          data: { quantity: Math.max(0, newSplitQty) }
+        });
+
+        remainingDiff -= canRemove;
+      } else {
+        await prisma.dispatchSplitItem.update({
+          where: { id: splitItem.id },
+          data: { quantity: splitItem.quantity + remainingDiff }
+        });
+
+        remainingDiff = 0;
+      }
+    }
+
+    if (diff < 0 && remainingDiff > 0) {
+      console.warn(
+        `Qty decrease of ${Math.abs(diff)} for item ${salesOrderItemId} ` +
+        `exceeded total split allocation by ${remainingDiff}`
+      );
+    }
+
+    return soItem.productId;
+  }
+
+  async createDispatchDateChangeRequest(data: {
+    salesOrderId: string;
+    currentDate: Date;
+    requestedDate: string | Date;
+    requestType: string;
+    requestedBy: string;
+  }) {
+    return this.prisma.dispatchDateChangeRequest.create({
+      data: {
+        salesOrderId: data.salesOrderId,
+        currentDate: data.currentDate,
+        requestedDate: new Date(data.requestedDate),
+        requestType: data.requestType,
+        requestedBy: data.requestedBy,
+      }
+    });
+  }
+
+  async getDispatchDateRequests(salesOrderId: string) {
+    return this.prisma.dispatchDateChangeRequest.findMany({
+      where: { salesOrderId },
+      include: { requestedByUser: true },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async approveDispatchDateRequest(salesOrderId: string, requestId: string) {
+    const user = userContext.getStore();
+    if (user?.role !== 'ADMIN') throw new UnauthorizedException('Only ADMIN can approve requests');
+
+    return this.prisma.$transaction(async (tx) => {
+      const request = await tx.dispatchDateChangeRequest.findUnique({
+        where: { id: requestId }
+      });
+
+      if (!request || request.status !== 'PENDING') throw new BadRequestException('Invalid request');
+
+      await tx.dispatchDateChangeRequest.update({
+        where: { id: requestId },
+        data: {
+          status: 'APPROVED',
+          reviewedBy: user.id,
+          reviewedAt: new Date()
+        }
+      });
+
+      await tx.salesOrder.update({
+        where: { id: salesOrderId },
+        data: { dispatchDate: request.requestedDate }
+      });
+
+      await tx.dispatchSplit.updateMany({
+        where: {
+          salesOrderId,
+          dispatchDate: request.currentDate
+        },
+        data: { dispatchDate: request.requestedDate }
+      });
+
+      await tx.salesOrderActivity.create({
+        data: {
+          salesOrderId,
+          action: 'Dispatch Date Prepone Approved',
+          changedBy: user.id,
+          details: `Approved dispatch date change from ${request.currentDate.toISOString().split('T')[0]} to ${request.requestedDate.toISOString().split('T')[0]}`,
+        }
+      });
+      
+      const so = await tx.salesOrder.findUnique({
+        where: { id: salesOrderId },
+        include: { items: true }
+      });
+
+      for (const item of so?.items || []) {
+        if (item.productId) {
+          this.eventsGateway.broadcastEntityUpdate({ type: 'STOCK', productId: item.productId });
+        }
+      }
+
+      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+      return request;
+    });
+  }
+
+  async rejectDispatchDateRequest(salesOrderId: string, requestId: string) {
+    const user = userContext.getStore();
+    if (user?.role !== 'ADMIN') throw new UnauthorizedException('Only ADMIN can reject requests');
+
+    const request = await this.prisma.dispatchDateChangeRequest.update({
+      where: { id: requestId },
+      data: {
+        status: 'REJECTED',
+        reviewedBy: user.id,
+        reviewedAt: new Date()
+      }
+    });
+
+    this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+    return request;
+  }
+
   async directUpdateItems(salesOrderId: string, body: any) {
     const user = userContext.getStore();
-    if (user?.role !== 'ADMIN') throw new UnauthorizedException('Only ADMIN can edit orders');
+    
+    await this.validateSOEdit(salesOrderId, body, user);
 
     return this.prisma.$transaction(async (tx) => {
       const existingItems = await tx.salesOrderItem.findMany({ where: { salesOrderId }});
@@ -1282,36 +1575,50 @@ export class SalesOrdersService {
         }
       }
 
-      // 2. Auto-supersede pending requests
+      // 2. Auto-supersede pending qty requests
       const pendingRequests = await tx.quantityChangeRequest.findMany({
         where: { salesOrderId, status: 'PENDING' }
       });
       if (pendingRequests.length > 0) {
         await tx.quantityChangeRequest.updateMany({
           where: { salesOrderId, status: 'PENDING' },
-          data: { status: 'SUPERSEDED', reviewedBy: user.id, reviewedAt: new Date() }
+          data: { status: 'SUPERSEDED', reviewedBy: user?.id, reviewedAt: new Date() }
         });
         await tx.salesOrderActivity.create({
           data: {
             salesOrderId,
             action: 'Requests Superseded',
-            changedBy: user.id,
-            details: `Pending reduction requests superseded by direct Admin edit`,
+            changedBy: user?.id,
+            details: `Pending reduction requests superseded by direct edit`,
           }
         });
       }
 
+      const productIdsToBroadcast = new Set<string>();
+
       // 3. Upsert items
-      for (const item of body.items) {
+      for (const [index, item] of body.items.entries()) {
         const rateNum = Number(item.rate);
         const qtyNum = parseInt(item.quantity, 10);
         const totalAmount = rateNum * qtyNum;
         
         if (item.id) {
+          const existingItem = existingItems.find(i => i.id === item.id);
           await tx.salesOrderItem.update({
             where: { id: item.id },
-            data: { quantity: qtyNum, rate: rateNum, totalAmount }
+            data: { quantity: qtyNum, rate: rateNum, totalAmount, sortOrder: index + 1 }
           });
+
+          if (existingItem && existingItem.quantity !== qtyNum) {
+            const productId = await this.cascadeQtyChangeToSplits(
+              salesOrderId,
+              item.id,
+              existingItem.quantity,
+              qtyNum,
+              tx
+            );
+            if (productId) productIdsToBroadcast.add(productId);
+          }
         } else {
           await tx.salesOrderItem.create({
             data: {
@@ -1323,23 +1630,40 @@ export class SalesOrdersService {
               rate: rateNum,
               mrp: rateNum,
               totalAmount,
+              sortOrder: index + 1
             }
           });
+          if (item.productId) productIdsToBroadcast.add(item.productId);
         }
       }
 
       // 4. Recalculate SO Totals
       await this.recalculateSOTotals(salesOrderId, tx);
 
-      // 5. Activity Log
+      // 5. Update Dispatch/Booking Date if provided
+      if (body.dispatchDate || body.bookingDate) {
+        await tx.salesOrder.update({
+          where: { id: salesOrderId },
+          data: {
+            ...(body.dispatchDate && { dispatchDate: new Date(body.dispatchDate) }),
+            ...(body.bookingDate && { bookingDate: new Date(body.bookingDate) }),
+          }
+        });
+      }
+
+      // 6. Activity Log
       await tx.salesOrderActivity.create({
         data: {
           salesOrderId,
-          action: 'Order Edited by Admin',
-          changedBy: user.id,
-          details: `Directly modified items list`,
+          action: 'Order Edited',
+          changedBy: user?.id,
+          details: `Directly modified order fields/items`,
         }
       });
+
+      for (const productId of productIdsToBroadcast) {
+        this.eventsGateway.broadcastEntityUpdate({ type: 'STOCK', productId });
+      }
 
       this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
       this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);

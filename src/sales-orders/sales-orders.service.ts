@@ -93,6 +93,7 @@ export class SalesOrdersService {
           where: { id: so.id },
           data: {
             soNumber,
+            status: 'DRAFT',
             subtotal: quotation.subtotal,
             gstAmount: quotation.gstAmount,
             grandTotal: quotation.grandTotal,
@@ -443,8 +444,7 @@ export class SalesOrdersService {
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.SalesOrderWhereInput = {
-      status: { not: 'UNBOOKED' },
-      needsResync: false
+      status: { not: 'UNBOOKED' }
     };
     
     const user = userContext.getStore();
@@ -635,7 +635,7 @@ export class SalesOrdersService {
       const result = await tx.salesOrder.update({
         where: { id: salesOrderId },
         data: { 
-          status: 'DRAFT',
+          status: 'UNBOOKED',
           needsResync: true,
           subtotal: 0,
           gstAmount: 0,
@@ -868,10 +868,7 @@ export class SalesOrdersService {
 
   async findUnbooked(search?: string, page: number = 0, limit: number = 100): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.SalesOrderWhereInput = { 
-      OR: [
-        { status: 'UNBOOKED' },
-        { needsResync: true }
-      ]
+      status: 'UNBOOKED'
     };
     if (search) {
       whereClause.AND = [

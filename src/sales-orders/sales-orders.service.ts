@@ -85,9 +85,14 @@ export class SalesOrdersService {
         include: { items: true },
       });
       if (quotation) {
+        const soNumber = quotation.quoteNumber
+          .replace('QO', 'SO')
+          .replace('Q', 'SO'); // Handle both old and new formats
+
         await db.salesOrder.update({
           where: { id: so.id },
           data: {
+            soNumber,
             subtotal: quotation.subtotal,
             gstAmount: quotation.gstAmount,
             grandTotal: quotation.grandTotal,
@@ -1367,9 +1372,13 @@ export class SalesOrdersService {
     const gstAmount = so.quotation.gstAmount;
     const grandTotal = so.quotation.grandTotal;
 
+    const soNumber = so.quotation.quoteNumber
+      .replace('QO', 'SO')
+      .replace('Q', 'SO');
+
     await this.prisma.salesOrder.update({
       where: { id: salesOrderId },
-      data: { subtotal, gstAmount, grandTotal, needsResync: false }
+      data: { soNumber, subtotal, gstAmount, grandTotal, needsResync: false }
     });
 
     await this.prisma.salesOrderItem.deleteMany({

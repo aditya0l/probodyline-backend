@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
 import { syncProductStock } from '../utils/stock-sync';
@@ -145,9 +146,8 @@ export class SalesOrdersService {
               select: {
                 id: true,
                 name: true,
-                modelNo: true,
+                modelNumber: true,
                 thumbnail: true,
-                mrp: true,
               },
             },
           },
@@ -160,7 +160,6 @@ export class SalesOrdersService {
             clientName: true,
             gymName: true,
             clientCity: true,
-            clientStateCode: true,
             bookingDate: true,
             dispatchDate: true,
             status: true,
@@ -547,9 +546,8 @@ export class SalesOrdersService {
               select: {
                 id: true,
                 name: true,
-                modelNo: true,
+                modelNumber: true,
                 thumbnail: true,
-                mrp: true,
               },
             },
           },
@@ -562,7 +560,6 @@ export class SalesOrdersService {
             clientName: true,
             gymName: true,
             clientCity: true,
-            clientStateCode: true,
             bookingDate: true,
             dispatchDate: true,
             status: true,
@@ -596,7 +593,7 @@ export class SalesOrdersService {
     tx?: Prisma.TransactionClient,
   ) {
     // First ensure Master SO exists (pass tx!)
-    const so = await this.ensureMasterSO(quotationId, tx);
+    const so = await this.ensureMasterSO(quotationId, tx) as any;
     if (!so) throw new Error('Failed to ensure Sales Order');
 
     // Check if any active splits exist
@@ -1367,14 +1364,15 @@ export class SalesOrdersService {
 
     if (changes.dispatchDate && !isAdmin) {
       const so = await this.prisma.salesOrder.findUnique({
-        where: { id: salesOrderId }
+        where: { id: salesOrderId },
+        include: { quotation: true }
       });
-      if (so && so.dispatchDate) {
-        const isPrepone = new Date(changes.dispatchDate) < new Date(so.dispatchDate);
+      if (so && so.quotation && so.quotation.dispatchDate) {
+        const isPrepone = new Date(changes.dispatchDate) < new Date(so.quotation.dispatchDate);
         if (isPrepone) {
           await this.createDispatchDateChangeRequest({
             salesOrderId,
-            currentDate: so.dispatchDate,
+            currentDate: so.quotation.dispatchDate,
             requestedDate: changes.dispatchDate,
             requestType: 'PREPONE',
             requestedBy: currentUser.id
@@ -1419,8 +1417,8 @@ export class SalesOrdersService {
     );
 
     relevantSplitItems.sort(
-      (a, b) => new Date(b.dispatchSplit.dispatchDate).getTime() - 
-                 new Date(a.dispatchSplit.dispatchDate).getTime()
+      (a, b) => new Date(b.dispatchSplit.dispatchDate || 0).getTime() - 
+                 new Date(a.dispatchSplit.dispatchDate || 0).getTime()
     );
 
     let remainingDiff = Math.abs(diff);
@@ -1490,7 +1488,8 @@ export class SalesOrdersService {
 
     return this.prisma.$transaction(async (tx) => {
       const request = await tx.dispatchDateChangeRequest.findUnique({
-        where: { id: requestId }
+        where: { id: requestId },
+        include: { salesOrder: true }
       });
 
       if (!request || request.status !== 'PENDING') throw new BadRequestException('Invalid request');
@@ -1504,10 +1503,12 @@ export class SalesOrdersService {
         }
       });
 
-      await tx.salesOrder.update({
-        where: { id: salesOrderId },
-        data: { dispatchDate: request.requestedDate }
-      });
+      if (request.salesOrder && request.salesOrder.quotationId) {
+        await tx.quotation.update({
+          where: { id: request.salesOrder.quotationId },
+          data: { dispatchDate: request.requestedDate }
+        });
+      }
 
       await tx.dispatchSplit.updateMany({
         where: {
@@ -1533,7 +1534,7 @@ export class SalesOrdersService {
 
       for (const item of so?.items || []) {
         if (item.productId) {
-          this.eventsGateway.broadcastEntityUpdate({ type: 'STOCK', productId: item.productId });
+          this.eventsGateway.broadcastEntityUpdate('STOCK', item.productId);
         }
       }
 
@@ -1642,13 +1643,16 @@ export class SalesOrdersService {
 
       // 5. Update Dispatch/Booking Date if provided
       if (body.dispatchDate || body.bookingDate) {
-        await tx.salesOrder.update({
-          where: { id: salesOrderId },
-          data: {
-            ...(body.dispatchDate && { dispatchDate: new Date(body.dispatchDate) }),
-            ...(body.bookingDate && { bookingDate: new Date(body.bookingDate) }),
-          }
-        });
+        const so = await tx.salesOrder.findUnique({ where: { id: salesOrderId } });
+        if (so && (so as any).quotationId) {
+          await tx.quotation.update({
+            where: { id: (so as any).quotationId },
+            data: {
+              ...(body.dispatchDate && { dispatchDate: new Date(body.dispatchDate) }),
+              ...(body.bookingDate && { bookingDate: new Date(body.bookingDate) }),
+            }
+          });
+        }
       }
 
       // 6. Activity Log
@@ -1662,7 +1666,7 @@ export class SalesOrdersService {
       });
 
       for (const productId of productIdsToBroadcast) {
-        this.eventsGateway.broadcastEntityUpdate({ type: 'STOCK', productId });
+        this.eventsGateway.broadcastEntityUpdate('STOCK', productId);
       }
 
       this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);

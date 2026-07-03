@@ -1567,7 +1567,8 @@ export class SalesOrdersService {
 
     return this.prisma.$transaction(async (tx) => {
       const existingItems = await tx.salesOrderItem.findMany({ where: { salesOrderId }});
-      const incomingItemIds = body.items.filter((i: any) => i.id).map((i: any) => i.id);
+      const items = body.items || [];
+      const incomingItemIds = items.filter((i: any) => i.id).map((i: any) => i.id);
 
       // 1. Delete removed items
       for (const item of existingItems) {
@@ -1598,7 +1599,7 @@ export class SalesOrdersService {
       const productIdsToBroadcast = new Set<string>();
 
       // 3. Upsert items
-      for (const [index, item] of body.items.entries()) {
+      for (const [index, item] of items.entries()) {
         const rateNum = Number(item.rate);
         const qtyNum = parseInt(item.quantity, 10);
         const totalAmount = rateNum * qtyNum;

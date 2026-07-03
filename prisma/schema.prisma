@@ -269,7 +269,8 @@ model SalesOrder {
   id          String @id @default(uuid())
   quotationId String @unique // 1-to-1 with Quotation now
   soNumber    String @unique // e.g., SO_22064
-  status      String @default("DRAFT") // DRAFT, COMPLETED (when all items booked)
+  status      String @default("DRAFT")
+  needsResync Boolean @default(false) // DRAFT, COMPLETED (when all items booked)
 
   // Financial (Snapshot for this SO - usually same as Quote)
   subtotal   Decimal @default(0) @db.Decimal(12, 2)

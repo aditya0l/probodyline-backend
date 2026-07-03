@@ -78,6 +78,53 @@ export class SalesOrdersService {
           data: salesOrderItemsData
         });
       }
+    } else {
+      // SO already exists - resync it from current quotation
+      const quotation = await db.quotation.findUnique({
+        where: { id: quotationId },
+        include: { items: true },
+      });
+      if (quotation) {
+        await db.salesOrder.update({
+          where: { id: so.id },
+          data: {
+            subtotal: quotation.subtotal,
+            gstAmount: quotation.gstAmount,
+            grandTotal: quotation.grandTotal,
+            needsResync: false,
+          },
+        });
+
+        const itemCount = await db.salesOrderItem.count({
+          where: { salesOrderId: so.id },
+        });
+
+        if (itemCount > 0) {
+          // Delete old stale items
+          await db.salesOrderItem.deleteMany({
+            where: { salesOrderId: so.id },
+          });
+        }
+        
+        if (quotation.items.length > 0) {
+          const salesOrderItemsData = quotation.items.map(qi => ({
+            salesOrderId: so!.id,
+            quotationItemId: qi.id,
+            productId: qi.productId,
+            productName: qi.productName,
+            modelNumber: qi.modelNumber,
+            quantity: qi.quantity,
+            rate: qi.rate,
+            mrp: qi.rate, // fallback mrp
+            totalAmount: qi.totalAmount,
+            notes: qi.notes
+          }));
+
+          await db.salesOrderItem.createMany({
+            data: salesOrderItemsData
+          });
+        }
+      }
     }
 
     // Return with FULL details
@@ -581,7 +628,13 @@ export class SalesOrdersService {
       // Update Master SO Status
       const result = await tx.salesOrder.update({
         where: { id: salesOrderId },
-        data: { status: 'UNBOOKED' },
+        data: { 
+          status: 'DRAFT',
+          needsResync: true,
+          subtotal: 0,
+          gstAmount: 0,
+          grandTotal: 0
+        },
       });
 
       const user = userContext.getStore();
@@ -1280,6 +1333,70 @@ export class SalesOrdersService {
       this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
       return { success: true };
     });
+  }
+
+  async getStockReserved(salesOrderId: string) {
+    const so = await this.prisma.salesOrder.findUnique({
+      where: { id: salesOrderId },
+      include: { splits: true }
+    });
+
+    if (!so) return [];
+
+    const splitIds = so.splits.map(s => s.id);
+
+    return this.prisma.stockTransaction.findMany({
+      where: {
+        referenceId: { in: splitIds },
+        referenceType: 'DISPATCH_SPLIT'
+      }
+    });
+  }
+
+  async syncFromQuotation(salesOrderId: string) {
+    const so = await this.prisma.salesOrder.findUnique({
+      where: { id: salesOrderId },
+      include: { quotation: { include: { items: true } } }
+    });
+
+    if (!so || !so.quotation) {
+      throw new NotFoundException('Sales Order or linked Quotation not found');
+    }
+
+    const subtotal = so.quotation.subtotal;
+    const gstAmount = so.quotation.gstAmount;
+    const grandTotal = so.quotation.grandTotal;
+
+    await this.prisma.salesOrder.update({
+      where: { id: salesOrderId },
+      data: { subtotal, gstAmount, grandTotal, needsResync: false }
+    });
+
+    await this.prisma.salesOrderItem.deleteMany({
+      where: { salesOrderId }
+    });
+
+    if (so.quotation.items.length > 0) {
+      const salesOrderItemsData = so.quotation.items.map(qi => ({
+        salesOrderId: so.id,
+        quotationItemId: qi.id,
+        productId: qi.productId,
+        productName: qi.productName,
+        modelNumber: qi.modelNumber,
+        quantity: qi.quantity,
+        rate: qi.rate,
+        mrp: qi.rate,
+        totalAmount: qi.totalAmount,
+        notes: qi.notes
+      }));
+
+      await this.prisma.salesOrderItem.createMany({
+        data: salesOrderItemsData
+      });
+    }
+
+    this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+    return { success: true, message: 'Synced from quotation' };
   }
 
   private async recalculateSOTotals(salesOrderId: string, tx: Prisma.TransactionClient) {

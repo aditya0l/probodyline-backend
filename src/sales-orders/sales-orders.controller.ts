@@ -76,6 +76,12 @@ export class SalesOrdersController {
     return this.salesOrdersService.unbookSalesOrder(id);
   }
 
+  @Post(':id/sync-from-quotation')
+  @ApiOperation({ summary: 'Sync Sales Order from current Quotation state' })
+  syncFromQuotation(@Param('id') id: string) {
+    return this.salesOrdersService.syncFromQuotation(id);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all Sales Orders' })
   @ApiQuery({ name: 'gymName', required: false, type: String })

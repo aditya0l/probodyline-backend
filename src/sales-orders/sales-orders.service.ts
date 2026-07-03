@@ -443,7 +443,7 @@ export class SalesOrdersService {
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.SalesOrderWhereInput = {
-      status: { not: 'UNBOOKED' }
+      status: { notIn: ['UNBOOKED', 'DRAFT'] }
     };
     
     const user = userContext.getStore();
@@ -866,7 +866,7 @@ export class SalesOrdersService {
   }
 
   async findUnbooked(search?: string, page: number = 0, limit: number = 100): Promise<{ data: any[]; total: number }> {
-    const whereClause: Prisma.SalesOrderWhereInput = { status: 'UNBOOKED' };
+    const whereClause: Prisma.SalesOrderWhereInput = { status: 'DRAFT' };
     if (search) {
       whereClause.OR = [
         { soNumber: { contains: search, mode: 'insensitive' } },

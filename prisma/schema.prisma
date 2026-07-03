@@ -266,10 +266,10 @@ model QuotationItem {
 }
 
 model SalesOrder {
-  id          String @id @default(uuid())
-  quotationId String @unique // 1-to-1 with Quotation now
-  soNumber    String @unique // e.g., SO_22064
-  status      String @default("DRAFT")
+  id          String  @id @default(uuid())
+  quotationId String  @unique // 1-to-1 with Quotation now
+  soNumber    String  @unique // e.g., SO_22064
+  status      String  @default("DRAFT")
   needsResync Boolean @default(false) // DRAFT, COMPLETED (when all items booked)
 
   // Financial (Snapshot for this SO - usually same as Quote)
@@ -288,9 +288,10 @@ model SalesOrder {
   user         User?           @relation(fields: [userId], references: [id])
   userId       String?
 
-  activities   SalesOrderActivity[]
-  items        SalesOrderItem[]
-  quantityRequests QuantityChangeRequest[]
+  activities           SalesOrderActivity[]
+  items                SalesOrderItem[]
+  quantityRequests     QuantityChangeRequest[]
+  dispatchDateRequests DispatchDateChangeRequest[]
 
   @@index([quotationId])
   @@index([status])
@@ -299,23 +300,24 @@ model SalesOrder {
 }
 
 model SalesOrderItem {
-  id               String   @id @default(uuid())
-  salesOrderId     String
-  quotationItemId  String?  // Reference to original quotation item, if derived from it
-  productId        String?
-  productName      String
-  modelNumber      String?
-  quantity         Int
-  rate             Decimal  @db.Decimal(12, 2)
-  mrp              Decimal? @db.Decimal(12, 2)
-  totalAmount      Decimal  @db.Decimal(12, 2)
-  notes            String?  @db.Text
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(uuid())
+  salesOrderId    String
+  quotationItemId String? // Reference to original quotation item, if derived from it
+  productId       String?
+  productName     String
+  modelNumber     String?
+  quantity        Int
+  rate            Decimal  @db.Decimal(12, 2)
+  mrp             Decimal? @db.Decimal(12, 2)
+  totalAmount     Decimal  @db.Decimal(12, 2)
+  notes           String?  @db.Text
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  salesOrder       SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  quotationItem    QuotationItem? @relation(fields: [quotationItemId], references: [id], onDelete: SetNull)
-  product          Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+  salesOrder    SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  quotationItem QuotationItem? @relation(fields: [quotationItemId], references: [id], onDelete: SetNull)
+  product       Product?       @relation(fields: [productId], references: [id], onDelete: SetNull)
 
   quantityRequests QuantityChangeRequest[]
 
@@ -326,40 +328,67 @@ model SalesOrderItem {
 }
 
 model QuantityChangeRequest {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   salesOrderId     String
   salesOrderItemId String
   requestedBy      String
-  requestType      String   @default("DECREASE")
+  requestType      String    @default("DECREASE")
   currentQty       Int
   requestedQty     Int
-  reason           String   @db.Text
-  status           String   @default("PENDING") // PENDING, APPROVED, REJECTED, SUPERSEDED
+  reason           String    @db.Text
+  status           String    @default("PENDING") // PENDING, APPROVED, REJECTED, SUPERSEDED
   reviewedBy       String?
   reviewedAt       DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  salesOrder       SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  salesOrderItem   SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
-  user             User           @relation("RequestCreator", fields: [requestedBy], references: [id], onDelete: Cascade)
-  reviewer         User?          @relation("RequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  salesOrder     SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  salesOrderItem SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
+  user           User           @relation("RequestCreator", fields: [requestedBy], references: [id], onDelete: Cascade)
+  reviewer       User?          @relation("RequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
 
   @@index([salesOrderId])
   @@index([status])
   @@map("quantity_change_requests")
 }
 
-model SalesOrderActivity {
+model DispatchDateChangeRequest {
   id           String     @id @default(uuid())
   salesOrderId String
-  action       String     // e.g. "Order Created", "Order Booked", "Splits Modified"
-  changedBy    String?    // User ID
-  changedAt    DateTime   @default(now())
-  details      Json?      // Additional details
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id])
 
-  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  user         User?      @relation(fields: [changedBy], references: [id], onDelete: SetNull)
+  currentDate   DateTime
+  requestedDate DateTime
+  requestType   String // 'PREPONE' | 'POSTPONE'
+  reason        String?
+
+  status String @default("PENDING")
+  // PENDING | APPROVED | REJECTED | SUPERSEDED
+
+  requestedBy     String
+  requestedByUser User   @relation("DispatchRequester", fields: [requestedBy], references: [id])
+
+  reviewedBy String?
+  reviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([salesOrderId])
+  @@index([status])
+  @@map("dispatch_date_change_requests")
+}
+
+model SalesOrderActivity {
+  id           String   @id @default(uuid())
+  salesOrderId String
+  action       String // e.g. "Order Created", "Order Booked", "Splits Modified"
+  changedBy    String? // User ID
+  changedAt    DateTime @default(now())
+  details      Json? // Additional details
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  user       User?      @relation(fields: [changedBy], references: [id], onDelete: SetNull)
 
   @@index([salesOrderId])
   @@index([changedAt])
@@ -421,11 +450,11 @@ model PurchaseOrder {
   updatedAt DateTime @updatedAt
 
   // Relations
-  items  PurchaseOrderItem[]
-  splits PurchaseOrderSplit[]
-  user   User?                @relation(fields: [userId], references: [id])
-  userId String?
-  factory Factory             @relation(fields: [factoryId], references: [id])
+  items     PurchaseOrderItem[]
+  splits    PurchaseOrderSplit[]
+  user      User?                @relation(fields: [userId], references: [id])
+  userId    String?
+  factory   Factory              @relation(fields: [factoryId], references: [id])
   factoryId String
 
   @@index([poNumber])
@@ -484,7 +513,7 @@ model PurchaseOrderSplit {
 }
 
 model PurchaseOrderSplitItem {
-  id                   String @id @default(uuid())
+  id                   String  @id @default(uuid())
   purchaseOrderSplitId String?
   factorySplitId       String?
   purchaseOrderItemId  String
@@ -517,18 +546,18 @@ model Factory {
 model FactorySplit {
   id             String    @id @default(uuid())
   factoryId      String
-  dateRangeLabel String    // e.g. "22-24 JUL"
-  tag            String?   // e.g. "1HQ"
+  dateRangeLabel String // e.g. "22-24 JUL"
+  tag            String? // e.g. "1HQ"
   color          String?
   sortDate       DateTime? // For chronological sorting of columns
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  factory Factory                  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   items   PurchaseOrderSplitItem[]
 
-  @@index([factoryId])
   @@unique([factoryId, dateRangeLabel])
+  @@index([factoryId])
   @@map("factory_splits")
 }
 
@@ -605,11 +634,11 @@ model Client {
   updatedAt       DateTime  @updatedAt
 
   // Relations
-  gyms            ClientGym[]
-  leads           ClientLead[]
-  partners        ClientPartner[]
-  serviceCards    ServiceCard[]
-  journeyEvents   ClientJourneyEvent[]
+  gyms          ClientGym[]
+  leads         ClientLead[]
+  partners      ClientPartner[]
+  serviceCards  ServiceCard[]
+  journeyEvents ClientJourneyEvent[]
 
   @@index([clientCode])
   @@index([stateCode, city])
@@ -657,20 +686,20 @@ model ClientPartner {
 }
 
 model ClientJourneyEvent {
-  id            String           @id @default(uuid())
-  clientId      String
-  client        Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  eventType     JourneyEventType
-  eventDate     DateTime?
-  details       String?
-  linkedName    String?
-  relationship  String?
+  eventType    JourneyEventType
+  eventDate    DateTime?
+  details      String?
+  linkedName   String?
+  relationship String?
 
-  photoUrl      String?
+  photoUrl String?
 
-  createdBy     String
-  createdAt     DateTime         @default(now())
+  createdBy String
+  createdAt DateTime @default(now())
 
   @@index([clientId])
   @@index([clientId, eventType])
@@ -968,9 +997,9 @@ model User {
 
   // Relations
   managerId                      String?
-  manager                        User?                    @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
-  team                           User[]                   @relation("UserManager")
-  organization                   Organization?            @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  manager                        User?                       @relation("UserManager", fields: [managerId], references: [id], onDelete: SetNull)
+  team                           User[]                      @relation("UserManager")
+  organization                   Organization?               @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   createdQuotations              Quotation[]
   createdSalesOrders             SalesOrder[]
   salesOrderActivities           SalesOrderActivity[]
@@ -983,8 +1012,9 @@ model User {
   createdStockTransactions       StockTransaction[]
   createdInaugurationCommitments InaugurationCommitment[]
   createdCalendarEvents          CalendarEvent[]
-  createdQuantityRequests        QuantityChangeRequest[] @relation("RequestCreator")
-  reviewedQuantityRequests       QuantityChangeRequest[] @relation("RequestReviewer")
+  createdQuantityRequests        QuantityChangeRequest[]     @relation("RequestCreator")
+  reviewedQuantityRequests       QuantityChangeRequest[]     @relation("RequestReviewer")
+  dispatchDateRequests           DispatchDateChangeRequest[] @relation("DispatchRequester")
 
   @@index([email])
   @@index([organizationId])

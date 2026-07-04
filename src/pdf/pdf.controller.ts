@@ -67,6 +67,12 @@ export class PdfController {
   @Post('sales-orders/:id/generate')
   @ApiOperation({ summary: 'Generate PDF for a sales order' })
   @ApiParam({ name: 'id', description: 'Sales Order UUID' })
+  @ApiQuery({
+    name: 'template',
+    required: false,
+    description: 'Template type (default, wholesale, retail, loading, price-list)',
+    enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'],
+  })
   @ApiResponse({
     status: 200,
     description: 'PDF file generated successfully',
@@ -75,6 +81,8 @@ export class PdfController {
   @ApiResponse({ status: 404, description: 'Sales Order not found' })
   async generateSalesOrderPDF(
     @Param('id') soId: string,
+    @Query('template') template: string = 'default',
+    @Query('visibleClientFields') visibleClientFields: string | undefined,
     @Res() res: Response,
   ) {
     console.log('[PdfController.generateSalesOrderPDF] Request received:', {
@@ -82,7 +90,9 @@ export class PdfController {
       timestamp: new Date().toISOString(),
     });
 
-    const pdfBuffer = await this.pdfService.generateSalesOrderPDF(soId);
+    const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+
+    const pdfBuffer = await this.pdfService.generateSalesOrderPDF(soId, template, parsedFields);
 
     console.log('[PdfController.generateSalesOrderPDF] PDF generated successfully:', {
       soId,
@@ -95,6 +105,39 @@ export class PdfController {
       `attachment; filename="sales-order-${soId}.pdf"`,
     );
     res.send(pdfBuffer);
+  }
+
+  @Get('sales-orders/:id/preview')
+  @ApiOperation({ summary: 'Preview HTML for a sales order PDF' })
+  @ApiParam({ name: 'id', description: 'Sales Order UUID' })
+  @ApiQuery({
+    name: 'template',
+    required: false,
+    description: 'Template type (default, wholesale, retail, loading, price-list)',
+    enum: ['default', 'wholesale', 'retail', 'loading', 'price-list'],
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'HTML preview generated successfully',
+    content: { 'text/html': {} },
+  })
+  @ApiResponse({ status: 404, description: 'Sales Order not found' })
+  async previewSalesOrderHTML(
+    @Param('id') soId: string,
+    @Query('template') template: string = 'default',
+    @Query('visibleClientFields') visibleClientFields: string | undefined,
+    @Res() res: Response,
+  ) {
+    const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+
+    const html = await this.pdfService.generateSalesOrderHTMLPreview(
+      soId,
+      template,
+      parsedFields,
+    );
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
   }
 
   @Get('quotations/:id/preview')

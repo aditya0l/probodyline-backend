@@ -143,34 +143,10 @@ export class PdfService implements OnModuleDestroy {
 
   async generateSalesOrderPDF(
     soId: string,
+    template: string = 'default',
+    visibleClientFields?: string[],
   ): Promise<Buffer> {
-    const so = await this.prisma.salesOrder.findUnique({
-      where: { id: soId },
-      include: {
-        quotation: {
-          include: {
-            customer: true,
-            clients: true,
-            items: {
-              orderBy: { srNo: 'asc' },
-            },
-          },
-        },
-      },
-    });
-
-    if (!so || !so.quotation) {
-      throw new NotFoundException('Sales Order not found');
-    }
-
-    // Replace the quote number with the SO number
-    const mockedQuotation = {
-      ...so.quotation,
-      quoteNumber: so.soNumber,
-    };
-
-    // Use salesOrder template, which mimics wholesale but overrides the title
-    const html = await this.generateQuotationHTML(mockedQuotation, 'salesOrder', false);
+    const html = await this.generateSalesOrderHTMLPreview(soId, template, visibleClientFields);
 
     const browser = await this.getBrowser();
     const page = await browser.newPage();
@@ -183,7 +159,7 @@ export class PdfService implements OnModuleDestroy {
 
       const pdf = await page.pdf({
         format: 'A4',
-        landscape: false, // Sales order (wholesale template) is always portrait
+        landscape: template === 'default',
         printBackground: true,
         displayHeaderFooter: true,
         headerTemplate: '<span></span>',
@@ -203,14 +179,70 @@ export class PdfService implements OnModuleDestroy {
     }
   }
 
+  async generateSalesOrderHTMLPreview(
+    soId: string,
+    template: string = 'default',
+    visibleClientFields?: string[],
+  ): Promise<string> {
+    const so = await this.prisma.salesOrder.findUnique({
+      where: { id: soId },
+      include: {
+        quotation: {
+          include: {
+            customer: true,
+            clients: true,
+          },
+        },
+        items: {
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            quotationItem: true,
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!so || !so.quotation) {
+      throw new NotFoundException('Sales Order not found');
+    }
+
+    // Map SalesOrderItems to QuotationItems format
+    const mappedItems = so.items.map((item, index) => ({
+      ...item,
+      srNo: index + 1,
+      productImage: item.quotationItem?.productImage || item.product?.images?.[0] || item.product?.image || null,
+      mrp: item.mrp || item.product?.price || null,
+      // Pass through other product fields if needed by template (like price list)
+      category: item.product?.productType || null,
+      brand: null,
+      warranty: null,
+    })) as unknown as QuotationItem[];
+
+    // Replace the quote number with the SO number
+    const mockedQuotation = {
+      ...so.quotation,
+      quoteNumber: so.soNumber,
+      items: mappedItems,
+      // Map SO dates to Quotation dates for the template
+      bookingDate: so.quotation.bookingDate,
+      dispatchDate: so.quotation.dispatchDate,
+    };
+
+    return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields);
+  }
+
   async generateSOSplitPDF(
     soId: string,
     splitId: string,
     template: string = 'default',
     visibleClientFields?: string[],
   ): Promise<Buffer> {
-    const split = await this.prisma.dispatchSplit.findUnique({
-      where: { id: splitId },
+    const split = await this.prisma.dispatchSplit.findFirst({
+      where: { 
+        id: splitId,
+        salesOrderId: soId
+      },
       include: {
         items: true,
         salesOrder: {
@@ -255,10 +287,12 @@ export class PdfService implements OnModuleDestroy {
 
     const mockedQuotation = {
       ...quotation,
+      quoteNumber: `${split.salesOrder.soNumber} Split ${split.label || ''}`,
       items: filteredItems,
       subtotal: subtotal as any,
       gstAmount: gstAmount as any,
       grandTotal: grandTotal as any,
+      dispatchDate: split.dispatchDate,
     };
 
     const html = await this.generateQuotationHTML(mockedQuotation, template, false, visibleClientFields);
@@ -292,8 +326,11 @@ export class PdfService implements OnModuleDestroy {
     template: string = 'default',
     visibleClientFields?: string[],
   ): Promise<string> {
-    const split = await this.prisma.dispatchSplit.findUnique({
-      where: { id: splitId },
+    const split = await this.prisma.dispatchSplit.findFirst({
+      where: { 
+        id: splitId,
+        salesOrderId: soId
+      },
       include: {
         items: true,
         salesOrder: {
@@ -338,14 +375,17 @@ export class PdfService implements OnModuleDestroy {
 
     const mockedQuotation = {
       ...quotation,
+      quoteNumber: `${split.salesOrder.soNumber} Split ${split.label || ''}`,
       items: filteredItems,
       subtotal: subtotal as any,
       gstAmount: gstAmount as any,
       grandTotal: grandTotal as any,
+      dispatchDate: split.dispatchDate,
     };
 
     return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields);
   }
+
 
   async generateQuotationHTMLPreview(
     quotationId: string,

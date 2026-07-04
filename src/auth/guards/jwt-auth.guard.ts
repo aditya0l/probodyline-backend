@@ -14,7 +14,8 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       request.url.includes('/api/auth/login') || 
       request.url.includes('/api/auth/register') || 
       request.url.includes('/api/auth/verify') ||
-      request.url.includes('/api/files')
+      request.url.includes('/api/files') ||
+      (request.url.includes('/api/pdf') && request.method === 'GET')
     ) {
       return true;
     }

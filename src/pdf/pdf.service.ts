@@ -232,17 +232,52 @@ export class PdfService implements OnModuleDestroy {
     return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields);
   }
 
-  async generateSOSplitPDF(
-    soId: string,
-    splitId: string,
-    template: string = 'default',
-    visibleClientFields?: string[],
-  ): Promise<Buffer> {
+  async getSplitDataForPDF(soId: string, splitId: string) {
+    if (splitId === 'pending') {
+      const so = await this.prisma.salesOrder.findUnique({
+        where: { id: soId },
+        include: {
+          quotation: {
+            include: {
+              customer: true,
+              clients: true,
+              items: { orderBy: { srNo: 'asc' } },
+            },
+          },
+          splits: { include: { items: true } },
+        },
+      });
+
+      if (!so || !so.quotation) {
+        throw new NotFoundException('Sales Order or Quotation not found');
+      }
+
+      const pendingItems = so.quotation.items.map((qItem) => {
+        const allocated = so.splits.reduce((acc, s) => {
+          const sItem = s.items.find((si) => si.quotationItemId === qItem.id);
+          return acc + (sItem?.quantity || 0);
+        }, 0);
+        return {
+          id: 'pending-' + qItem.id,
+          dispatchSplitId: 'pending',
+          quotationItemId: qItem.id,
+          quantity: Math.max(0, qItem.quantity - allocated),
+        };
+      }).filter(item => item.quantity > 0);
+
+      return {
+        id: 'pending',
+        salesOrderId: so.id,
+        splitNumber: 1,
+        label: 'A/A',
+        dispatchDate: so.createdAt || new Date(),
+        items: pendingItems,
+        salesOrder: so,
+      };
+    }
+
     const split = await this.prisma.dispatchSplit.findFirst({
-      where: { 
-        id: splitId,
-        salesOrderId: soId
-      },
+      where: { id: splitId, salesOrderId: soId },
       include: {
         items: true,
         salesOrder: {
@@ -250,10 +285,8 @@ export class PdfService implements OnModuleDestroy {
             quotation: {
               include: {
                 customer: true,
-        clients: true,
-                items: {
-                  orderBy: { srNo: 'asc' },
-                },
+                clients: true,
+                items: { orderBy: { srNo: 'asc' } },
               },
             },
           },
@@ -265,6 +298,17 @@ export class PdfService implements OnModuleDestroy {
       throw new NotFoundException('Split or Quotation not found');
     }
 
+    return split;
+  }
+
+  async generateSOSplitPDF(
+    soId: string,
+    splitId: string,
+    template: string = 'default',
+    visibleClientFields?: string[],
+  ): Promise<Buffer> {
+    const split = await this.getSplitDataForPDF(soId, splitId);
+    
     const quotation = split.salesOrder.quotation;
 
     // Filter and update items for this split
@@ -326,32 +370,7 @@ export class PdfService implements OnModuleDestroy {
     template: string = 'default',
     visibleClientFields?: string[],
   ): Promise<string> {
-    const split = await this.prisma.dispatchSplit.findFirst({
-      where: { 
-        id: splitId,
-        salesOrderId: soId
-      },
-      include: {
-        items: true,
-        salesOrder: {
-          include: {
-            quotation: {
-              include: {
-                customer: true,
-        clients: true,
-                items: {
-                  orderBy: { srNo: 'asc' },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!split || !split.salesOrder || !split.salesOrder.quotation) {
-      throw new NotFoundException('Split or Quotation not found');
-    }
+    const split = await this.getSplitDataForPDF(soId, splitId);
 
     const quotation = split.salesOrder.quotation;
 

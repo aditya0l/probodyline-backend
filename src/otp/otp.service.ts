@@ -19,12 +19,33 @@ export class OtpService {
   }
 
   async sendOtp(sendOtpDto: SendOtpDto) {
-    const { phone } = sendOtpDto;
+    const { phone, entityType } = sendOtpDto;
     
-    // Generate 6 digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
+    // Resend cooldown check for CLIENT
+    if (entityType === 'CLIENT') {
+      const recentOtp = await this.prisma.otpSession.findFirst({
+        where: {
+          phone,
+          isUsed: false,
+          createdAt: { gt: new Date(Date.now() - 30 * 1000) }, // created within last 30s
+        },
+      });
+      if (recentOtp) {
+        throw new BadRequestException('Please wait before requesting another OTP');
+      }
+    }
+
+    // Generate OTP length based on entityType
+    let otp: string;
+    let expiresAt = new Date();
+    
+    if (entityType === 'CLIENT') {
+      otp = Math.floor(100 + Math.random() * 900).toString();
+      expiresAt.setSeconds(expiresAt.getSeconds() + 90); // 90 seconds expiry
+    } else {
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
+    }
 
     // Save to DB
     await this.prisma.otpSession.create({
@@ -55,11 +76,10 @@ export class OtpService {
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
     const { phone, otp, entityId, entityType } = verifyOtpDto;
 
-    // Find latest valid OTP
+    // Find latest valid OTP session for this phone (don't filter by otp yet so we can track attempts)
     const session = await this.prisma.otpSession.findFirst({
       where: {
         phone,
-        otp,
         isUsed: false,
         expiresAt: { gt: new Date() },
       },
@@ -68,6 +88,28 @@ export class OtpService {
 
     if (!session) {
       throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    // Verify OTP match and handle attempts for CLIENT
+    if (session.otp !== otp) {
+      if (entityType === 'CLIENT') {
+        const newAttempts = session.attempts + 1;
+        if (newAttempts >= 5) {
+          await this.prisma.otpSession.update({
+            where: { id: session.id },
+            data: { attempts: newAttempts, isUsed: true },
+          });
+          throw new BadRequestException('Too many incorrect attempts. Please request a new OTP.');
+        } else {
+          await this.prisma.otpSession.update({
+            where: { id: session.id },
+            data: { attempts: newAttempts },
+          });
+          throw new BadRequestException('Invalid OTP');
+        }
+      } else {
+        throw new BadRequestException('Invalid OTP');
+      }
     }
 
     // Mark as used

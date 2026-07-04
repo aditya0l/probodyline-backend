@@ -13,7 +13,7 @@ export class VerifyOtpDto {
   @IsString()
   entityId?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  entityType?: 'CUSTOMER' | 'MANAGER' | 'TRAINER' | 'LEAD' | 'CLIENT';
+  entityType: 'CUSTOMER' | 'MANAGER' | 'TRAINER' | 'LEAD' | 'CLIENT';
 }

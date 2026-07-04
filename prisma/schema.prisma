@@ -1184,6 +1184,7 @@ model OtpSession {
   expiresAt DateTime
   createdAt DateTime @default(now())
   isUsed    Boolean  @default(false)
+  attempts  Int      @default(0)
 
   @@index([phone, otp])
   @@map("otp_sessions")

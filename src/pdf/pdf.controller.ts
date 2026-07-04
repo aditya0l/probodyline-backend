@@ -14,6 +14,7 @@ import type { Response } from 'express';
 export class PdfController {
   constructor(private readonly pdfService: PdfService) {}
 
+  @Get('quotations/:id/generate')
   @Post('quotations/:id/generate')
   @ApiOperation({ summary: 'Generate PDF for a quotation' })
   @ApiParam({ name: 'id', description: 'Quotation UUID' })
@@ -64,6 +65,7 @@ export class PdfController {
     res.send(pdfBuffer);
   }
 
+  @Get('sales-orders/:id/generate')
   @Post('sales-orders/:id/generate')
   @ApiOperation({ summary: 'Generate PDF for a sales order' })
   @ApiParam({ name: 'id', description: 'Sales Order UUID' })
@@ -174,6 +176,7 @@ export class PdfController {
     res.send(html);
   }
 
+  @Get('sales-orders/:soId/splits/:splitId/generate')
   @Post('sales-orders/:soId/splits/:splitId/generate')
   @ApiOperation({ summary: 'Generate PDF for a Sales Order Split' })
   @ApiParam({ name: 'soId', description: 'Sales Order UUID' })

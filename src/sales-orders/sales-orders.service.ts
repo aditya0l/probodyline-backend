@@ -714,13 +714,67 @@ export class SalesOrdersService {
       const result = await tx.salesOrder.update({
         where: { id: salesOrderId },
         data: { status: 'DRAFT', needsResync: true },
+        include: { splits: { include: { items: { include: { quotationItem: true } } } } }
       });
 
       if ((so as any).quotationId) {
         await tx.quotation.update({
           where: { id: (so as any).quotationId },
-          data: { bookingDate: new Date() }
+          data: { bookingDate: new Date(), status: 'CONFIRMED' }
         });
+      }
+
+      // Restore unbooked splits to BOOKED and recreate stock transactions
+      if (result.splits && result.splits.length > 0) {
+        for (const split of result.splits) {
+          if (split.status === 'UNBOOKED') {
+            await tx.dispatchSplit.update({
+              where: { id: split.id },
+              data: { status: 'BOOKED', bookedAt: new Date() }
+            });
+
+            for (const item of split.items) {
+              if (!item.quotationItem.productId || item.quantity <= 0) continue;
+
+              // Stock OUT
+              await tx.stockTransaction.create({
+                data: {
+                  productId: item.quotationItem.productId,
+                  transactionType: 'OUT',
+                  quantity: -item.quantity,
+                  referenceType: 'DISPATCH_SPLIT',
+                  referenceId: split.id,
+                  date: split.dispatchDate || new Date(),
+                  notes: `Rebooked Disp: ${so.soNumber} / Sp-${split.splitNumber}`,
+                },
+              });
+
+              // Booking
+              const product = await tx.product.findUnique({ where: { id: item.quotationItem.productId } });
+              if (product) {
+                await tx.booking.create({
+                  data: {
+                    quotationId: (so as any).quotationId,
+                    quotationItemId: item.quotationItemId,
+                    quoteNumber: so.quotation.quoteNumber,
+                    productId: product.id,
+                    productName: product.name,
+                    productThumbnail: product.thumbnail,
+                    modelNumber: product.modelNumber,
+                    dispatchDate: split.dispatchDate || new Date(),
+                    bookedOn: new Date(),
+                    customerName: so.quotation.customerName,
+                    gymName: so.quotation.gymName,
+                    requiredQuantity: item.quantity,
+                    status: 'CONFIRM',
+                    waitingQuantity: 0,
+                    dispatchSplitId: split.id,
+                  },
+                });
+              }
+            }
+          }
+        }
       }
 
       const user = userContext.getStore();
@@ -729,7 +783,7 @@ export class SalesOrdersService {
           salesOrderId: salesOrderId,
           action: 'Sales Order Rebooked',
           changedBy: user?.id,
-          details: 'Sales order status changed back to DRAFT and booked on date reset to now',
+          details: 'Sales order status restored, splits marked as BOOKED, and stock deducted',
         },
       });
 

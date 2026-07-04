@@ -83,7 +83,62 @@ export class SalesOrdersService {
         });
       }
     } else {
-      // SO already exists - no resync needed as SO is decoupled from QO after creation.
+      // SO already exists - check if we should resync
+      if (so.needsResync || so.status === 'UNBOOKED' || so.status === 'DRAFT') {
+        const quotation = await db.quotation.findUnique({
+          where: { id: quotationId },
+        });
+        
+        if (quotation) {
+          await db.salesOrder.update({
+            where: { id: so.id },
+            data: {
+              subtotal: quotation.subtotal,
+              gstAmount: quotation.gstAmount,
+              grandTotal: quotation.grandTotal,
+              needsResync: false,
+            }
+          });
+
+          await db.salesOrderItem.deleteMany({
+            where: { salesOrderId: so.id }
+          });
+
+          const quotationItems = await db.quotationItem.findMany({
+            where: { quotationId },
+          });
+
+          if (quotationItems.length > 0) {
+            const salesOrderItemsData = quotationItems.map((qi, index) => ({
+              salesOrderId: so!.id,
+              quotationItemId: qi.id,
+              productId: qi.productId,
+              productName: qi.productName,
+              modelNumber: qi.modelNumber,
+              quantity: qi.quantity,
+              rate: qi.rate,
+              mrp: qi.rate,
+              totalAmount: qi.totalAmount,
+              notes: qi.notes,
+              sortOrder: index + 1
+            }));
+
+            await db.salesOrderItem.createMany({
+              data: salesOrderItemsData
+            });
+          }
+          
+          const user = userContext.getStore();
+          await db.salesOrderActivity.create({
+            data: {
+              salesOrderId: so.id,
+              action: 'Sales Order Resynced',
+              changedBy: user?.id,
+              details: `Resynced from Quotation ${quotation.quoteNumber} during booking`,
+            },
+          });
+        }
+      }
     }
 
     // Return with FULL details

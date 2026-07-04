@@ -45,6 +45,7 @@ export class SalesOrdersService {
           gstAmount: quotation.gstAmount,
           grandTotal: quotation.grandTotal,
         },
+        include: { splits: true },
       });
 
       const user = userContext.getStore();

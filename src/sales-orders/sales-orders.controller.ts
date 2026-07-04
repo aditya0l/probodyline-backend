@@ -78,8 +78,8 @@ export class SalesOrdersController {
 
   @Post(':id/rebook')
   @ApiOperation({ summary: 'Re-book an unbooked Sales Order' })
-  rebookSalesOrder(@Param('id') id: string) {
-    return this.salesOrdersService.rebookSalesOrder(id);
+  rebookSalesOrder(@Param('id') id: string, @Body() body: { dispatchDate?: string }) {
+    return this.salesOrdersService.rebookSalesOrder(id, body.dispatchDate);
   }
 
   @Post(':id/sync-from-quotation')

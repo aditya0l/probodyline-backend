@@ -699,7 +699,7 @@ export class SalesOrdersService {
     });
   }
 
-  async rebookSalesOrder(salesOrderId: string) {
+  async rebookSalesOrder(salesOrderId: string, dispatchDateStr?: string) {
     return this.prisma.$transaction(async (tx) => {
       const so = await tx.salesOrder.findUnique({
         where: { id: salesOrderId },
@@ -720,7 +720,11 @@ export class SalesOrdersService {
       if ((so as any).quotationId) {
         await tx.quotation.update({
           where: { id: (so as any).quotationId },
-          data: { bookingDate: new Date(), status: 'CONFIRMED' }
+          data: { 
+            bookingDate: new Date(), 
+            status: 'CONFIRMED',
+            ...(dispatchDateStr ? { dispatchDate: new Date(dispatchDateStr) } : {})
+          }
         });
       }
 
@@ -730,7 +734,11 @@ export class SalesOrdersService {
           if (split.status === 'UNBOOKED') {
             await tx.dispatchSplit.update({
               where: { id: split.id },
-              data: { status: 'BOOKED', bookedAt: new Date() }
+              data: { 
+                status: 'BOOKED', 
+                bookedAt: new Date(),
+                ...(dispatchDateStr ? { dispatchDate: new Date(dispatchDateStr) } : {})
+              }
             });
 
             for (const item of split.items) {
@@ -744,7 +752,7 @@ export class SalesOrdersService {
                   quantity: -item.quantity,
                   referenceType: 'DISPATCH_SPLIT',
                   referenceId: split.id,
-                  date: split.dispatchDate || new Date(),
+                  date: dispatchDateStr ? new Date(dispatchDateStr) : (split.dispatchDate || new Date()),
                   notes: `Rebooked Disp: ${so.soNumber} / Sp-${split.splitNumber}`,
                 },
               });
@@ -761,7 +769,7 @@ export class SalesOrdersService {
                     productName: product.name || "",
                     productThumbnail: product.thumbnail,
                     modelNumber: product.modelNumber,
-                    dispatchDate: split.dispatchDate || new Date(),
+                    dispatchDate: dispatchDateStr ? new Date(dispatchDateStr) : (split.dispatchDate || new Date()),
                     bookedOn: new Date(),
                     customerName: so.quotation.clientName,
                     gymName: so.quotation.gymName,

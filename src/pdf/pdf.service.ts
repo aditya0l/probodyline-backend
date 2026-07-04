@@ -439,7 +439,6 @@ export class PdfService implements OnModuleDestroy {
         break;
       case 'loading':
         titleText = 'LOADING SLIP';
-        showClientInfo = false;
         showTotals = false;
         showBankDetails = false;
         showDisclaimer = false;
@@ -455,7 +454,6 @@ export class PdfService implements OnModuleDestroy {
       case 'price-list':
         titleText = 'PRICE LIST';
         showDisclaimer = true; // ONLY price-list shows disclaimer
-        showClientInfo = false;
         showTotals = false;
         showBankDetails = true; // Show bank details in price-list
         // Price list: always use predefined columns (ignore saved visibleColumns)

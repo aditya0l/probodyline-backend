@@ -24,6 +24,7 @@ export class SalesOrdersService {
     const db = tx || this.prisma;
     let so = await db.salesOrder.findUnique({
       where: { quotationId },
+      include: { splits: true },
     });
 
     if (!so) {
@@ -550,7 +551,9 @@ export class SalesOrdersService {
       return so; // Already has active splits, don't auto-create
     }
 
-    const nextSplitNumber = so.splits ? so.splits.length + 1 : 1;
+    const nextSplitNumber = so.splits && so.splits.length > 0 
+      ? Math.max(...so.splits.map((s: any) => s.splitNumber)) + 1 
+      : 1;
 
     const executeLogic = async (paramTx: Prisma.TransactionClient) => {
       // Create Split

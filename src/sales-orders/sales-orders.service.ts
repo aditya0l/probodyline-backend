@@ -569,10 +569,10 @@ export class SalesOrdersService {
       });
 
       // Create Split Items with full quantity
-      const splitItemsInfo = so.quotation.items.map((qItem) => ({
+      const splitItemsInfo = so.items.map((soItem: any) => ({
         dispatchSplitId: split.id,
-        quotationItemId: qItem.id,
-        quantity: qItem.quantity, // Auto-allocate full quantity
+        quotationItemId: soItem.quotationItemId,
+        quantity: soItem.quantity, // Auto-allocate full quantity
       }));
 
       if (splitItemsInfo.length > 0) {

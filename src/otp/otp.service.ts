@@ -48,7 +48,7 @@ export class OtpService {
     }
 
     // Save to DB
-    await this.prisma.otpSession.create({
+    const session = await this.prisma.otpSession.create({
       data: {
         phone,
         otp,
@@ -69,6 +69,12 @@ export class OtpService {
       return { success: true, message: 'OTP sent successfully' };
     } catch (error) {
       console.error('Error sending SMS via AWS SNS:', error);
+      
+      // Rollback the DB record so the user isn't blocked by the 30s cooldown
+      await this.prisma.otpSession.delete({
+        where: { id: session.id }
+      });
+      
       throw new InternalServerErrorException('Failed to send OTP via SMS');
     }
   }

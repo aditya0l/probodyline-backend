@@ -107,7 +107,7 @@ export class PdfService implements OnModuleDestroy {
 
     try {
       await page.setContent(html, {
-        waitUntil: 'domcontentloaded',
+        waitUntil: 'networkidle0',
         timeout: 15000,
       });
 
@@ -153,7 +153,7 @@ export class PdfService implements OnModuleDestroy {
 
     try {
       await page.setContent(html, {
-        waitUntil: 'domcontentloaded',
+        waitUntil: 'networkidle0',
         timeout: 15000,
       });
 
@@ -346,7 +346,7 @@ export class PdfService implements OnModuleDestroy {
 
     try {
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 15000 });
       const pdf = await page.pdf({ 
         format: 'A4', 
         printBackground: true, 

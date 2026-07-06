@@ -44,7 +44,7 @@ export class ClientsService {
         { clientCode: { contains: filters.search, mode: 'insensitive' } },
         { clientName: { contains: filters.search, mode: 'insensitive' } },
         { city: { contains: filters.search, mode: 'insensitive' } },
-        { salesPerson: { contains: filters.search, mode: 'insensitive' } },
+        { salesInitial: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
 
@@ -57,7 +57,7 @@ export class ClientsService {
     }
 
     if (filters?.salesPerson) {
-      where.salesPerson = {
+      where.salesInitial = {
         contains: filters.salesPerson,
         mode: 'insensitive',
       };

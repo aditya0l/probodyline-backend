@@ -303,7 +303,7 @@ export class QuotationsService {
               customerId = newCustomer.id;
             }
           } else if (c.clientName || c.clientPhone || c.clientEmail) {
-            let existing = null;
+            let existing: any = null;
             if (customerData.email) {
               existing = await tx.customer.findUnique({ where: { email: customerData.email } });
             }

@@ -16,7 +16,7 @@ export class CalendarEventsService {
       // 1. Sales Orders with dispatch date
       this.prisma.salesOrder.findMany({
         where: {
-          status: { not: 'COMPLETED' },
+          status: { notIn: ['COMPLETED', 'UNBOOKED'] },
           splits: { none: {} },
           quotation: {
             dispatchDate: {
@@ -40,6 +40,7 @@ export class CalendarEventsService {
       // 2. Dispatch Splits
       this.prisma.dispatchSplit.findMany({
         where: {
+          status: { not: 'UNBOOKED' },
           dispatchDate: {
             gte: startDate,
             lt: endDate,

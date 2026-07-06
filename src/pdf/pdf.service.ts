@@ -540,7 +540,7 @@ export class PdfService implements OnModuleDestroy {
         break;
       case 'default':
       default: {
-        titleText = 'PROFORMA INVOICE';
+        titleText = isBankQuote ? 'GYM EQUIPMENT QUOTATION' : 'PROFORMA INVOICE';
         // ONLY for default template: use user's saved columns if available
         let userSelectedColumns: QuotationColumnId[] | null = null;
         if (quotation.visibleColumns) {
@@ -681,6 +681,15 @@ export class PdfService implements OnModuleDestroy {
       useLandscape: useLandscape,
 
       // Conditional Flags
+      isBankQuote: isBankQuote,
+      bankQuoteFirmName: bankQuoteData?.firmName,
+      bankQuoteFirmGstNo: bankQuoteData?.firmGstNo,
+      bankQuoteBranchAddress: bankQuoteData?.branchAddress,
+      bankQuoteFirmPanCard: bankQuoteData?.firmPanCardNumber,
+      bankQuoteContact: bankQuoteData?.contact,
+      bankQuotePartners: bankQuoteData?.partners,
+      bankQuoteDocumentUrls: bankQuoteData?.documentUrls,
+      
       showHeader: showHeader,
       showClientInfo: showClientInfo,
       showGymName: showGymName,

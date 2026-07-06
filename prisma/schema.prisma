@@ -118,7 +118,7 @@ model Product {
 }
 
 model Customer {
-  documents     ClientDocument[]
+
   id              String    @id @default(uuid())
   name            String
   gymName         String?
@@ -640,6 +640,7 @@ model Client {
   partners      ClientPartner[]
   serviceCards  ServiceCard[]
   journeyEvents ClientJourneyEvent[]
+  documents     ClientDocument[]
 
   @@index([clientCode])
   @@index([stateCode, city])
@@ -1250,7 +1251,7 @@ model ClientDocument {
   verifiedBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  client    Customer @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@unique([clientId, documentType])
   @@map("client_documents")

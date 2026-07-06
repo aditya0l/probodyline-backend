@@ -81,6 +81,10 @@ export interface PDFTemplateData {
   client2GST?: string;
   client2PanCard?: string;
   client2AadharCard?: string;
+  legalName?: string;
+  tradeName?: string;
+  nameAsPanCard?: string;
+  nameAsAadharCard?: string;
   
   // Client Info visibility flags
   showClientNameField?: boolean;
@@ -129,6 +133,17 @@ export interface PDFTemplateData {
   isRetail?: boolean;
   isPriceList?: boolean;
   isLoadingSlip?: boolean;
+  isBankQuote?: boolean;
+  bankQuoteFirmName?: string;
+  bankQuoteFirmGstNo?: string;
+  bankQuoteBranchAddress?: string;
+  bankQuoteFirmPanCard?: string;
+  bankQuoteContact?: string;
+  bankQuotePartners?: Array<{
+    nameAsOnAadhar: string;
+    aadharNumber: string;
+    panCardNumber: string;
+  }>;
   status?: string;
   notes?: string;
   computerGeneratedText?: string;

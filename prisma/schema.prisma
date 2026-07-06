@@ -118,6 +118,7 @@ model Product {
 }
 
 model Customer {
+  documents     ClientDocument[]
   id              String    @id @default(uuid())
   name            String
   gymName         String?
@@ -721,6 +722,7 @@ enum JourneyEventType {
 
 // Gym Management Models
 model Gym {
+  documents     GymDocument[]
   id               String    @id @default(uuid())
   gymCode          String    @unique // Auto-generated, immutable
   installationDate DateTime?
@@ -1188,4 +1190,68 @@ model OtpSession {
 
   @@index([phone, otp])
   @@map("otp_sessions")
+}
+
+
+
+
+
+
+
+
+
+enum GymDocumentType {
+  PAN_CARD_CLIENT
+  AADHAR_CARD
+  GST_CERTIFICATE
+  PAN_CARD_FIRM
+  RENT_AGREEMENT
+  BANK_DETAILS
+}
+
+model GymDocument {
+  id        String   @id @default(uuid())
+  gymId     String
+  documentType GymDocumentType
+  documentNumber String?
+  pdfUrl    String?
+  imageUrls String[]
+  fieldData Json?
+  verificationStatus String @default("NOT_UPLOADED")
+  verifiedAt DateTime?
+  verifiedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, documentType])
+  @@map("gym_documents")
+}
+
+enum ClientDocumentType {
+  PAN_CARD_CLIENT
+  AADHAR_CARD
+  GST_CERTIFICATE
+  PAN_CARD_FIRM
+  RENT_AGREEMENT
+  BANK_DETAILS
+}
+
+model ClientDocument {
+  id        String   @id @default(uuid())
+  clientId  String
+  documentType ClientDocumentType
+  documentNumber String?
+  pdfUrl    String?
+  imageUrls String[]
+  fieldData Json?
+  verificationStatus String @default("NOT_UPLOADED")
+  verifiedAt DateTime?
+  verifiedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client    Customer @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, documentType])
+  @@map("client_documents")
 }

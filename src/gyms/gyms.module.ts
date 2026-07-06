@@ -4,7 +4,10 @@ import { GymsController } from './gyms.controller';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { FilesModule } from '../files/files.module';
+
 @Module({
+  imports: [FilesModule],
   controllers: [GymsController],
   providers: [GymsService],
   exports: [GymsService],

@@ -17,11 +17,15 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { ClientsService } from './clients.service';
+
+import { UpdateDocumentDto, VerifyDocumentDto } from './dto/document.dto';
+import { ClientDocumentType } from '@prisma/client';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { CreateJourneyEventDto } from './dto/create-journey-event.dto';
 import * as fs from 'fs';
 
@@ -350,4 +354,52 @@ export class ClientsController {
   ) {
     return this.clientsService.createJourneyEvent(id, dto, req.user);
   }
+
+  @Get(':id/documents')
+  @ApiOperation({ summary: 'Get all documents for a client' })
+  getDocuments(@Param('id') id: string) {
+    return this.clientsService.getDocuments(id);
+  }
+
+  @Post(':id/documents/:type')
+  @ApiOperation({ summary: 'Create or update document data' })
+  upsertDocument(
+    @Param('id') id: string,
+    @Param('type') type: ClientDocumentType,
+    @Body() dto: UpdateDocumentDto,
+  ) {
+    return this.clientsService.upsertDocument(id, type, dto);
+  }
+
+  @Post(':id/documents/:type/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload file for a document type' })
+  uploadDocumentFile(
+    @Param('id') id: string,
+    @Param('type') type: ClientDocumentType,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.clientsService.uploadDocumentFile(id, type, file);
+  }
+
+  @Delete(':id/documents/:type/files/:index')
+  @ApiOperation({ summary: 'Delete file from a document by index' })
+  deleteDocumentFile(
+    @Param('id') id: string,
+    @Param('type') type: ClientDocumentType,
+    @Param('index') index: string,
+  ) {
+    return this.clientsService.deleteDocumentFile(id, type, parseInt(index));
+  }
+
+  @Patch(':id/documents/:type/verify')
+  @ApiOperation({ summary: 'Verify document' })
+  verifyDocument(
+    @Param('id') id: string,
+    @Param('type') type: ClientDocumentType,
+    @Body() dto: VerifyDocumentDto,
+  ) {
+    return this.clientsService.verifyDocument(id, type, dto);
+  }
+
 }

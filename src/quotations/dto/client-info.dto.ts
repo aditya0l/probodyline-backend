@@ -66,4 +66,40 @@ export class ClientInfoDto {
   @IsOptional()
   @IsBoolean()
   isPhoneVerified?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  legalName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  tradeName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  principalAddress?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  additionalPlaces?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nameAsPanCard?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  nameAsAadharCard?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  addressAsAadharCard?: string;
 }
+

@@ -34,12 +34,18 @@ export class PdfController {
     @Param('id') quotationId: string,
     @Query('template') template: string = 'default',
     @Query('visibleClientFields') visibleClientFields: string | undefined,
+    @Query('bankQuote') bankQuote: string | undefined,
+    @Query('bankQuoteData') bankQuoteData: string | undefined,
     @Res() res: Response,
   ) {
     const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+    const isBankQuote = bankQuote === 'true';
+    const parsedBankQuoteData = bankQuoteData ? JSON.parse(bankQuoteData) : undefined;
+    
     console.log('[PdfController.generatePDF] Request received:', {
       quotationId,
       template,
+      isBankQuote,
       route: 'POST /api/pdf/quotations/:id/generate',
       timestamp: new Date().toISOString(),
     });
@@ -48,6 +54,8 @@ export class PdfController {
       quotationId,
       template,
       parsedFields,
+      isBankQuote,
+      parsedBankQuoteData
     );
 
     console.log('[PdfController.generatePDF] PDF generated successfully:', {
@@ -83,6 +91,8 @@ export class PdfController {
     @Param('id') soId: string,
     @Query('template') template: string = 'default',
     @Query('visibleClientFields') visibleClientFields: string | undefined,
+    @Query('bankQuote') bankQuote: string | undefined,
+    @Query('bankQuoteData') bankQuoteData: string | undefined,
     @Res() res: Response,
   ) {
     console.log('[PdfController.generateSalesOrderPDF] Request received:', {
@@ -91,8 +101,10 @@ export class PdfController {
     });
 
     const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+    const isBankQuote = bankQuote === 'true';
+    const parsedBankQuoteData = bankQuoteData ? JSON.parse(bankQuoteData) : undefined;
 
-    const pdfBuffer = await this.pdfService.generateSalesOrderPDF(soId, template, parsedFields);
+    const pdfBuffer = await this.pdfService.generateSalesOrderPDF(soId, template, parsedFields, isBankQuote, parsedBankQuoteData);
 
     console.log('[PdfController.generateSalesOrderPDF] PDF generated successfully:', {
       soId,
@@ -126,14 +138,20 @@ export class PdfController {
     @Param('id') soId: string,
     @Query('template') template: string = 'default',
     @Query('visibleClientFields') visibleClientFields: string | undefined,
+    @Query('bankQuote') bankQuote: string | undefined,
+    @Query('bankQuoteData') bankQuoteData: string | undefined,
     @Res() res: Response,
   ) {
     const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+    const isBankQuote = bankQuote === 'true';
+    const parsedBankQuoteData = bankQuoteData ? JSON.parse(bankQuoteData) : undefined;
 
     const html = await this.pdfService.generateSalesOrderHTMLPreview(
       soId,
       template,
       parsedFields,
+      isBankQuote,
+      parsedBankQuoteData
     );
 
     res.setHeader('Content-Type', 'text/html');
@@ -160,14 +178,20 @@ export class PdfController {
     @Param('id') quotationId: string,
     @Query('template') template: string = 'default',
     @Query('visibleClientFields') visibleClientFields: string | undefined,
+    @Query('bankQuote') bankQuote: string | undefined,
+    @Query('bankQuoteData') bankQuoteData: string | undefined,
     @Res() res: Response,
   ) {
     const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+    const isBankQuote = bankQuote === 'true';
+    const parsedBankQuoteData = bankQuoteData ? JSON.parse(bankQuoteData) : undefined;
 
     const html = await this.pdfService.generateQuotationHTMLPreview(
       quotationId,
       template,
       parsedFields,
+      isBankQuote,
+      parsedBankQuoteData
     );
 
     res.setHeader('Content-Type', 'text/html');
@@ -194,15 +218,21 @@ export class PdfController {
     @Param('splitId') splitId: string,
     @Query('template') template: string = 'default',
     @Query('visibleClientFields') visibleClientFields: string | undefined,
+    @Query('bankQuote') bankQuote: string | undefined,
+    @Query('bankQuoteData') bankQuoteData: string | undefined,
     @Res() res: Response,
   ) {
     const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+    const isBankQuote = bankQuote === 'true';
+    const parsedBankQuoteData = bankQuoteData ? JSON.parse(bankQuoteData) : undefined;
 
     const pdfBuffer = await this.pdfService.generateSOSplitPDF(
       soId,
       splitId,
       template,
       parsedFields,
+      isBankQuote,
+      parsedBankQuoteData
     );
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -232,15 +262,21 @@ export class PdfController {
     @Param('splitId') splitId: string,
     @Query('template') template: string = 'default',
     @Query('visibleClientFields') visibleClientFields: string | undefined,
+    @Query('bankQuote') bankQuote: string | undefined,
+    @Query('bankQuoteData') bankQuoteData: string | undefined,
     @Res() res: Response,
   ) {
     const parsedFields = visibleClientFields !== undefined ? (visibleClientFields === '' ? [] : visibleClientFields.split(',')) : undefined;
+    const isBankQuote = bankQuote === 'true';
+    const parsedBankQuoteData = bankQuoteData ? JSON.parse(bankQuoteData) : undefined;
 
     const html = await this.pdfService.generateSOSplitHTMLPreview(
       soId,
       splitId,
       template,
       parsedFields,
+      isBankQuote,
+      parsedBankQuoteData
     );
 
     res.setHeader('Content-Type', 'text/html');

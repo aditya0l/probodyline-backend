@@ -75,6 +75,8 @@ export class PdfService implements OnModuleDestroy {
     quotationId: string,
     template: string = 'default',
     visibleClientFields?: string[],
+    isBankQuote?: boolean,
+    bankQuoteData?: any
   ): Promise<Buffer> {
     // Get quotation data with full organization details
     const quotation = await this.quotationsService.findOne(quotationId);
@@ -99,7 +101,7 @@ export class PdfService implements OnModuleDestroy {
     }
 
     // Generate HTML from quotation data
-    const html = await this.generateQuotationHTML(fullQuotation, template, false, visibleClientFields);
+    const html = await this.generateQuotationHTML(fullQuotation, template, false, visibleClientFields, isBankQuote, bankQuoteData);
 
     // Reuse persistent browser instance for speed
     const browser = await this.getBrowser();
@@ -145,8 +147,10 @@ export class PdfService implements OnModuleDestroy {
     soId: string,
     template: string = 'default',
     visibleClientFields?: string[],
+    isBankQuote?: boolean,
+    bankQuoteData?: any
   ): Promise<Buffer> {
-    const html = await this.generateSalesOrderHTMLPreview(soId, template, visibleClientFields);
+    const html = await this.generateSalesOrderHTMLPreview(soId, template, visibleClientFields, isBankQuote, bankQuoteData);
 
     const browser = await this.getBrowser();
     const page = await browser.newPage();
@@ -183,6 +187,8 @@ export class PdfService implements OnModuleDestroy {
     soId: string,
     template: string = 'default',
     visibleClientFields?: string[],
+    isBankQuote?: boolean,
+    bankQuoteData?: any
   ): Promise<string> {
     const so = await this.prisma.salesOrder.findUnique({
       where: { id: soId },
@@ -229,7 +235,7 @@ export class PdfService implements OnModuleDestroy {
       dispatchDate: so.quotation.dispatchDate,
     };
 
-    return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields);
+    return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields, isBankQuote, bankQuoteData);
   }
 
   async getSplitDataForPDF(soId: string, splitId: string) {
@@ -306,6 +312,8 @@ export class PdfService implements OnModuleDestroy {
     splitId: string,
     template: string = 'default',
     visibleClientFields?: string[],
+    isBankQuote?: boolean,
+    bankQuoteData?: any
   ): Promise<Buffer> {
     const split = await this.getSplitDataForPDF(soId, splitId);
     
@@ -339,7 +347,7 @@ export class PdfService implements OnModuleDestroy {
       dispatchDate: split.dispatchDate,
     };
 
-    const html = await this.generateQuotationHTML(mockedQuotation, template, false, visibleClientFields);
+    const html = await this.generateQuotationHTML(mockedQuotation, template, false, visibleClientFields, isBankQuote, bankQuoteData);
 
     const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
     const browser = await this.getBrowser();
@@ -369,6 +377,8 @@ export class PdfService implements OnModuleDestroy {
     splitId: string,
     template: string = 'default',
     visibleClientFields?: string[],
+    isBankQuote?: boolean,
+    bankQuoteData?: any
   ): Promise<string> {
     const split = await this.getSplitDataForPDF(soId, splitId);
 
@@ -402,7 +412,7 @@ export class PdfService implements OnModuleDestroy {
       dispatchDate: split.dispatchDate,
     };
 
-    return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields);
+    return await this.generateQuotationHTML(mockedQuotation, template, true, visibleClientFields, isBankQuote, bankQuoteData);
   }
 
 
@@ -410,6 +420,8 @@ export class PdfService implements OnModuleDestroy {
     quotationId: string,
     template: string = 'default',
     visibleClientFields?: string[],
+    isBankQuote?: boolean,
+    bankQuoteData?: any
   ): Promise<string> {
     // Fetch full quotation with all details
     const fullQuotation = await this.prisma.quotation.findUnique({
@@ -427,7 +439,7 @@ export class PdfService implements OnModuleDestroy {
       throw new NotFoundException('Quotation not found');
     }
 
-    return await this.generateQuotationHTML(fullQuotation, template, true, visibleClientFields);
+    return await this.generateQuotationHTML(fullQuotation, template, true, visibleClientFields, isBankQuote, bankQuoteData);
   }
 
   private async generateQuotationHTML(
@@ -439,6 +451,8 @@ export class PdfService implements OnModuleDestroy {
     templateType: string,
     isPreview = false,
     visibleClientFields?: string[],
+    isBankQuote?: boolean,
+    bankQuoteData?: any
   ): Promise<string> {
     const customer = quotation.customer;
 

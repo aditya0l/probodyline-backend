@@ -5,6 +5,9 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { UpdateDocumentDto, VerifyDocumentDto } from './dto/document.dto';
+import { ClientDocumentType } from '@prisma/client';
+
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { generateClientCode } from '../common/utils/client-code.util';
@@ -633,4 +636,124 @@ export class ClientsService {
     this.eventsGateway.broadcastEntityUpdate('CLIENT', clientId);
     return event;
   }
+
+  async getDocuments(clientId: string) {
+    return this.prisma.clientDocument.findMany({
+      where: { clientId },
+    });
+  }
+
+  async upsertDocument(clientId: string, type: ClientDocumentType, dto: UpdateDocumentDto) {
+    const existing = await this.prisma.clientDocument.findFirst({
+      where: { clientId, documentType: type },
+    });
+    
+    if (existing) {
+      return this.prisma.clientDocument.update({
+        where: { id: existing.id },
+        data: {
+          documentNumber: dto.documentNumber !== undefined ? dto.documentNumber : existing.documentNumber,
+          fieldData: dto.fieldData !== undefined ? (dto.fieldData as any) : existing.fieldData,
+        },
+      });
+    } else {
+      return this.prisma.clientDocument.create({
+        data: {
+          clientId,
+          documentType: type,
+          documentNumber: dto.documentNumber,
+          fieldData: dto.fieldData || {},
+        },
+      });
+    }
+  }
+
+  async uploadDocumentFile(clientId: string, type: ClientDocumentType, file: Express.Multer.File) {
+    let existing = await this.prisma.clientDocument.findFirst({
+      where: { clientId, documentType: type },
+    });
+    
+    if (!existing) {
+      existing = await this.prisma.clientDocument.create({
+        data: {
+          clientId,
+          documentType: type,
+        },
+      });
+    }
+    
+    const subfolder = `clients/${clientId}/documents/${type}`;
+    const result = await this.filesService.saveFile(file, subfolder);
+    
+    if (file.mimetype === 'application/pdf') {
+      return this.prisma.clientDocument.update({
+        where: { id: existing.id },
+        data: {
+          pdfUrl: result.url,
+          verificationStatus: existing.verificationStatus === 'NOT_UPLOADED' ? 'UNVERIFIED' : existing.verificationStatus,
+        },
+      });
+    } else {
+      const imageUrls = [...existing.imageUrls, result.url];
+      return this.prisma.clientDocument.update({
+        where: { id: existing.id },
+        data: {
+          imageUrls,
+          verificationStatus: existing.verificationStatus === 'NOT_UPLOADED' ? 'UNVERIFIED' : existing.verificationStatus,
+        },
+      });
+    }
+  }
+
+  async deleteDocumentFile(clientId: string, type: ClientDocumentType, index: number) {
+    const existing = await this.prisma.clientDocument.findFirst({
+      where: { clientId, documentType: type },
+    });
+    
+    if (!existing) {
+      throw new NotFoundException('Document not found');
+    }
+    
+    // if index is -1, it's pdf, otherwise it's index in imageUrls
+    if (index === -1) {
+      if (existing.pdfUrl) {
+        await this.filesService.deleteFile(existing.pdfUrl);
+      }
+      return this.prisma.clientDocument.update({
+        where: { id: existing.id },
+        data: { pdfUrl: null },
+      });
+    } else {
+      if (existing.imageUrls && existing.imageUrls[index]) {
+        await this.filesService.deleteFile(existing.imageUrls[index]);
+        const newImageUrls = [...existing.imageUrls];
+        newImageUrls.splice(index, 1);
+        return this.prisma.clientDocument.update({
+          where: { id: existing.id },
+          data: { imageUrls: newImageUrls },
+        });
+      }
+    }
+    return existing;
+  }
+
+  async verifyDocument(clientId: string, type: ClientDocumentType, dto: VerifyDocumentDto) {
+    const existing = await this.prisma.clientDocument.findFirst({
+      where: { clientId, documentType: type },
+    });
+    
+    if (!existing) {
+      throw new NotFoundException('Document not found');
+    }
+    
+    return this.prisma.clientDocument.update({
+      where: { id: existing.id },
+      data: {
+        verificationStatus: 'VERIFIED',
+        verifiedBy: dto.verifiedBy,
+        verifiedAt: new Date(),
+      },
+    });
+  }
+
 }

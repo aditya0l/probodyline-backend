@@ -24,6 +24,10 @@ import { GymsService } from './gyms.service';
 import { CreateGymDto } from './dto/create-gym.dto';
 import { UpdateGymDto } from './dto/update-gym.dto';
 import { CreateInaugurationCommitmentDto } from './dto/create-inauguration-commitment.dto';
+
+import { UpdateDocumentDto, VerifyDocumentDto } from './dto/document.dto';
+import { GymDocumentType } from '@prisma/client';
+
 import * as fs from 'fs';
 
 @ApiTags('gyms')
@@ -378,4 +382,52 @@ export class GymsController {
   getGymSummary(@Param('id') id: string) {
     return this.gymsService.getGymSummary(id);
   }
+
+  @Get(':id/documents')
+  @ApiOperation({ summary: 'Get all documents for a gym' })
+  getDocuments(@Param('id') id: string) {
+    return this.gymsService.getDocuments(id);
+  }
+
+  @Post(':id/documents/:type')
+  @ApiOperation({ summary: 'Create or update document data' })
+  upsertDocument(
+    @Param('id') id: string,
+    @Param('type') type: GymDocumentType,
+    @Body() dto: UpdateDocumentDto,
+  ) {
+    return this.gymsService.upsertDocument(id, type, dto);
+  }
+
+  @Post(':id/documents/:type/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Upload file for a document type' })
+  uploadDocumentFile(
+    @Param('id') id: string,
+    @Param('type') type: GymDocumentType,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.gymsService.uploadDocumentFile(id, type, file);
+  }
+
+  @Delete(':id/documents/:type/files/:index')
+  @ApiOperation({ summary: 'Delete file from a document by index' })
+  deleteDocumentFile(
+    @Param('id') id: string,
+    @Param('type') type: GymDocumentType,
+    @Param('index') index: string,
+  ) {
+    return this.gymsService.deleteDocumentFile(id, type, parseInt(index));
+  }
+
+  @Patch(':id/documents/:type/verify')
+  @ApiOperation({ summary: 'Verify document' })
+  verifyDocument(
+    @Param('id') id: string,
+    @Param('type') type: GymDocumentType,
+    @Body() dto: VerifyDocumentDto,
+  ) {
+    return this.gymsService.verifyDocument(id, type, dto);
+  }
+
 }

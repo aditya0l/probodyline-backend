@@ -61,7 +61,31 @@
         <div>#{{quoteNumber}}</div>
         <div style="font-weight: normal;">{{currentDate}}</div>
       </div>
-            <!-- Multiple Clients Side-by-Side -->
+      
+      {{#if isBankQuote}}
+      <div class="info-grid">
+        <div class="info-row"><div class="info-label">FIRM NAME</div><div class="info-value">{{bankQuoteFirmName}}</div></div>
+        <div class="info-row"><div class="info-label">FIRM GST NO.</div><div class="info-value">{{bankQuoteFirmGstNo}}</div></div>
+        <div class="info-row" style="grid-column: span 2;"><div class="info-label">BRANCH ADDRESS</div><div class="info-value">{{bankQuoteBranchAddress}}</div></div>
+        <div class="info-row"><div class="info-label">FIRM PAN CARD</div><div class="info-value">{{bankQuoteFirmPanCard}}</div></div>
+        <div class="info-row"><div class="info-label">CONTACT</div><div class="info-value">{{bankQuoteContact}}</div></div>
+      </div>
+      
+      {{#if bankQuotePartners}}
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; margin-bottom: 10px;">
+        {{#each bankQuotePartners}}
+        <div style="border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
+          <div style="font-weight: 600; font-size: 8pt; margin-bottom: 5px; color: var(--text-secondary);">PARTNER {{@index}}</div>
+          <div class="info-row"><div class="info-label">NAME AS AADHAR</div><div class="info-value">{{this.nameAsOnAadhar}}</div></div>
+          <div class="info-row"><div class="info-label">AADHAR CARD</div><div class="info-value">{{this.aadharNumber}}</div></div>
+          <div class="info-row"><div class="info-label">PAN CARD</div><div class="info-value">{{this.panCardNumber}}</div></div>
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+      
+      {{else}}
+      <!-- Multiple Clients Side-by-Side -->
       {{#if hasMultipleClients}}
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
         <!-- Client 1 -->
@@ -97,6 +121,31 @@
           <div class="info-value">{{#if clientName}}{{clientName}}{{else}}—{{/if}}</div>
         </div>
         {{/if}}
+        {{#if legalName}}
+        <div class="info-row">
+          <div class="info-label">LEGAL NAME</div>
+          <div class="info-value">{{legalName}}</div>
+        </div>
+        {{/if}}
+        {{#if tradeName}}
+        <div class="info-row">
+          <div class="info-label">TRADE NAME</div>
+          <div class="info-value">{{tradeName}}</div>
+        </div>
+        {{/if}}
+        {{#if nameAsPanCard}}
+        <div class="info-row">
+          <div class="info-label">NAME AS PAN</div>
+          <div class="info-value">{{nameAsPanCard}}</div>
+        </div>
+        {{/if}}
+        {{#if nameAsAadharCard}}
+        <div class="info-row">
+          <div class="info-label">NAME AS AADHAR</div>
+          <div class="info-value">{{nameAsAadharCard}}</div>
+        </div>
+        {{/if}}
+
         {{/if}}
         {{#if isSingleClient}}
         {{#if showAddressLine1Field}}
@@ -171,6 +220,7 @@
         </div>
         {{/if}}
       </div>
+      {{/if}}
     </div>
     {{else}}
     <!-- Minimal Header for loading slip / price list if needed -->

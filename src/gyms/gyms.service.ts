@@ -5,6 +5,10 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../common/prisma.service';
+import { UpdateDocumentDto, VerifyDocumentDto } from './dto/document.dto';
+import { GymDocumentType } from '@prisma/client';
+import { FilesService } from '../files/files.service';
+
 import { CreateGymDto } from './dto/create-gym.dto';
 import { UpdateGymDto } from './dto/update-gym.dto';
 import { CreateInaugurationCommitmentDto } from './dto/create-inauguration-commitment.dto';
@@ -16,6 +20,7 @@ import { EventsGateway } from '../events/events.gateway';
 export class GymsService {
   constructor(
     private prisma: PrismaService,
+    private filesService: FilesService,
     private eventsGateway: EventsGateway,
   ) {}
 
@@ -93,6 +98,7 @@ export class GymsService {
           },
         },
         technicians: true,
+        documents: true,
         managers: {
           include: {
             manager: true,
@@ -476,6 +482,7 @@ export class GymsService {
       where: { id: gymId },
       include: {
         technicians: true,
+        documents: true,
       },
     });
 
@@ -636,6 +643,7 @@ export class GymsService {
       include: {
         clients: true,
         technicians: true,
+        documents: true,
         managers: true,
         trainers: true,
         media: true,
@@ -659,4 +667,124 @@ export class GymsService {
       orderCount: 0, // TODO: Implement
     };
   }
+
+  async getDocuments(gymId: string) {
+    return this.prisma.gymDocument.findMany({
+      where: { gymId },
+    });
+  }
+
+  async upsertDocument(gymId: string, type: GymDocumentType, dto: UpdateDocumentDto) {
+    const existing = await this.prisma.gymDocument.findFirst({
+      where: { gymId, documentType: type },
+    });
+    
+    if (existing) {
+      return this.prisma.gymDocument.update({
+        where: { id: existing.id },
+        data: {
+          documentNumber: dto.documentNumber !== undefined ? dto.documentNumber : existing.documentNumber,
+          fieldData: dto.fieldData !== undefined ? (dto.fieldData as any) : existing.fieldData,
+        },
+      });
+    } else {
+      return this.prisma.gymDocument.create({
+        data: {
+          gymId,
+          documentType: type,
+          documentNumber: dto.documentNumber,
+          fieldData: dto.fieldData || {},
+        },
+      });
+    }
+  }
+
+  async uploadDocumentFile(gymId: string, type: GymDocumentType, file: Express.Multer.File) {
+    let existing = await this.prisma.gymDocument.findFirst({
+      where: { gymId, documentType: type },
+    });
+    
+    if (!existing) {
+      existing = await this.prisma.gymDocument.create({
+        data: {
+          gymId,
+          documentType: type,
+        },
+      });
+    }
+    
+    const subfolder = `gyms/${gymId}/documents/${type}`;
+    const result = await this.filesService.saveFile(file, subfolder);
+    
+    if (file.mimetype === 'application/pdf') {
+      return this.prisma.gymDocument.update({
+        where: { id: existing.id },
+        data: {
+          pdfUrl: result.url,
+          verificationStatus: existing.verificationStatus === 'NOT_UPLOADED' ? 'UNVERIFIED' : existing.verificationStatus,
+        },
+      });
+    } else {
+      const imageUrls = [...existing.imageUrls, result.url];
+      return this.prisma.gymDocument.update({
+        where: { id: existing.id },
+        data: {
+          imageUrls,
+          verificationStatus: existing.verificationStatus === 'NOT_UPLOADED' ? 'UNVERIFIED' : existing.verificationStatus,
+        },
+      });
+    }
+  }
+
+  async deleteDocumentFile(gymId: string, type: GymDocumentType, index: number) {
+    const existing = await this.prisma.gymDocument.findFirst({
+      where: { gymId, documentType: type },
+    });
+    
+    if (!existing) {
+      throw new NotFoundException('Document not found');
+    }
+    
+    // if index is -1, it's pdf, otherwise it's index in imageUrls
+    if (index === -1) {
+      if (existing.pdfUrl) {
+        await this.filesService.deleteFile(existing.pdfUrl);
+      }
+      return this.prisma.gymDocument.update({
+        where: { id: existing.id },
+        data: { pdfUrl: null },
+      });
+    } else {
+      if (existing.imageUrls && existing.imageUrls[index]) {
+        await this.filesService.deleteFile(existing.imageUrls[index]);
+        const newImageUrls = [...existing.imageUrls];
+        newImageUrls.splice(index, 1);
+        return this.prisma.gymDocument.update({
+          where: { id: existing.id },
+          data: { imageUrls: newImageUrls },
+        });
+      }
+    }
+    return existing;
+  }
+
+  async verifyDocument(gymId: string, type: GymDocumentType, dto: VerifyDocumentDto) {
+    const existing = await this.prisma.gymDocument.findFirst({
+      where: { gymId, documentType: type },
+    });
+    
+    if (!existing) {
+      throw new NotFoundException('Document not found');
+    }
+    
+    return this.prisma.gymDocument.update({
+      where: { id: existing.id },
+      data: {
+        verificationStatus: 'VERIFIED',
+        verifiedBy: dto.verifiedBy,
+        verifiedAt: new Date(),
+      },
+    });
+  }
+
 }

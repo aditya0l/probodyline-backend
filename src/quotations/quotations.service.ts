@@ -247,6 +247,7 @@ export class QuotationsService {
 
       // Process multiple clients
       const clientIdsToConnect: string[] = [];
+      const masterClientIdsForEvents: string[] = [];
       if (data.clients && data.clients.length > 0) {
         for (const c of data.clients) {
           let customerId = c.id;
@@ -283,6 +284,7 @@ export class QuotationsService {
                   aadharCard: customerData.aadharCard,
                 }
               });
+              masterClientIdsForEvents.push(customerId);
             }
 
             const existing = await tx.customer.findUnique({ where: { id: customerId } });
@@ -425,7 +427,7 @@ export class QuotationsService {
       });
 
       // Create QO_SENT event for each linked master client
-      for (const clientId of clientIdsToConnect) {
+      for (const clientId of masterClientIdsForEvents) {
         await tx.clientJourneyEvent.create({
           data: {
             clientId,

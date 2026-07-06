@@ -17,6 +17,7 @@ export class CalendarEventsService {
       this.prisma.salesOrder.findMany({
         where: {
           status: { not: 'COMPLETED' },
+          splits: { none: {} },
           quotation: {
             dispatchDate: {
               gte: startDate,
@@ -51,7 +52,7 @@ export class CalendarEventsService {
               soNumber: true,
               quotationId: true,
               quotation: {
-                select: { gymName: true }
+                select: { gymName: true, clientName: true }
               }
             }
           },
@@ -98,7 +99,7 @@ export class CalendarEventsService {
         salesOrderId: ds.salesOrder?.id,
         soNumber: ds.salesOrder?.soNumber,
         quotationId: ds.salesOrder?.quotationId,
-        gymName: ds.salesOrder?.quotation?.gymName || 'Unknown Gym',
+        gymName: ds.salesOrder?.quotation?.gymName || ds.salesOrder?.quotation?.clientName || 'Unknown Gym',
         dispatchDate: ds.dispatchDate,
         splitLabel: ds.label || `Split ${ds.splitNumber}`,
         splitQuantity: ds.items.reduce((sum, item) => sum + item.quantity, 0) || 0,

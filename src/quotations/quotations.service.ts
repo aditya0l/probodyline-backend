@@ -287,19 +287,36 @@ export class QuotationsService {
               masterClientIdsForEvents.push(customerId);
             }
 
-            const existing = await tx.customer.findUnique({ where: { id: customerId } });
+            let existing = await tx.customer.findUnique({ where: { id: customerId } });
+            if (!existing && customerData.email) {
+              existing = await tx.customer.findUnique({ where: { email: customerData.email } });
+            }
+
             if (existing) {
               await tx.customer.update({
-                where: { id: customerId },
+                where: { id: existing.id },
                 data: customerData,
               });
+              customerId = existing.id;
             } else {
               const newCustomer = await tx.customer.create({ data: customerData });
               customerId = newCustomer.id;
             }
           } else if (c.clientName || c.clientPhone || c.clientEmail) {
-            const newCustomer = await tx.customer.create({ data: customerData });
-            customerId = newCustomer.id;
+            let existing = null;
+            if (customerData.email) {
+              existing = await tx.customer.findUnique({ where: { email: customerData.email } });
+            }
+            if (existing) {
+              await tx.customer.update({
+                where: { id: existing.id },
+                data: customerData,
+              });
+              customerId = existing.id;
+            } else {
+              const newCustomer = await tx.customer.create({ data: customerData });
+              customerId = newCustomer.id;
+            }
           }
           
           if (customerId) {

@@ -21,6 +21,7 @@ import { ClientsService } from './clients.service';
 import { UpdateDocumentDto, VerifyDocumentDto } from './dto/document.dto';
 import { ClientDocumentType } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -315,7 +316,7 @@ export class ClientsController {
 
   @Post(':id/smart-upload-photo')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Smart upload profile photo (Entry Gate App)' })
   smartUploadPhoto(
     @Param('id') id: string,
@@ -327,7 +328,7 @@ export class ClientsController {
 
   @Post(':id/manual-upload-photo')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Manual upload profile photo' })
   manualUploadPhoto(
     @Param('id') id: string,
@@ -372,7 +373,7 @@ export class ClientsController {
   }
 
   @Post(':id/documents/:type/upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Upload file for a document type' })
   uploadDocumentFile(
     @Param('id') id: string,

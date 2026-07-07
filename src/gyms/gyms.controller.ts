@@ -11,6 +11,7 @@ import {
   UploadedFile,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import {
   ApiTags,
   ApiOperation,
@@ -343,7 +344,7 @@ export class GymsController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } }))
   uploadGymMedia(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
@@ -400,7 +401,7 @@ export class GymsController {
   }
 
   @Post(':id/documents/:type/upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
   @ApiOperation({ summary: 'Upload file for a document type' })
   uploadDocumentFile(
     @Param('id') id: string,

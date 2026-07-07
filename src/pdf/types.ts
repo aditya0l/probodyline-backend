@@ -99,6 +99,14 @@ export interface PDFTemplateData {
   showGymAreaField?: boolean;
   showGymNameField?: boolean;
 
+  // Bank Quote visibility flags
+  showBqFirmNameField?: boolean;
+  showBqFirmGstNoField?: boolean;
+  showBqBranchAddressField?: boolean;
+  showBqFirmPanCardField?: boolean;
+  showBqContactField?: boolean;
+  showBqPartnersField?: boolean;
+
   // Totals
   subtotal: string;
   gstRate: number;

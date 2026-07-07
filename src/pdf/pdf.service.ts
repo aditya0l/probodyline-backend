@@ -665,6 +665,14 @@ export class PdfService implements OnModuleDestroy {
       showGymAreaField: showField('gymArea'),
       showGymNameField: true,
 
+      // Bank Quote visibility flags
+      showBqFirmNameField: isBankQuote ? showField('bqFirmName') : false,
+      showBqFirmGstNoField: isBankQuote ? showField('bqFirmGstNo') : false,
+      showBqBranchAddressField: isBankQuote ? showField('bqBranchAddress') : false,
+      showBqFirmPanCardField: isBankQuote ? showField('bqFirmPanCard') : false,
+      showBqContactField: isBankQuote ? showField('bqContact') : false,
+      showBqPartnersField: isBankQuote ? showField('bqPartners') : false,
+
       // Totals
       subtotal: toNumber(quotation.subtotal).toLocaleString('en-IN'),
       gstRate: toNumber(quotation.gstRate),

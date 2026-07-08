@@ -8,6 +8,13 @@ export class UpdateDocumentDto {
   @IsOptional()
   @IsObject()
   fieldData?: Record<string, any>;
+
+  @IsOptional()
+  @IsString()
+  pdfUrl?: string;
+
+  @IsOptional()
+  imageUrls?: string[];
 }
 
 export class VerifyDocumentDto {

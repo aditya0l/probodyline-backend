@@ -653,11 +653,18 @@ export class ClientsService {
     });
     
     if (existing) {
+      let imageUrls = existing.imageUrls;
+      if (dto.imageUrls) {
+         imageUrls = [...new Set([...imageUrls, ...dto.imageUrls])];
+      }
       return this.prisma.clientDocument.update({
         where: { id: existing.id },
         data: {
           documentNumber: dto.documentNumber !== undefined ? dto.documentNumber : existing.documentNumber,
           fieldData: dto.fieldData !== undefined ? (dto.fieldData as any) : existing.fieldData,
+          pdfUrl: dto.pdfUrl !== undefined ? dto.pdfUrl : existing.pdfUrl,
+          imageUrls,
+          verificationStatus: (dto.pdfUrl || (dto.imageUrls && dto.imageUrls.length > 0)) && existing.verificationStatus === 'NOT_UPLOADED' ? 'UNVERIFIED' : existing.verificationStatus,
         },
       });
     } else {
@@ -667,6 +674,9 @@ export class ClientsService {
           documentType: type,
           documentNumber: dto.documentNumber,
           fieldData: dto.fieldData || {},
+          pdfUrl: dto.pdfUrl,
+          imageUrls: dto.imageUrls || [],
+          verificationStatus: (dto.pdfUrl || (dto.imageUrls && dto.imageUrls.length > 0)) ? 'UNVERIFIED' : 'NOT_UPLOADED',
         },
       });
     }

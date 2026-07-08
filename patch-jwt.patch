@@ -1,0 +1,20 @@
+--- src/auth/strategies/jwt.strategy.ts
++++ src/auth/strategies/jwt.strategy.ts
+@@ -8,7 +8,17 @@
+     private authService: AuthService,
+   ) {
+     super({
+-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
++      jwtFromRequest: (req) => {
++        let token = null;
++        if (req && req.headers && req.headers.authorization) {
++          const authHeader = req.headers.authorization;
++          const parts = authHeader.split(' ');
++          if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
++            token = parts[1];
++          }
++        }
++        return token;
++      },
+       ignoreExpiration: false,
+       secretOrKey:

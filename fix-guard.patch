@@ -1,0 +1,15 @@
+--- src/auth/guards/jwt-auth.guard.ts
++++ src/auth/guards/jwt-auth.guard.ts
+@@ -23,4 +23,12 @@
+ 
+     return super.canActivate(context);
+   }
++
++  handleRequest(err: any, user: any, info: any) {
++    if (err || !user) {
++      console.error('JwtAuthGuard failed:', { err, info: info?.message || info, user: !!user });
++      throw err || new import('@nestjs/common').UnauthorizedException();
++    }
++    return user;
++  }
+ }

@@ -38,6 +38,7 @@ import { SearchModule } from './search/search.module';
 import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 import { OtpModule } from './otp/otp.module';
 import { FactoriesModule } from './factories/factories.module';
+import { TextractModule } from './textract/textract.module';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { FactoriesModule } from './factories/factories.module';
     CalendarEventsModule,
     OtpModule,
     FactoriesModule,
+    TextractModule,
   ],
   controllers: [AppController],
   providers: [

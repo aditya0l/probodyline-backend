@@ -5,9 +5,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { FilesModule } from '../files/files.module';
+import { TextractModule } from '../textract/textract.module';
 
 @Module({
-  imports: [FilesModule],
+  imports: [FilesModule, TextractModule],
   controllers: [GymsController],
   providers: [GymsService],
   exports: [GymsService],

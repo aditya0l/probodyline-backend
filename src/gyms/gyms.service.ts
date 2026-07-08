@@ -15,6 +15,8 @@ import { CreateInaugurationCommitmentDto } from './dto/create-inauguration-commi
 import { generateGymCode } from '../common/utils/gym-code.util';
 
 import { EventsGateway } from '../events/events.gateway';
+import { TextractService } from '../textract/textract.service';
+import { DocumentParserService } from '../textract/document-parser.service';
 
 @Injectable()
 export class GymsService {
@@ -22,6 +24,8 @@ export class GymsService {
     private prisma: PrismaService,
     private filesService: FilesService,
     private eventsGateway: EventsGateway,
+    private textractService: TextractService,
+    private documentParserService: DocumentParserService,
   ) {}
 
   private async generateLocationQR(locationLink: string): Promise<string> {
@@ -716,8 +720,25 @@ export class GymsService {
     const subfolder = `gyms/${gymId}/documents/${type}`;
     const result = await this.filesService.saveFile(file, subfolder);
     
+    let extractedFields = {};
+    try {
+      const bucketName = process.env.AWS_S3_BUCKET || 'probodyline-uploads';
+      let blocks = [];
+      if (file.mimetype === 'application/pdf') {
+         blocks = await this.textractService.analyzeDocument(bucketName, result.key, undefined, file.mimetype);
+      } else {
+         blocks = await this.textractService.analyzeDocument(bucketName, result.mainKey, file.buffer, file.mimetype);
+      }
+      const rawText = this.textractService.extractRawText(blocks);
+      const kvPairs = this.textractService.extractKeyValuePairs(blocks);
+      extractedFields = this.documentParserService.parseDocument(type, rawText, kvPairs);
+    } catch (ocrError: any) {
+      console.warn('OCR failed for document:', ocrError.message);
+    }
+
+    let updatedDoc;
     if (file.mimetype === 'application/pdf') {
-      return this.prisma.gymDocument.update({
+      updatedDoc = await this.prisma.gymDocument.update({
         where: { id: existing.id },
         data: {
           pdfUrl: result.url,
@@ -726,7 +747,7 @@ export class GymsService {
       });
     } else {
       const imageUrls = [...existing.imageUrls, result.url];
-      return this.prisma.gymDocument.update({
+      updatedDoc = await this.prisma.gymDocument.update({
         where: { id: existing.id },
         data: {
           imageUrls,
@@ -734,6 +755,12 @@ export class GymsService {
         },
       });
     }
+
+    return {
+      ...updatedDoc,
+      fileUrl: result.url,
+      extractedFields
+    };
   }
 
   async deleteDocumentFile(gymId: string, type: GymDocumentType, index: number) {

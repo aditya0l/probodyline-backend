@@ -2,10 +2,11 @@ import { Module, OnModuleInit } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { ClientsController } from './clients.controller';
 import { FilesModule } from '../files/files.module';
+import { TextractModule } from '../textract/textract.module';
 import * as fs from 'fs';
 
 @Module({
-  imports: [FilesModule],
+  imports: [FilesModule, TextractModule],
   controllers: [ClientsController],
   providers: [ClientsService],
   exports: [ClientsService],

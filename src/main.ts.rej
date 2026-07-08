@@ -1,0 +1,12 @@
+@@ -11,6 +11,11 @@
+ import { json, urlencoded } from 'express';
+ 
++// Fix BigInt serialization
++BigInt.prototype['toJSON'] = function () {
++  return this.toString();
++};
++
+ async function bootstrap() {
+ 
+ 
+ 

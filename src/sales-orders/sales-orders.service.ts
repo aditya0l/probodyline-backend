@@ -1274,7 +1274,7 @@ export class SalesOrdersService {
 
         let runningStock = 0;
         let todaysStock = 0;
-        let stockOnDispatchDate = 0;
+        let stockAtDispatch = 0;
 
         const today = new Date();
         today.setHours(23, 59, 59, 999);
@@ -1286,7 +1286,17 @@ export class SalesOrdersService {
             todaysStock = runningStock;
           }
           if (tx.date <= masterDispatchDate) {
-            stockOnDispatchDate = runningStock;
+            stockAtDispatch = runningStock;
+          }
+        }
+
+        // Calculate "Available to Promise" (min running stock from dispatch date onwards)
+        let stockOnDispatchDate = stockAtDispatch;
+        let running = 0;
+        for (const tx of ledgerTransactions) {
+          running += tx.quantity;
+          if (tx.date >= masterDispatchDate && running < stockOnDispatchDate) {
+            stockOnDispatchDate = running;
           }
         }
 

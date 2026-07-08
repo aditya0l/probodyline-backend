@@ -1280,8 +1280,7 @@ export class SalesOrdersService {
         today.setHours(23, 59, 59, 999);
 
         for (const tx of ledgerTransactions) {
-          if (tx.transactionType === 'IN') runningStock += tx.quantity;
-          else if (tx.transactionType === 'OUT') runningStock -= tx.quantity;
+          runningStock += tx.quantity;
 
           if (tx.date <= today) {
             todaysStock = runningStock;

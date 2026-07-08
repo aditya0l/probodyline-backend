@@ -4,6 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { QuotationsService } from '../quotations/quotations.service';
 import { PrismaService } from '../common/prisma.service';
+import { PDFDocument } from 'pdf-lib';
+import axios from 'axios';
 import { renderTemplate, numberToWords } from './pdf-template-engine';
 import {
   buildTableData,
@@ -137,7 +139,7 @@ export class PdfService implements OnModuleDestroy {
       });
 
       console.log('PDF Generated. Size:', (pdf.length / 1024).toFixed(2), 'KB');
-      return Buffer.from(pdf);
+      return await this.mergeBankQuoteDocuments(Buffer.from(pdf), isBankQuote ? bankQuoteData?.documentUrls : undefined);
     } finally {
       await page.close();
     }
@@ -177,7 +179,7 @@ export class PdfService implements OnModuleDestroy {
       });
 
       console.log('PDF Generated (Sales Order). Size:', (pdf.length / 1024).toFixed(2), 'KB');
-      return Buffer.from(pdf);
+      return await this.mergeBankQuoteDocuments(Buffer.from(pdf), isBankQuote ? bankQuoteData?.documentUrls : undefined);
     } finally {
       await page.close();
     }
@@ -779,5 +781,47 @@ export class PdfService implements OnModuleDestroy {
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${day}/${month}/${year}`;
+  }
+
+  private async mergeBankQuoteDocuments(basePdfBuffer: Buffer, documentUrls?: string[]): Promise<Buffer> {
+    if (!documentUrls || documentUrls.length === 0) return basePdfBuffer;
+    try {
+      const mergedPdf = await PDFDocument.load(basePdfBuffer);
+      for (const url of documentUrls) {
+        try {
+          const response = await axios.get(url, { responseType: 'arraybuffer' });
+          const contentType = response.headers['content-type'] as string;
+          const buffer = response.data;
+
+          if (contentType === 'application/pdf' || url.toLowerCase().endsWith('.pdf')) {
+            const extPdf = await PDFDocument.load(buffer);
+            const copiedPages = await mergedPdf.copyPages(extPdf, extPdf.getPageIndices());
+            copiedPages.forEach((page) => mergedPdf.addPage(page));
+          } else if (contentType?.startsWith('image/') || url.match(/\.(jpeg|jpg|png|gif)$/i)) {
+            let image;
+            if (contentType === 'image/png' || url.toLowerCase().endsWith('.png')) {
+              image = await mergedPdf.embedPng(buffer);
+            } else {
+              image = await mergedPdf.embedJpg(buffer);
+            }
+            const page = mergedPdf.addPage([595.28, 841.89]); // A4
+            const { width, height } = image.scaleToFit(500, 750);
+            page.drawImage(image, {
+              x: (595.28 - width) / 2,
+              y: (841.89 - height) / 2,
+              width,
+              height,
+            });
+          }
+        } catch (e: any) {
+          console.error('Failed to append document:', url, e.message);
+        }
+      }
+      const finalPdfBytes = await mergedPdf.save();
+      return Buffer.from(finalPdfBytes);
+    } catch (e) {
+      console.error('Failed to merge documents:', e);
+      return basePdfBuffer;
+    }
   }
 }

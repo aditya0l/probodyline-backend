@@ -732,6 +732,32 @@ export class ClientsService {
     };
   }
 
+  async parseDocumentFile(clientId: string, type: ClientDocumentType, file: Express.Multer.File) {
+    const subfolder = `clients/${clientId}/documents/${type}/temp`;
+    const result = await this.filesService.saveFile(file, subfolder);
+    
+    let extractedFields = {};
+    try {
+      const bucketName = process.env.AWS_S3_BUCKET || 'probodyline-uploads';
+      let blocks: any[] = [];
+      if (file.mimetype === 'application/pdf') {
+         blocks = await this.textractService.analyzeDocument(bucketName, result.key, undefined, file.mimetype);
+      } else {
+         blocks = await this.textractService.analyzeDocument(bucketName, result.mainKey, file.buffer, file.mimetype);
+      }
+      const rawText = this.textractService.extractRawText(blocks);
+      const kvPairs = this.textractService.extractKeyValuePairs(blocks);
+      extractedFields = this.documentParserService.parseDocument(type, rawText, kvPairs);
+    } catch (ocrError: any) {
+      console.warn('OCR failed for document:', ocrError.message);
+    }
+
+    return {
+      fileUrl: result.url,
+      extractedFields
+    };
+  }
+
   async deleteDocumentFile(clientId: string, type: ClientDocumentType, index: number) {
     const existing = await this.prisma.clientDocument.findFirst({
       where: { clientId, documentType: type },

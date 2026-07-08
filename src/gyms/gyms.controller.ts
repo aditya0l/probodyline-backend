@@ -411,6 +411,17 @@ export class GymsController {
     return this.gymsService.uploadDocumentFile(id, type, file);
   }
 
+  @Post(':id/documents/:type/parse')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
+  @ApiOperation({ summary: 'Upload file to S3 and run OCR, returning parsed data without updating DB' })
+  parseDocumentFile(
+    @Param('id') id: string,
+    @Param('type') type: GymDocumentType,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.gymsService.parseDocumentFile(id, type, file);
+  }
+
   @Delete(':id/documents/:type/files/:index')
   @ApiOperation({ summary: 'Delete file from a document by index' })
   deleteDocumentFile(

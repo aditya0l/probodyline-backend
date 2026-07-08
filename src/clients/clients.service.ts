@@ -692,7 +692,7 @@ export class ClientsService {
     let extractedFields = {};
     try {
       const bucketName = process.env.AWS_S3_BUCKET || 'probodyline-uploads';
-      let blocks = [];
+      let blocks: any[] = [];
       if (file.mimetype === 'application/pdf') {
          blocks = await this.textractService.analyzeDocument(bucketName, result.key, undefined, file.mimetype);
       } else {

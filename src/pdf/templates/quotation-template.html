@@ -313,11 +313,11 @@
 
     {{#if isBankQuote}}
       {{#if bankQuoteDocumentUrls}}
-      <div style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;">
         {{#each bankQuoteDocumentUrls}}
-          <img src="{{this}}" style="max-width: 100%; max-height: 400px; object-fit: contain; padding: 2px;" />
+        <div style="page-break-before: always; width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center;">
+          <img src="{{this}}" style="max-width: 100%; max-height: 90vh; object-fit: contain;" />
+        </div>
         {{/each}}
-      </div>
       {{/if}}
     {{/if}}
 

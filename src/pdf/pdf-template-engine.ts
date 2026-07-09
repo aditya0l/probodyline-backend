@@ -470,6 +470,67 @@ export function renderTemplate(template: string, data: TemplateData): string {
             }
           }
 
+          // Process {{#if this.prop}} at the itemContent level
+          let itemIteration = 0;
+          while (itemIteration < 200) {
+            itemIteration++;
+            const before = itemContent;
+            const ifStarts: Array<{pos: number, prop: string, length: number}> = [];
+            const ifRegex = /\{\{#if\s+this\.(\w+)\}\}/g;
+            let match;
+            while ((match = ifRegex.exec(itemContent)) !== null) {
+              ifStarts.push({pos: match.index, prop: match[1], length: match[0].length});
+            }
+            if (ifStarts.length === 0) break;
+            const lastIf = ifStarts[ifStarts.length - 1];
+            const startPos = lastIf.pos;
+            const startTagLength = lastIf.length;
+            const ifProp = lastIf.prop;
+            let depth = 1;
+            let searchPos = startPos + startTagLength;
+            let endPos = -1;
+            while (depth > 0 && searchPos < itemContent.length) {
+              const nextIfPos = itemContent.indexOf('{{#if', searchPos);
+              const nextEndIfPos = itemContent.indexOf('{{/if}}', searchPos);
+              if (nextEndIfPos === -1) break;
+              if (nextIfPos !== -1 && nextIfPos < nextEndIfPos) {
+                depth++; searchPos = nextIfPos + 5;
+              } else {
+                depth--;
+                if (depth === 0) { endPos = nextEndIfPos; break; }
+                searchPos = nextEndIfPos + 7;
+              }
+            }
+            if (endPos !== -1) {
+              const innerContent = itemContent.substring(startPos + startTagLength, endPos);
+              const ifValue = item[ifProp];
+              const shouldRender = ifValue !== undefined && ifValue !== null && ifValue !== false && ifValue !== '' && !(Array.isArray(ifValue) && ifValue.length === 0);
+              let elsePos = -1; let elseDepth = 0; let elseSearch = startPos + startTagLength;
+              while (elseSearch < endPos) {
+                const nextIf = itemContent.indexOf('{{#if', elseSearch);
+                const nextEndIf = itemContent.indexOf('{{/if}}', elseSearch);
+                const nextElse = itemContent.indexOf('{{else}}', elseSearch);
+                const positions = [{type: 'if', pos: nextIf}, {type: 'endif', pos: nextEndIf}, {type: 'else', pos: nextElse}].filter(p => p.pos !== -1 && p.pos < endPos).sort((a,b) => a.pos - b.pos);
+                if (positions.length === 0) break;
+                const next = positions[0];
+                if (next.type === 'if') { elseDepth++; elseSearch = next.pos + 5; }
+                else if (next.type === 'endif') { elseDepth--; elseSearch = next.pos + 7; }
+                else if (next.type === 'else' && elseDepth === 0) { elsePos = next.pos; break; }
+                else { elseSearch = next.pos + 8; }
+              }
+              let replacement = '';
+              if (elsePos !== -1) {
+                const trueContent = itemContent.substring(startPos + startTagLength, elsePos);
+                const falseContent = itemContent.substring(elsePos + 8, endPos);
+                replacement = shouldRender ? trueContent : falseContent;
+              } else {
+                replacement = shouldRender ? innerContent : '';
+              }
+              itemContent = itemContent.substring(0, startPos) + replacement + itemContent.substring(endPos + 7);
+            }
+            if (before === itemContent) break;
+          }
+
           // Replace {{this.property}} with item.property
           itemContent = itemContent.replace(
             /\{\{\{this\.(\w+)\}\}\}/g,

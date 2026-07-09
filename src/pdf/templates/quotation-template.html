@@ -56,14 +56,13 @@
 
     <!-- Document Info Block -->
     {{#if showClientInfo}}
+    {{#if isNotBankQuote}}
     <div class="info-block">
       <div class="info-header">
         <div>#{{quoteNumber}}</div>
         <div style="font-weight: normal;">{{currentDate}}</div>
       </div>
       
-      <!-- Client info now always renders -->
-      {{#unless isBankQuote}}
       <!-- Multiple Clients Side-by-Side -->
       {{#if hasMultipleClients}}
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
@@ -114,7 +113,8 @@
         </div>
       </div>
       {{/if}}
-      {{/unless}}
+    </div>
+    {{/if}}
 
       {{#if isBankQuote}}
       <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; font-weight: bold; margin-bottom: 20px;">
@@ -123,18 +123,18 @@
           <td style="border: 1px solid #000; padding: 4px; width: 60%; text-align: right;">DATE : {{currentDate}}</td>
         </tr>
         
-        {{#if bankQuoteFirmName}}
-        <tr>
-          <td style="border: 1px solid #000; padding: 4px;">FIRM NAME</td>
-          <td style="border: 1px solid #000; padding: 4px;">{{bankQuoteFirmName}}</td>
-        </tr>
-        {{else}}
         {{#if clientName}}
         <tr>
           <td style="border: 1px solid #000; padding: 4px;">CLIENT NAME</td>
           <td style="border: 1px solid #000; padding: 4px;">{{clientName}}</td>
         </tr>
         {{/if}}
+        
+        {{#if bankQuoteFirmName}}
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">FIRM NAME / GYM NAME</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{bankQuoteFirmName}}</td>
+        </tr>
         {{/if}}
 
         {{#if bankQuoteFirmGstNo}}
@@ -206,7 +206,7 @@
 
         <tr>
           <td style="border: 1px solid #000; padding: 4px;">CONTACT</td>
-          <td style="border: 1px solid #000; padding: 4px;">{{#if bankQuoteContact}}{{bankQuoteContact}}{{else}}94858-53105{{/if}}</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{#if bankQuoteContact}}{{bankQuoteContact}}{{else}}<span style="color: #666; font-weight: normal;">Not provided</span>{{/if}}</td>
         </tr>
       </table>
       {{/if}}

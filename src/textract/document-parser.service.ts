@@ -147,7 +147,7 @@ export class DocumentParserService {
     return { rawText: rawText.substring(0, 500) };
   }
 
-  parseBankCheque(rawText: string, kvPairs: Record<string, string>) {
+  async parseBankCheque(rawText: string, kvPairs: Record<string, string>) {
     const result: Record<string, string> = {};
 
     // Account number — 9-18 digits, skipping intervening text
@@ -169,11 +169,12 @@ export class DocumentParserService {
     const ifscRegex = /[A-Z]{4}0[A-Z0-9]{6}/g;
     const ifscMatches = rawText.match(ifscRegex);
     if (ifscMatches?.length) {
-      result.ifscCode = ifscMatches[0];
-      result.branchCode = ifscMatches[0].slice(-6); // Branch code is last 6 characters of IFSC
+      const ifsc = ifscMatches[0];
+      result.ifscCode = ifsc;
+      result.branchCode = ifsc.slice(-6); // Branch code is last 6 characters of IFSC
       
       // Auto-determine Bank Name from IFSC prefix
-      const ifscPrefix = ifscMatches[0].substring(0, 4).toUpperCase();
+      const ifscPrefix = ifsc.substring(0, 4).toUpperCase();
       const bankMap: Record<string, string> = {
         'SBIN': 'State Bank of India',
         'HDFC': 'HDFC Bank',
@@ -191,16 +192,28 @@ export class DocumentParserService {
         'IDFB': 'IDFC First Bank'
       };
       result.bankName = bankMap[ifscPrefix] || ifscPrefix;
+
+      // Dynamically fetch exact Branch Name and confirm Bank Name via IFSC API
+      try {
+        const response = await fetch(`https://ifsc.razorpay.com/${ifsc}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.BRANCH) result.branchName = data.BRANCH;
+          if (data.BANK) result.bankName = data.BANK; // Override with exact official name
+        }
+      } catch (e) {
+        // Silently ignore network failures, fallback to mapping
+      }
     }
 
-    // Branch name from key-value pairs
-    if (kvPairs['branch']) result.branchName = kvPairs['branch'];
+    // Branch name from key-value pairs (fallback)
+    if (!result.branchName && kvPairs['branch']) result.branchName = kvPairs['branch'];
 
     return result;
   }
 
   // Route to correct parser based on document type
-  parseDocument(
+  async parseDocument(
     documentType: string,
     rawText: string,
     kvPairs: Record<string, string>
@@ -216,7 +229,7 @@ export class DocumentParserService {
       case 'RENT_AGREEMENT':
         return this.parseRentAgreement(rawText, kvPairs);
       case 'BANK_DETAILS':
-        return this.parseBankCheque(rawText, kvPairs);
+        return await this.parseBankCheque(rawText, kvPairs);
       default:
         return {};
     }

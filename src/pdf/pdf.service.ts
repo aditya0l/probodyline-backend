@@ -641,7 +641,7 @@ export class PdfService implements OnModuleDestroy {
       client2AadharCard: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].aadharCard || undefined) : undefined,
 
       // Client Info (Default)
-      clientName: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].name || undefined) : (customer?.name || quotation.clientName || undefined),
+      clientName: (isBankQuote && bankQuoteData?.clientAadharName) ? bankQuoteData.clientAadharName : (quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].name || undefined) : (customer?.name || quotation.clientName || undefined)),
       clientAddress: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].address || undefined) : (customer?.address || quotation.clientAddress || undefined),
       clientAddressLine2: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].addressLine2 || undefined) : (customer?.addressLine2 || quotation.clientAddressLine2 || undefined),
       clientCity: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].city || undefined) : (customer?.city || quotation.clientCity || undefined),
@@ -696,7 +696,7 @@ export class PdfService implements OnModuleDestroy {
       bankQuoteFirmGstNo: bankQuoteData?.firmGstNo,
       bankQuoteBranchAddress: bankQuoteData?.branchAddress,
       bankQuoteFirmPanCard: bankQuoteData?.firmPanCardNumber,
-      bankQuoteContact: bankQuoteData?.contact,
+      bankQuoteContact: bankQuoteData?.contact || (quotation.clients && quotation.clients.length > 0 ? quotation.clients[0].phone : undefined) || customer?.phone || quotation.phone,
       bankQuotePartners: bankQuoteData?.partners,
       bankQuoteDocumentUrls: bankQuoteData?.documentUrls,
       
@@ -723,10 +723,14 @@ export class PdfService implements OnModuleDestroy {
     };
 
     // Load the base HTML template
+    data.isNotBankQuote = !isBankQuote;
+
     const templatePath = path.join(
       __dirname,
       'templates',
-      'quotation-template.html',
+      templateApi === 'DEFAULT' ? 'quotation-template.html' : 
+      templateApi === 'WHOLESALE' ? 'quotation-template.html' : 
+      templateApi === 'RETAIL' ? 'quotation-template.html' : 'quotation-template.html'
     );
     const cssPath = path.join(__dirname, 'templates', 'quotation-styles.css');
 

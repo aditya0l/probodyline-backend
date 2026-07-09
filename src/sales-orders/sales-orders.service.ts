@@ -1282,7 +1282,9 @@ export class SalesOrdersService {
         // Find the last transaction that occurred on or before today to get today's stock
         const pastRows = ledgerRows.filter(r => r.date <= todayStr);
         if (pastRows.length > 0) {
-          todaysStock = pastRows[pastRows.length - 1].todaysPhysicalStock;
+          // IMPORTANT: ledgerRows is returned from getLedgerTransactions in DESCENDING order (newest first).
+          // Therefore, the FIRST element in pastRows (index 0) is the most recent date on or before today.
+          todaysStock = pastRows[0].todaysPhysicalStock;
         }
 
         // 2. Find this specific order's transaction in the ledger to inherit its exact allocation status

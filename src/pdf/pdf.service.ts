@@ -692,7 +692,7 @@ export class PdfService implements OnModuleDestroy {
 
       // Conditional Flags
       isBankQuote: isBankQuote,
-      bankQuoteFirmName: bankQuoteData?.firmName,
+      bankQuoteFirmName: bankQuoteData?.firmName || (quotation as any).gym?.legalName || (quotation as any).gym?.tradeName || (quotation as any).gym?.gymName,
       bankQuoteFirmGstNo: bankQuoteData?.firmGstNo,
       bankQuoteBranchAddress: bankQuoteData?.branchAddress,
       bankQuoteFirmPanCard: bankQuoteData?.firmPanCardNumber,

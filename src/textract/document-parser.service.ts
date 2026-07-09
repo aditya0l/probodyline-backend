@@ -150,10 +150,20 @@ export class DocumentParserService {
   parseBankCheque(rawText: string, kvPairs: Record<string, string>) {
     const result: Record<string, string> = {};
 
-    // Account number — 9-18 digits
-    const accRegex = /(?:A\/C|Account|Acc)[.\s#:]*(\d{9,18})/i;
+    // Account number — 9-18 digits, skipping intervening text
+    const accRegex = /(?:A\/c\s*No|Account|Acc)[^0-9]*(\d{9,18})/is;
     const accMatch = rawText.match(accRegex);
-    if (accMatch) result.accountNumber = accMatch[1];
+    if (accMatch) {
+      result.accountNumber = accMatch[1];
+    } else {
+      // Fallback: look for any 9-18 digit number in KV pairs
+      for (const val of Object.values(kvPairs)) {
+        if (/^\d{9,18}$/.test(val)) {
+           result.accountNumber = val;
+           break;
+        }
+      }
+    }
 
     // IFSC: 11 chars starting with 4 letters
     const ifscRegex = /[A-Z]{4}0[A-Z0-9]{6}/g;
@@ -161,11 +171,29 @@ export class DocumentParserService {
     if (ifscMatches?.length) {
       result.ifscCode = ifscMatches[0];
       result.branchCode = ifscMatches[0].slice(-6); // Branch code is last 6 characters of IFSC
+      
+      // Auto-determine Bank Name from IFSC prefix
+      const ifscPrefix = ifscMatches[0].substring(0, 4).toUpperCase();
+      const bankMap: Record<string, string> = {
+        'SBIN': 'State Bank of India',
+        'HDFC': 'HDFC Bank',
+        'ICIC': 'ICICI Bank',
+        'UTIB': 'Axis Bank',
+        'PUNB': 'Punjab National Bank',
+        'KKBK': 'Kotak Mahindra Bank',
+        'BARB': 'Bank of Baroda',
+        'BKID': 'Bank of India',
+        'CNRB': 'Canara Bank',
+        'UBIN': 'Union Bank of India',
+        'IDIB': 'Indian Bank',
+        'MAHB': 'Bank of Maharashtra',
+        'YESB': 'Yes Bank',
+        'IDFB': 'IDFC First Bank'
+      };
+      result.bankName = bankMap[ifscPrefix] || ifscPrefix;
     }
 
-    // Bank name from key-value pairs
-    if (kvPairs['bank']) result.bankName = kvPairs['bank'];
-    if (kvPairs['bank name']) result.bankName = kvPairs['bank name'];
+    // Branch name from key-value pairs
     if (kvPairs['branch']) result.branchName = kvPairs['branch'];
 
     return result;

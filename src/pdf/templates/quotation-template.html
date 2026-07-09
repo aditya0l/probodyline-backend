@@ -63,6 +63,7 @@
       </div>
       
       <!-- Client info now always renders -->
+      {{#unless isBankQuote}}
       <!-- Multiple Clients Side-by-Side -->
       {{#if hasMultipleClients}}
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
@@ -113,36 +114,101 @@
         </div>
       </div>
       {{/if}}
+      {{/unless}}
 
       {{#if isBankQuote}}
-      <div class="card-section">
-        <div class="card-title">BANK QUOTE DETAILS</div>
-        <div class="card-grid">
-          {{#if showBqFirmNameField}}<div class="field-group"><div class="field-label">FIRM NAME</div><div class="field-value">{{#if bankQuoteFirmName}}{{bankQuoteFirmName}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
-          {{#if showBqFirmGstNoField}}<div class="field-group"><div class="field-label">FIRM GST NO.</div><div class="field-value">{{#if bankQuoteFirmGstNo}}{{bankQuoteFirmGstNo}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
-          {{#if showBqBranchAddressField}}<div class="field-group" style="grid-column: span 2;"><div class="field-label">BRANCH ADDRESS</div><div class="field-value">{{#if bankQuoteBranchAddress}}{{bankQuoteBranchAddress}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
-          {{#if showBqFirmPanCardField}}<div class="field-group"><div class="field-label">FIRM PAN CARD</div><div class="field-value">{{#if bankQuoteFirmPanCard}}{{bankQuoteFirmPanCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
-          {{#if showBqContactField}}<div class="field-group"><div class="field-label">CONTACT</div><div class="field-value">{{#if bankQuoteContact}}{{bankQuoteContact}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
-        </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 8.5pt; font-weight: bold; margin-bottom: 20px;">
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px; width: 40%;">QUOTATION NO. {{quoteNumber}}</td>
+          <td style="border: 1px solid #000; padding: 4px; width: 60%; text-align: right;">DATE : {{currentDate}}</td>
+        </tr>
         
-        {{#if showBqPartnersField}}
+        {{#if bankQuoteFirmName}}
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">FIRM NAME</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{bankQuoteFirmName}}</td>
+        </tr>
+        {{else}}
+        {{#if clientName}}
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">CLIENT NAME</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{clientName}}</td>
+        </tr>
+        {{/if}}
+        {{/if}}
+
+        {{#if bankQuoteFirmGstNo}}
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">FIRM GST NO.</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{bankQuoteFirmGstNo}}</td>
+        </tr>
+        {{else}}
+        {{#if clientGST}}
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">GST NO.</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{clientGST}}</td>
+        </tr>
+        {{/if}}
+        {{/if}}
+
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">BRANCH ADDRESS</td>
+          <td style="border: 1px solid #000; padding: 4px;">
+            {{#if bankQuoteBranchAddress}}
+              {{bankQuoteBranchAddress}}
+            {{else}}
+              {{#if clientAddress}}{{{clientAddress}}}{{#if clientAddressLine2}}, {{{clientAddressLine2}}}{{/if}}{{#if clientCity}}, {{clientCity}}{{/if}}{{else}}{{#if clientCity}}{{clientCity}}{{else}}{{/if}}{{/if}}
+            {{/if}}
+          </td>
+        </tr>
+
+        {{#if bankQuoteFirmPanCard}}
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">FIRM PAN CARD NUMBER</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{bankQuoteFirmPanCard}}</td>
+        </tr>
+        {{else}}
+        {{#if clientPanCard}}
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">PAN CARD NUMBER</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{clientPanCard}}</td>
+        </tr>
+        {{/if}}
+        {{/if}}
+
         {{#if bankQuotePartners}}
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border);">
           {{#each bankQuotePartners}}
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <div class="partner-badge">P{{@index}}</div>
-              <div style="font-weight: 600; font-size: 8.5pt; color: var(--text-secondary);">PARTNER {{@index}}</div>
-            </div>
-            <div class="field-group"><div class="field-label">NAME AS AADHAR</div><div class="field-value">{{#if this.nameAsOnAadhar}}{{this.nameAsOnAadhar}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
-            <div class="field-group"><div class="field-label">AADHAR CARD</div><div class="field-value">{{#if this.aadharNumber}}{{this.aadharNumber}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
-            <div class="field-group"><div class="field-label">PAN CARD</div><div class="field-value">{{#if this.panCardNumber}}{{this.panCardNumber}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
-          </div>
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px;">(PARTNER {{this.displayIndex}}) NAME AS ON ADHAR CARD</td>
+            <td style="border: 1px solid #000; padding: 4px;">{{this.nameAsOnAadhar}}</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px;">(PARTNER {{this.displayIndex}}) ADHAR CARD NUMBER</td>
+            <td style="border: 1px solid #000; padding: 4px;">{{this.aadharNumber}}</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px;">(PARTNER {{this.displayIndex}}) PAN CARD NUMBER</td>
+            <td style="border: 1px solid #000; padding: 4px;">{{this.panCardNumber}}</td>
+          </tr>
           {{/each}}
-        </div>
+        {{else}}
+          {{#if clientAadharCard}}
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px;">NAME AS ON ADHAR CARD</td>
+            <td style="border: 1px solid #000; padding: 4px;">{{clientName}}</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #000; padding: 4px;">ADHAR CARD NUMBER</td>
+            <td style="border: 1px solid #000; padding: 4px;">{{clientAadharCard}}</td>
+          </tr>
+          {{/if}}
         {{/if}}
-        {{/if}}
-      </div>
+
+        <tr>
+          <td style="border: 1px solid #000; padding: 4px;">CONTACT</td>
+          <td style="border: 1px solid #000; padding: 4px;">{{#if bankQuoteContact}}{{bankQuoteContact}}{{else}}94858-53105{{/if}}</td>
+        </tr>
+      </table>
       {{/if}}
     </div>
     {{else}}

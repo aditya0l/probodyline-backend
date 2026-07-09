@@ -25,7 +25,9 @@ export async function getLedgerTransactions(
   }
 
   // 2. Fetch product (No openingStock field exists on Prisma model, default to 0)
+  const product = await prisma.product.findUnique({ where: { id: productId }, select: { todaysStock: true } });
   const openingStock = 0;
+  const currentStock = product?.todaysStock || 0;
 
   // 3. Fetch all transactions for this product, strict date ascending
   // Secondary sort by createdAt ascending to ensure deterministic order for same date
@@ -217,15 +219,48 @@ export async function getLedgerTransactions(
     };
   });
 
-  // 6. Running Balance Calculation (First Pass)
-  let runningBalance = openingStock;
-  for (const row of ledgerRows) {
-    if (row.type === 'IN') {
-      runningBalance += row.qty;
-    } else if (row.type === 'OUT') {
-      runningBalance -= row.qty;
+  // 6. Running Balance Calculation (Anchored to currentStock = Today)
+  const todayStr = formatInTimeZone(new Date(), IST, 'yyyy-MM-dd');
+  
+  let anchorIndex = -1;
+  for (let i = ledgerRows.length - 1; i >= 0; i--) {
+    if (ledgerRows[i].date <= todayStr) {
+      anchorIndex = i;
+      break;
     }
-    row.todaysPhysicalStock = runningBalance;
+  }
+
+  const futureNetChange = transactionsRaw.reduce((acc, t) => {
+    const tDate = formatInTimeZone(t.date, IST, 'yyyy-MM-dd');
+    if (tDate > todayStr) {
+      const change = (t.transactionType === 'IN' || t.transactionType === 'PURCHASE') ? t.quantity :
+        (t.transactionType === 'OUT' || t.transactionType === 'SALE') ? -Math.abs(t.quantity) : t.quantity;
+      return acc + change;
+    }
+    return acc;
+  }, 0);
+
+  const todaysPhysicalStock = currentStock - futureNetChange;
+
+  if (anchorIndex !== -1) {
+    ledgerRows[anchorIndex].todaysPhysicalStock = todaysPhysicalStock;
+  } else if (ledgerRows.length > 0) {
+    // If all transactions are in the future, set anchor to 0
+    anchorIndex = -1;
+  }
+
+  // Backwards from anchor
+  for (let i = anchorIndex - 1; i >= 0; i--) {
+    const nextRow = ledgerRows[i + 1];
+    const nextChange = nextRow.type === 'IN' ? nextRow.qty : -nextRow.qty;
+    ledgerRows[i].todaysPhysicalStock = nextRow.todaysPhysicalStock - nextChange;
+  }
+
+  // Forwards from anchor
+  for (let i = Math.max(0, anchorIndex + 1); i < ledgerRows.length; i++) {
+    const prevRow = i === 0 ? null : ledgerRows[i - 1];
+    const currentChange = ledgerRows[i].type === 'IN' ? ledgerRows[i].qty : -ledgerRows[i].qty;
+    ledgerRows[i].todaysPhysicalStock = prevRow ? prevRow.todaysPhysicalStock + currentChange : todaysPhysicalStock + currentChange;
   }
 
   // 7. Calculate Stock on Selected Date (Available Stock)

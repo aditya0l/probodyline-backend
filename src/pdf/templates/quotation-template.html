@@ -56,14 +56,14 @@
 
     <!-- Document Info Block -->
     {{#if showClientInfo}}
-    {{#if isNotBankQuote}}
     <div class="info-block">
       <div class="info-header">
         <div>#{{quoteNumber}}</div>
         <div style="font-weight: normal;">{{currentDate}}</div>
       </div>
       
-      <!-- Multiple Clients Side-by-Side -->
+      <!-- Multiple Clients Side-by-Side (non-bank-quote only) -->
+      {{#if isNotBankQuote}}
       {{#if hasMultipleClients}}
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
         <!-- Client 1 -->
@@ -95,7 +95,6 @@
       <div class="card-section">
         <div class="card-title">CLIENT DETAILS</div>
         <div class="card-grid">
-          {{#if isNotBankQuote}}
           {{#if showClientNameField}}<div class="field-group"><div class="field-label">CLIENT NAME</div><div class="field-value">{{#if clientName}}{{clientName}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
           {{#if legalName}}<div class="field-group"><div class="field-label">LEGAL NAME</div><div class="field-value">{{legalName}}</div></div>{{/if}}
           {{#if tradeName}}<div class="field-group"><div class="field-label">TRADE NAME</div><div class="field-value">{{tradeName}}</div></div>{{/if}}
@@ -111,9 +110,15 @@
           {{#if showAadharCardField}}<div class="field-group"><div class="field-label">AADHAR CARD</div><div class="field-value">{{#if clientAadharCard}}{{clientAadharCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
           {{#if showGymAreaField}}<div class="field-group"><div class="field-label">GYM AREA (Sq.ft)</div><div class="field-value">{{#if gymArea}}{{gymArea}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
           {{#if showGymNameField}}<div class="field-group"><div class="field-label">GYM NAME</div><div class="field-value">{{#if gymName}}{{gymName}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
-          {{/if}}
-          
-          {{#if isBankQuote}}
+        </div>
+      </div>
+      {{/if}}
+      {{/if}}
+
+      {{#if isBankQuote}}
+      <div class="card-section">
+        <div class="card-title">CLIENT DETAILS</div>
+        <div class="card-grid">
           {{#if clientName}}<div class="field-group"><div class="field-label">CLIENT NAME</div><div class="field-value">{{clientName}}</div></div>{{/if}}
           {{#if bankQuoteFirmName}}<div class="field-group"><div class="field-label">FIRM NAME / GYM NAME</div><div class="field-value">{{bankQuoteFirmName}}</div></div>{{/if}}
           {{#if bankQuoteBranchAddress}}<div class="field-group" style="grid-column: span 2;"><div class="field-label">BRANCH ADDRESS</div><div class="field-value">{{bankQuoteBranchAddress}}</div></div>{{/if}}
@@ -126,15 +131,11 @@
           <div class="field-group"><div class="field-label">(PARTNER {{this.displayIndex}}) AADHAR CARD NO.</div><div class="field-value">{{#if this.aadharNumber}}{{this.aadharNumber}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
           <div class="field-group"><div class="field-label">(PARTNER {{this.displayIndex}}) PAN CARD NO.</div><div class="field-value">{{#if this.panCardNumber}}{{this.panCardNumber}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
           {{/each}}
-          {{/if}}
         </div>
       </div>
       {{/if}}
     </div>
     {{/if}}
-
-
-    </div>
     {{else}}
     <!-- Minimal Header for loading slip / price list if needed -->
     {{#if quoteNumber}}

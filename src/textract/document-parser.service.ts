@@ -41,7 +41,7 @@ export class DocumentParserService {
     const result: Record<string, string> = {};
 
     // Aadhar number: 12 digits, usually in format XXXX XXXX XXXX
-    const aadharRegex = /\d{4}\s\d{4}\s\d{4}/g;
+    const aadharRegex = /\b\d{4}[ \t]+\d{4}[ \t]+\d{4}\b/g;
     const aadharMatches = rawText.match(aadharRegex);
     if (aadharMatches?.length) {
       result.aadharCardNumber = aadharMatches[0].replace(/\s/g, '');

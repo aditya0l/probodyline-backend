@@ -137,12 +137,10 @@ export class DocumentParserService {
     // IFSC: 11 chars starting with 4 letters
     const ifscRegex = /[A-Z]{4}0[A-Z0-9]{6}/g;
     const ifscMatches = rawText.match(ifscRegex);
-    if (ifscMatches?.length) result.ifscCode = ifscMatches[0];
-
-    // MICR: 9 digits
-    const micrRegex = /\b\d{9}\b/g;
-    const micrMatches = rawText.match(micrRegex);
-    if (micrMatches?.length) result.micrCode = micrMatches[0];
+    if (ifscMatches?.length) {
+      result.ifscCode = ifscMatches[0];
+      result.branchCode = ifscMatches[0].slice(-6); // Branch code is last 6 characters of IFSC
+    }
 
     // Bank name from key-value pairs
     if (kvPairs['bank']) result.bankName = kvPairs['bank'];

@@ -728,7 +728,7 @@ export class GymsService {
       }
       const rawText = this.textractService.extractRawText(blocks);
       const kvPairs = this.textractService.extractKeyValuePairs(blocks);
-      extractedFields = this.documentParserService.parseDocument(type, rawText, kvPairs);
+      extractedFields = await this.documentParserService.parseDocument(type, rawText, kvPairs);
     } catch (ocrError: any) {
       console.warn('OCR failed for document:', ocrError.message);
     }
@@ -767,7 +767,7 @@ export class GymsService {
       }
       const rawText = this.textractService.extractRawText(blocks);
       const kvPairs = this.textractService.extractKeyValuePairs(blocks);
-      extractedFields = this.documentParserService.parseDocument(type, rawText, kvPairs);
+      extractedFields = await this.documentParserService.parseDocument(type, rawText, kvPairs);
     } catch (ocrError: any) {
       console.warn('OCR failed for document:', ocrError.message);
     }

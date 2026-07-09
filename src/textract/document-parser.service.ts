@@ -18,7 +18,9 @@ export class DocumentParserService {
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].toLowerCase();
-      if (line === 'name' || line === 'name:') {
+      // Indian PAN cards often have bilingual labels (e.g., "नाम / Name")
+      // AWS Textract often corrupts the Hindi part to things like "714 1 Name"
+      if ((line.endsWith('name') || line.endsWith('name:')) && !line.includes('father')) {
         if (lines[i + 1]) {
           result.nameAsPanCard = lines[i + 1];
           break;

@@ -696,7 +696,7 @@ export class PdfService implements OnModuleDestroy {
       bankQuoteFirmGstNo: bankQuoteData?.firmGstNo,
       bankQuoteBranchAddress: bankQuoteData?.branchAddress,
       bankQuoteFirmPanCard: bankQuoteData?.firmPanCardNumber,
-      bankQuoteContact: bankQuoteData?.contact || (quotation.clients && quotation.clients.length > 0 ? quotation.clients[0].phone : undefined) || customer?.phone || quotation.phone,
+      bankQuoteContact: bankQuoteData?.contact || (quotation.clients && quotation.clients.length > 0 ? quotation.clients[0].phone : undefined) || customer?.phone,
       bankQuotePartners: bankQuoteData?.partners,
       bankQuoteDocumentUrls: bankQuoteData?.documentUrls,
       
@@ -720,7 +720,7 @@ export class PdfService implements OnModuleDestroy {
 
       // CSS content (will be injected)
       CSS_CONTENT: '',
-    };
+    } as any; // Cast to any to allow isNotBankQuote
 
     // Load the base HTML template
     data.isNotBankQuote = !isBankQuote;
@@ -728,9 +728,7 @@ export class PdfService implements OnModuleDestroy {
     const templatePath = path.join(
       __dirname,
       'templates',
-      templateApi === 'DEFAULT' ? 'quotation-template.html' : 
-      templateApi === 'WHOLESALE' ? 'quotation-template.html' : 
-      templateApi === 'RETAIL' ? 'quotation-template.html' : 'quotation-template.html'
+      'quotation-template.html'
     );
     const cssPath = path.join(__dirname, 'templates', 'quotation-styles.css');
 

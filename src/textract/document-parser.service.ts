@@ -75,13 +75,19 @@ export class DocumentParserService {
     const dobMatch = rawText.match(dobRegex);
     if (dobMatch) result.dateOfBirth = dobMatch[1];
 
-    // Address — everything after "Address:" or "S/O", "W/O", "D/O"
-    const addressRegex = /(?:Address|S\/O|W\/O|D\/O)[:\s]+(.+?)(?=\d{4}\s\d{4}|\d{6}|$)/is;
-    const addressMatch = rawText.match(addressRegex);
-    if (addressMatch) {
-      result.addressAsAadharCard = addressMatch[1]
-        .replace(/\n/g, ', ')
-        .trim();
+    // Address — Check KV pairs first as Textract often parses it cleanly
+    const addressKey = Object.keys(kvPairs).find(k => k.includes('address'));
+    if (addressKey && kvPairs[addressKey]) {
+      result.addressAsAadharCard = kvPairs[addressKey];
+    } else {
+      // Fallback to raw text regex
+      const addressRegex = /(?:Address|S\/O|W\/O|D\/O)[:\s]+(.+?)(?=\d{4}\s\d{4}|\d{6}|$)/is;
+      const addressMatch = rawText.match(addressRegex);
+      if (addressMatch) {
+        result.addressAsAadharCard = addressMatch[1]
+          .replace(/\n/g, ', ')
+          .trim();
+      }
     }
 
     return result;

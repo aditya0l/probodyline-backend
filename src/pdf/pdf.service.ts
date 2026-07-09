@@ -817,4 +817,16 @@ export class PdfService implements OnModuleDestroy {
       return basePdfBuffer;
     }
   }
+
+  async createShortLink(url: string) {
+    return this.prisma.sharedLink.create({
+      data: { url }
+    });
+  }
+
+  async getShortLink(id: string) {
+    return this.prisma.sharedLink.findUnique({
+      where: { id }
+    });
+  }
 }

@@ -1256,3 +1256,11 @@ model ClientDocument {
   @@unique([clientId, documentType])
   @@map("client_documents")
 }
+
+model SharedLink {
+  id        String   @id @default(uuid())
+  url       String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@map("shared_links")
+}

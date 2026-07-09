@@ -1,4 +1,4 @@
-import { Controller, Get, Post, All, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, All, Param, Query, Res, Body } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -281,5 +281,21 @@ export class PdfController {
 
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
+  }
+
+  @Post('shorten')
+  @ApiOperation({ summary: 'Create a short link for sharing' })
+  async createShortLink(@Body() body: { url: string }) {
+    if (!body.url) throw new import('@nestjs/common').BadRequestException('url is required');
+    const link = await this.pdfService.createShortLink(body.url);
+    return { id: link.id };
+  }
+
+  @Get('s/:id')
+  @ApiOperation({ summary: 'Redirect to a short link' })
+  async redirectShortLink(@Param('id') id: string, @Res() res: Response) {
+    const link = await this.pdfService.getShortLink(id);
+    if (!link) throw new import('@nestjs/common').NotFoundException('Link not found');
+    res.redirect(302, link.url);
   }
 }

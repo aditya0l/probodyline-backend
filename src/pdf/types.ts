@@ -154,6 +154,9 @@ export interface PDFTemplateData {
     panCardNumber: string;
   }>;
   bankQuoteDocumentUrls?: string[];
+  bankQuoteClientAadharName?: string;
+  bankQuoteClientAadharNumber?: string;
+  bankQuoteClientPanCardNumber?: string;
   status?: string;
   notes?: string;
   computerGeneratedText?: string;

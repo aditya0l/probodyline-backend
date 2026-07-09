@@ -142,6 +142,7 @@ export interface PDFTemplateData {
   isPriceList?: boolean;
   isLoadingSlip?: boolean;
   isBankQuote?: boolean;
+  isNotBankQuote?: boolean;
   bankQuoteFirmName?: string;
   bankQuoteFirmGstNo?: string;
   bankQuoteBranchAddress?: string;

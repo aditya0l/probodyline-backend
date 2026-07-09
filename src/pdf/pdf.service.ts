@@ -720,7 +720,7 @@ export class PdfService implements OnModuleDestroy {
 
       // CSS content (will be injected)
       CSS_CONTENT: '',
-    } as any; // Cast to any to allow isNotBankQuote
+    };
 
     // Load the base HTML template
     data.isNotBankQuote = !isBankQuote;

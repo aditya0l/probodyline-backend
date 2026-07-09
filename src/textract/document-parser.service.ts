@@ -78,7 +78,15 @@ export class DocumentParserService {
     // Address — Check KV pairs first as Textract often parses it cleanly
     const addressKey = Object.keys(kvPairs).find(k => k.includes('address'));
     if (addressKey && kvPairs[addressKey]) {
-      result.addressAsAadharCard = kvPairs[addressKey];
+      let address = kvPairs[addressKey];
+      // Strip relative name (S/O, W/O, D/O, C/O) from the beginning of the address if present
+      const nameMatch = rawText.match(/(?:S\/O|W\/O|D\/O|C\/O)[\s:]+([A-Za-z\s\.]+)/i);
+      if (nameMatch) {
+        const relativeName = nameMatch[1].trim();
+        const regex = new RegExp(`^${relativeName}[,\\s]*`, 'i');
+        address = address.replace(regex, '');
+      }
+      result.addressAsAadharCard = address;
     } else {
       // Fallback to raw text regex
       const addressRegex = /(?:Address|S\/O|W\/O|D\/O)[:\s]+(.+?)(?=\d{4}\s\d{4}|\d{6}|$)/is;

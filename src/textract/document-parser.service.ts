@@ -15,15 +15,14 @@ export class DocumentParserService {
 
     // Name on PAN card — usually appears after "Name" label
     // or on the line before the PAN number
-    const namePatterns = [
-      /name[:\s]+([A-Z\s]+)/i,
-      /(?:^|\n)([A-Z]{2,}\s+[A-Z]{2,}(?:\s+[A-Z]{2,})?)/m
-    ];
-    for (const pattern of namePatterns) {
-      const match = rawText.match(pattern);
-      if (match?.[1] && match[1].trim().length > 2) {
-        result.nameAsPanCard = match[1].trim();
-        break;
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].toLowerCase();
+      if (line === 'name' || line === 'name:') {
+        if (lines[i + 1]) {
+          result.nameAsPanCard = lines[i + 1];
+          break;
+        }
       }
     }
 
@@ -89,19 +88,15 @@ export class DocumentParserService {
       result.gstRegistrationNumber = gstMatches[0];
     }
 
-    // Legal name
-    const legalNamePatterns = [
-      /legal name[:\s]+([^\n]+)/i,
-      /trade name[:\s]+([^\n]+)/i
-    ];
-    for (const pattern of legalNamePatterns) {
-      const match = rawText.match(pattern);
-      if (match?.[1]) {
-        if (pattern.source.includes('legal')) {
-          result.legalName = match[1].trim();
-        } else {
-          result.tradeName = match[1].trim();
-        }
+    // Legal & Trade name using line-based parsing
+    const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].toLowerCase();
+      if (line.includes('legal name')) {
+        if (lines[i + 1]) result.legalName = lines[i + 1];
+      }
+      if (line.includes('trade name')) {
+        if (lines[i + 1]) result.tradeName = lines[i + 1];
       }
     }
 

@@ -757,6 +757,12 @@ export class ClientsService {
       }
       const rawText = this.textractService.extractRawText(blocks);
       const kvPairs = this.textractService.extractKeyValuePairs(blocks);
+      
+      console.log('====== OCR RAW TEXT ======');
+      console.log(rawText);
+      console.log('====== OCR KV PAIRS ======');
+      console.log(JSON.stringify(kvPairs, null, 2));
+      
       extractedFields = this.documentParserService.parseDocument(type, rawText, kvPairs);
     } catch (ocrError: any) {
       console.warn('OCR failed for document:', ocrError.message);

@@ -519,61 +519,40 @@ export class QuotationsService {
                   }
                 });
               }
+            }
 
-              const existing = await tx.customer.findUnique({ where: { id: customerId } });
-              if (existing) {
-                await tx.customer.update({
-                  where: { id: customerId },
-                  data: {
-                    name: c.clientName?.trim() || 'Unknown',
-                    phone: c.clientPhone?.trim() || '0000000000',
-                    email: c.clientEmail?.trim() || null,
-                    address: c.clientAddress,
-                    addressLine2: c.clientAddressLine2,
-                    city: c.clientCity,
-                    panCard: c.clientPanCard?.trim() || null,
-                    aadharCard: c.clientAadharCard?.trim() || null,
-                    gst: c.clientGST?.trim() || null,
-                    gymName: c.gymName,
-                    area: c.gymArea,
-                    isPhoneVerified: c.isPhoneVerified || false,
-                  },
-                });
-              } else {
-                const newCustomer = await tx.customer.create({
-                  data: {
-                    name: c.clientName?.trim() || 'Unknown',
-                    phone: c.clientPhone?.trim() || '0000000000',
-                    email: c.clientEmail?.trim() || null,
-                    address: c.clientAddress,
-                    addressLine2: c.clientAddressLine2,
-                    city: c.clientCity,
-                    panCard: c.clientPanCard?.trim() || null,
-                    aadharCard: c.clientAadharCard?.trim() || null,
-                    gst: c.clientGST?.trim() || null,
-                    gymName: c.gymName,
-                    area: c.gymArea,
-                    isPhoneVerified: c.isPhoneVerified || false,
-                  },
-                });
-                customerId = newCustomer.id;
-              }
+            const customerData = {
+              name: c.clientName?.trim() || 'Unknown',
+              phone: c.clientPhone?.trim() || '0000000000',
+              email: c.clientEmail?.trim() || null,
+              address: c.clientAddress,
+              addressLine2: c.clientAddressLine2,
+              city: c.clientCity,
+              panCard: c.clientPanCard?.trim() || null,
+              aadharCard: c.clientAadharCard?.trim() || null,
+              gst: c.clientGST?.trim() || null,
+              gymName: c.gymName,
+              area: c.gymArea,
+              isPhoneVerified: c.isPhoneVerified || false,
+            };
+
+            let existing: any = null;
+            if (customerId) {
+              existing = await tx.customer.findUnique({ where: { id: customerId } });
+            }
+            if (!existing && customerData.email) {
+              existing = await tx.customer.findUnique({ where: { email: customerData.email } });
+            }
+
+            if (existing) {
+              await tx.customer.update({
+                where: { id: existing.id },
+                data: customerData,
+              });
+              customerId = existing.id;
             } else if (c.clientName || c.clientPhone || c.clientEmail) {
               const newCustomer = await tx.customer.create({
-                data: {
-                  name: c.clientName?.trim() || 'Unknown',
-                  phone: c.clientPhone?.trim() || '0000000000',
-                  email: c.clientEmail?.trim() || null,
-                  address: c.clientAddress,
-                  addressLine2: c.clientAddressLine2,
-                  city: c.clientCity,
-                  panCard: c.clientPanCard?.trim() || null,
-                  aadharCard: c.clientAadharCard?.trim() || null,
-                  gst: c.clientGST?.trim() || null,
-                  gymName: c.gymName,
-                  area: c.gymArea,
-                  isPhoneVerified: c.isPhoneVerified || false,
-                },
+                data: customerData,
               });
               customerId = newCustomer.id;
             }

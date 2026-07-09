@@ -1278,7 +1278,7 @@ export class SalesOrdersService {
         const requiredQty = item.quantity;
 
         // 1. Calculate Today's Physical Stock
-        const todayStr = new Date().toLocaleDateString('en-CA'); // e.g. "2026-07-09"
+        const todayStr = require('date-fns-tz').formatInTimeZone(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd'); // e.g. "2026-07-09"
         // Find the last transaction that occurred on or before today to get today's stock
         const pastRows = ledgerRows.filter(r => r.date <= todayStr);
         if (pastRows.length > 0) {

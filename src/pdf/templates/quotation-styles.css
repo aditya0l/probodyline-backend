@@ -578,3 +578,66 @@ body.landscape .no-image-placeholder {
     padding: 0;
   }
 }
+/* Redesigned Card Sections */
+.card-section {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #FFFFFF;
+}
+
+.card-title {
+  font-weight: bold;
+  font-size: 10pt;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: 7.5pt;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.field-value {
+  font-size: 9pt;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.field-muted {
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: normal;
+}
+
+.partner-badge {
+  background: var(--header-bg);
+  color: var(--text-primary);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8pt;
+  font-weight: bold;
+}

@@ -65,160 +65,78 @@
       <!-- Client info now always renders -->
       <!-- Multiple Clients Side-by-Side -->
       {{#if hasMultipleClients}}
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
         <!-- Client 1 -->
-        <div style="border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
-          <div style="font-weight: 600; font-size: 8pt; margin-bottom: 5px; color: var(--text-secondary);">CLIENT 1</div>
-          <div class="info-row"><div class="info-label">CLIENT NAME</div><div class="info-value">{{client1Name}}</div></div>
-          {{#if showAddressLine1Field}}<div class="info-row"><div class="info-label">ADDRESS 1</div><div class="info-value">{{#if client1Address}}{{{client1Address}}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showAddressLine2Field}}<div class="info-row"><div class="info-label">ADDRESS 2</div><div class="info-value">{{#if client1AddressLine2}}{{{client1AddressLine2}}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showCityField}}<div class="info-row"><div class="info-label">CITY</div><div class="info-value">{{#if client1City}}{{client1City}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showGstNoField}}<div class="info-row"><div class="info-label">GST NO.</div><div class="info-value">{{#if client1GST}}{{client1GST}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showPanCardField}}<div class="info-row"><div class="info-label">PAN CARD</div><div class="info-value">{{#if client1PanCard}}{{client1PanCard}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showAadharCardField}}<div class="info-row"><div class="info-label">AADHAR CARD</div><div class="info-value">{{#if client1AadharCard}}{{client1AadharCard}}{{else}}—{{/if}}</div></div>{{/if}}
+        <div class="card-section" style="margin-bottom: 0;">
+          <div class="card-title">CLIENT 1</div>
+          <div class="card-grid">
+            <div class="field-group"><div class="field-label">CLIENT NAME</div><div class="field-value">{{#if client1Name}}{{client1Name}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
+            {{#if showAddressLine1Field}}<div class="field-group"><div class="field-label">ADDRESS</div><div class="field-value">{{#if client1Address}}{{{client1Address}}}{{#if client1AddressLine2}}, {{{client1AddressLine2}}}{{/if}}{{#if client1City}}, {{client1City}}{{/if}}{{else}}{{#if client1City}}{{client1City}}{{else}}<span class="field-muted">Not provided</span>{{/if}}{{/if}}</div></div>{{/if}}
+            {{#if showGstNoField}}<div class="field-group"><div class="field-label">GST NO.</div><div class="field-value">{{#if client1GST}}{{client1GST}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+            {{#if showPanCardField}}<div class="field-group"><div class="field-label">PAN CARD</div><div class="field-value">{{#if client1PanCard}}{{client1PanCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+            {{#if showAadharCardField}}<div class="field-group"><div class="field-label">AADHAR CARD</div><div class="field-value">{{#if client1AadharCard}}{{client1AadharCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          </div>
         </div>
         <!-- Client 2 -->
-        <div style="border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
-          <div style="font-weight: 600; font-size: 8pt; margin-bottom: 5px; color: var(--text-secondary);">CLIENT 2</div>
-          <div class="info-row"><div class="info-label">CLIENT NAME</div><div class="info-value">{{client2Name}}</div></div>
-          {{#if showAddressLine1Field}}<div class="info-row"><div class="info-label">ADDRESS 1</div><div class="info-value">{{#if client2Address}}{{{client2Address}}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showAddressLine2Field}}<div class="info-row"><div class="info-label">ADDRESS 2</div><div class="info-value">{{#if client2AddressLine2}}{{{client2AddressLine2}}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showCityField}}<div class="info-row"><div class="info-label">CITY</div><div class="info-value">{{#if client2City}}{{client2City}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showGstNoField}}<div class="info-row"><div class="info-label">GST NO.</div><div class="info-value">{{#if client2GST}}{{client2GST}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showPanCardField}}<div class="info-row"><div class="info-label">PAN CARD</div><div class="info-value">{{#if client2PanCard}}{{client2PanCard}}{{else}}—{{/if}}</div></div>{{/if}}
-          {{#if showAadharCardField}}<div class="info-row"><div class="info-label">AADHAR CARD</div><div class="info-value">{{#if client2AadharCard}}{{client2AadharCard}}{{else}}—{{/if}}</div></div>{{/if}}
+        <div class="card-section" style="margin-bottom: 0;">
+          <div class="card-title">CLIENT 2</div>
+          <div class="card-grid">
+            <div class="field-group"><div class="field-label">CLIENT NAME</div><div class="field-value">{{#if client2Name}}{{client2Name}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
+            {{#if showAddressLine1Field}}<div class="field-group"><div class="field-label">ADDRESS</div><div class="field-value">{{#if client2Address}}{{{client2Address}}}{{#if client2AddressLine2}}, {{{client2AddressLine2}}}{{/if}}{{#if client2City}}, {{client2City}}{{/if}}{{else}}{{#if client2City}}{{client2City}}{{else}}<span class="field-muted">Not provided</span>{{/if}}{{/if}}</div></div>{{/if}}
+            {{#if showGstNoField}}<div class="field-group"><div class="field-label">GST NO.</div><div class="field-value">{{#if client2GST}}{{client2GST}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+            {{#if showPanCardField}}<div class="field-group"><div class="field-label">PAN CARD</div><div class="field-value">{{#if client2PanCard}}{{client2PanCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+            {{#if showAadharCardField}}<div class="field-group"><div class="field-label">AADHAR CARD</div><div class="field-value">{{#if client2AadharCard}}{{client2AadharCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          </div>
         </div>
       </div>
       {{/if}}
 
-      <div class="info-grid">
-        {{#if isSingleClient}}
-        {{#if showClientNameField}}
-        <div class="info-row">
-          <div class="info-label">CLIENT NAME</div>
-          <div class="info-value">{{#if clientName}}{{clientName}}{{else}}—{{/if}}</div>
+      {{#if isSingleClient}}
+      <div class="card-section">
+        <div class="card-title">CLIENT DETAILS</div>
+        <div class="card-grid">
+          {{#if showClientNameField}}<div class="field-group"><div class="field-label">CLIENT NAME</div><div class="field-value">{{#if clientName}}{{clientName}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if legalName}}<div class="field-group"><div class="field-label">LEGAL NAME</div><div class="field-value">{{legalName}}</div></div>{{/if}}
+          {{#if tradeName}}<div class="field-group"><div class="field-label">TRADE NAME</div><div class="field-value">{{tradeName}}</div></div>{{/if}}
+          {{#if nameAsPanCard}}<div class="field-group"><div class="field-label">NAME AS PAN</div><div class="field-value">{{nameAsPanCard}}</div></div>{{/if}}
+          {{#if nameAsAadharCard}}<div class="field-group"><div class="field-label">NAME AS AADHAR</div><div class="field-value">{{nameAsAadharCard}}</div></div>{{/if}}
+          
+          {{#if showAddressLine1Field}}<div class="field-group" style="grid-column: span 2;"><div class="field-label">ADDRESS</div><div class="field-value">{{#if clientAddress}}{{{clientAddress}}}{{#if clientAddressLine2}}, {{{clientAddressLine2}}}{{/if}}{{#if clientCity}}, {{clientCity}}{{/if}}{{else}}{{#if clientCity}}{{clientCity}}{{else}}<span class="field-muted">Not provided</span>{{/if}}{{/if}}</div></div>{{/if}}
+          
+          {{#if showGstNoField}}<div class="field-group"><div class="field-label">GST NO.</div><div class="field-value">{{#if clientGST}}{{clientGST}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showBookingDateField}}<div class="field-group"><div class="field-label">BOOKING DATE</div><div class="field-value">{{#if bookingDate}}{{bookingDate}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showDispatchDateField}}<div class="field-group"><div class="field-label">DISPATCH DATE</div><div class="field-value">{{#if dispatchDate}}{{dispatchDate}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showPanCardField}}<div class="field-group"><div class="field-label">PAN CARD</div><div class="field-value">{{#if clientPanCard}}{{clientPanCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showAadharCardField}}<div class="field-group"><div class="field-label">AADHAR CARD</div><div class="field-value">{{#if clientAadharCard}}{{clientAadharCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showGymAreaField}}<div class="field-group"><div class="field-label">GYM AREA (Sq.ft)</div><div class="field-value">{{#if gymArea}}{{gymArea}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showGymNameField}}<div class="field-group"><div class="field-label">GYM NAME</div><div class="field-value">{{#if gymName}}{{gymName}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
         </div>
-        {{/if}}
-        {{#if legalName}}
-        <div class="info-row">
-          <div class="info-label">LEGAL NAME</div>
-          <div class="info-value">{{legalName}}</div>
-        </div>
-        {{/if}}
-        {{#if tradeName}}
-        <div class="info-row">
-          <div class="info-label">TRADE NAME</div>
-          <div class="info-value">{{tradeName}}</div>
-        </div>
-        {{/if}}
-        {{#if nameAsPanCard}}
-        <div class="info-row">
-          <div class="info-label">NAME AS PAN</div>
-          <div class="info-value">{{nameAsPanCard}}</div>
-        </div>
-        {{/if}}
-        {{#if nameAsAadharCard}}
-        <div class="info-row">
-          <div class="info-label">NAME AS AADHAR</div>
-          <div class="info-value">{{nameAsAadharCard}}</div>
-        </div>
-        {{/if}}
-
-        {{/if}}
-        {{#if isSingleClient}}
-        {{#if showAddressLine1Field}}
-        <div class="info-row">
-          <div class="info-label">ADDRESS LINE 1</div>
-          <div class="info-value">{{#if clientAddress}}{{{clientAddress}}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{/if}}
-        {{#if isSingleClient}}
-        {{#if showAddressLine2Field}}
-        <div class="info-row">
-          <div class="info-label">ADDRESS LINE 2</div>
-          <div class="info-value">{{#if clientAddressLine2}}{{{clientAddressLine2}}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{/if}}
-        {{#if isSingleClient}}
-        {{#if showCityField}}
-        <div class="info-row">
-          <div class="info-label">CITY</div>
-          <div class="info-value">{{#if clientCity}}{{clientCity}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{/if}}
-        {{#if isSingleClient}}
-        {{#if showGstNoField}}
-        <div class="info-row">
-          <div class="info-label">GST NO.</div>
-          <div class="info-value">{{#if clientGST}}{{clientGST}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{/if}}
-        {{#if showBookingDateField}}
-        <div class="info-row">
-          <div class="info-label">BOOKING DATE</div>
-          <div class="info-value">{{#if bookingDate}}{{bookingDate}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{#if showDispatchDateField}}
-        <div class="info-row">
-          <div class="info-label">DISPATCH DATE</div>
-          <div class="info-value">{{#if dispatchDate}}{{dispatchDate}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{#if isSingleClient}}
-        {{#if showPanCardField}}
-        <div class="info-row">
-          <div class="info-label">PAN CARD</div>
-          <div class="info-value">{{#if clientPanCard}}{{clientPanCard}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{/if}}
-        {{#if isSingleClient}}
-        {{#if showAadharCardField}}
-        <div class="info-row">
-          <div class="info-label">AADHAR CARD</div>
-          <div class="info-value">{{#if clientAadharCard}}{{clientAadharCard}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{/if}}
-        {{#if showGymAreaField}}
-        <div class="info-row">
-          <div class="info-label">GYM AREA (Sq.ft)</div>
-          <div class="info-value">{{#if gymArea}}{{gymArea}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
-        {{#if showGymNameField}}
-        <div class="info-row">
-          <div class="info-label">GYM NAME</div>
-          <div class="info-value">{{#if gymName}}{{gymName}}{{else}}—{{/if}}</div>
-        </div>
-        {{/if}}
       </div>
+      {{/if}}
 
       {{#if isBankQuote}}
-      <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
-        <div style="font-weight: bold; font-size: 9pt; margin-bottom: 5px; color: var(--primary-color);">BANK QUOTE DETAILS</div>
-        <div class="info-grid">
-          {{#if showBqFirmNameField}}<div class="info-row"><div class="info-label">FIRM NAME</div><div class="info-value">{{bankQuoteFirmName}}</div></div>{{/if}}
-          {{#if showBqFirmGstNoField}}<div class="info-row"><div class="info-label">FIRM GST NO.</div><div class="info-value">{{bankQuoteFirmGstNo}}</div></div>{{/if}}
-          {{#if showBqBranchAddressField}}<div class="info-row" style="grid-column: span 2;"><div class="info-label">BRANCH ADDRESS</div><div class="info-value">{{bankQuoteBranchAddress}}</div></div>{{/if}}
-          {{#if showBqFirmPanCardField}}<div class="info-row"><div class="info-label">FIRM PAN CARD</div><div class="info-value">{{bankQuoteFirmPanCard}}</div></div>{{/if}}
-          {{#if showBqContactField}}<div class="info-row"><div class="info-label">CONTACT</div><div class="info-value">{{bankQuoteContact}}</div></div>{{/if}}
+      <div class="card-section">
+        <div class="card-title">BANK QUOTE DETAILS</div>
+        <div class="card-grid">
+          {{#if showBqFirmNameField}}<div class="field-group"><div class="field-label">FIRM NAME</div><div class="field-value">{{#if bankQuoteFirmName}}{{bankQuoteFirmName}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showBqFirmGstNoField}}<div class="field-group"><div class="field-label">FIRM GST NO.</div><div class="field-value">{{#if bankQuoteFirmGstNo}}{{bankQuoteFirmGstNo}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showBqBranchAddressField}}<div class="field-group" style="grid-column: span 2;"><div class="field-label">BRANCH ADDRESS</div><div class="field-value">{{#if bankQuoteBranchAddress}}{{bankQuoteBranchAddress}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showBqFirmPanCardField}}<div class="field-group"><div class="field-label">FIRM PAN CARD</div><div class="field-value">{{#if bankQuoteFirmPanCard}}{{bankQuoteFirmPanCard}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
+          {{#if showBqContactField}}<div class="field-group"><div class="field-label">CONTACT</div><div class="field-value">{{#if bankQuoteContact}}{{bankQuoteContact}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
         </div>
         
         {{#if showBqPartnersField}}
         {{#if bankQuotePartners}}
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; margin-bottom: 5px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border);">
           {{#each bankQuotePartners}}
-          <div style="border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
-            <div style="font-weight: 600; font-size: 8pt; margin-bottom: 5px; color: var(--text-secondary);">PARTNER {{@index}}</div>
-            <div class="info-row"><div class="info-label">NAME AS AADHAR</div><div class="info-value">{{this.nameAsOnAadhar}}</div></div>
-            <div class="info-row"><div class="info-label">AADHAR CARD</div><div class="info-value">{{this.aadharNumber}}</div></div>
-            <div class="info-row"><div class="info-label">PAN CARD</div><div class="info-value">{{this.panCardNumber}}</div></div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div class="partner-badge">P{{@index}}</div>
+              <div style="font-weight: 600; font-size: 8.5pt; color: var(--text-secondary);">PARTNER {{@index}}</div>
+            </div>
+            <div class="field-group"><div class="field-label">NAME AS AADHAR</div><div class="field-value">{{#if this.nameAsOnAadhar}}{{this.nameAsOnAadhar}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
+            <div class="field-group"><div class="field-label">AADHAR CARD</div><div class="field-value">{{#if this.aadharNumber}}{{this.aadharNumber}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
+            <div class="field-group"><div class="field-label">PAN CARD</div><div class="field-value">{{#if this.panCardNumber}}{{this.panCardNumber}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>
           </div>
           {{/each}}
         </div>
@@ -226,7 +144,6 @@
         {{/if}}
       </div>
       {{/if}}
-
     </div>
     {{else}}
     <!-- Minimal Header for loading slip / price list if needed -->

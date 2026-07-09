@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 
 import { EventsGateway } from '../events/events.gateway';
 import { userContext } from '../common/context';
+import { getLedgerTransactions } from '../stock/allocation-algorithm';
 
 @Injectable()
 export class SalesOrdersService {
@@ -1267,49 +1268,53 @@ export class SalesOrdersService {
         const product = item.product;
         if (!product) return null;
 
-        const ledgerTransactions = await this.prisma.stockTransaction.findMany({
-          where: { productId: product.id },
-          orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
-        });
+        const ledger = await getLedgerTransactions(this.prisma, product.id);
+        const ledgerRows = ledger.data;
 
-        let runningStock = 0;
         let todaysStock = 0;
-        let stockAtDispatch = 0;
-
-        const today = new Date();
-        today.setHours(23, 59, 59, 999);
-
-        for (const tx of ledgerTransactions) {
-          runningStock += tx.quantity;
-
-          if (tx.date <= today) {
-            todaysStock = runningStock;
-          }
-          if (tx.date <= masterDispatchDate) {
-            stockAtDispatch = runningStock;
-          }
-        }
-
-        // Calculate "Available to Promise" (min running stock from dispatch date onwards)
-        let stockOnDispatchDate = stockAtDispatch;
-        let running = 0;
-        for (const tx of ledgerTransactions) {
-          running += tx.quantity;
-          if (tx.date >= masterDispatchDate && running < stockOnDispatchDate) {
-            stockOnDispatchDate = running;
-          }
-        }
-
-        const requiredQty = item.quantity;
+        let stockOnDispatchDate = 0;
         let status = 'WAITING LIST';
         let statusQty = 0;
+        const requiredQty = item.quantity;
 
-        if (stockOnDispatchDate >= requiredQty) {
-          status = 'CONFIRM';
-          statusQty = requiredQty;
-        } else if (stockOnDispatchDate > 0) {
-          status = 'PARTIAL';
-          statusQty = stockOnDispatchDate;
+        // 1. Calculate Today's Physical Stock
+        const todayStr = new Date().toLocaleDateString('en-CA'); // e.g. "2026-07-09"
+        // Find the last transaction that occurred on or before today to get today's stock
+        const pastRows = ledgerRows.filter(r => r.date <= todayStr);
+        if (pastRows.length > 0) {
+          todaysStock = pastRows[pastRows.length - 1].todaysPhysicalStock;
+        }
+
+        // 2. Find this specific order's transaction in the ledger to inherit its exact allocation status
+        const targetRefId = so.quotationId || so.id;
+        const orderRow = ledgerRows.find(r => r.referenceId === targetRefId);
+
+        if (orderRow) {
+          stockOnDispatchDate = orderRow.stockOnDispatchDate;
+          status = orderRow.status || 'WAITING LIST';
+          statusQty = orderRow.statusQty || 0;
+        } else {
+          // Fallback if transaction isn't found (e.g. fresh unbooked order)
+          // Use the ATP of the masterDispatchDate
+          const masterDispatchDateStr = masterDispatchDate.toISOString().split('T')[0];
+          const dispatchRows = ledgerRows.filter(r => r.date <= masterDispatchDateStr);
+          let baseStock = 0;
+          if (dispatchRows.length > 0) {
+             baseStock = dispatchRows[dispatchRows.length - 1].todaysPhysicalStock;
+          }
+          
+          const futureRows = ledgerRows.filter(r => r.date >= masterDispatchDateStr);
+          stockOnDispatchDate = futureRows.length > 0
+            ? Math.min(...futureRows.map(r => r.todaysPhysicalStock))
+            : baseStock;
+            
+          if (stockOnDispatchDate >= requiredQty) {
+            status = 'CONFIRM';
+            statusQty = requiredQty;
+          } else if (stockOnDispatchDate > 0) {
+            status = 'PARTIAL';
+            statusQty = stockOnDispatchDate;
+          }
         }
 
         return {

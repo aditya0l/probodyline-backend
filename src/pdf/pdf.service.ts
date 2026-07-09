@@ -798,20 +798,8 @@ export class PdfService implements OnModuleDestroy {
             const copiedPages = await mergedPdf.copyPages(extPdf, extPdf.getPageIndices());
             copiedPages.forEach((page) => mergedPdf.addPage(page));
           } else if (contentType?.startsWith('image/') || url.match(/\.(jpeg|jpg|png|gif)$/i)) {
-            let image;
-            if (contentType === 'image/png' || url.toLowerCase().endsWith('.png')) {
-              image = await mergedPdf.embedPng(buffer);
-            } else {
-              image = await mergedPdf.embedJpg(buffer);
-            }
-            const page = mergedPdf.addPage([595.28, 841.89]); // A4
-            const { width, height } = image.scaleToFit(500, 750);
-            page.drawImage(image, {
-              x: (595.28 - width) / 2,
-              y: (841.89 - height) / 2,
-              width,
-              height,
-            });
+            // Images are now rendered natively on the final page of the quotation via HTML template
+            // We no longer append them as separate new pages here.
           }
         } catch (e: any) {
           console.error('Failed to append document:', url, e.message);

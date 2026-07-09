@@ -148,7 +148,8 @@ export function renderTemplate(template: string, data: TemplateData): string {
         value !== undefined &&
         value !== null &&
         value !== false &&
-        value !== '';
+        value !== '' &&
+        !(Array.isArray(value) && value.length === 0);
 
       // Check for {{else}} at the same level
       let elsePos = -1;
@@ -366,7 +367,8 @@ export function renderTemplate(template: string, data: TemplateData): string {
                         nestedIfValue !== undefined &&
                         nestedIfValue !== null &&
                         nestedIfValue !== false &&
-                        nestedIfValue !== '';
+                        nestedIfValue !== '' &&
+                        !(Array.isArray(nestedIfValue) && nestedIfValue.length === 0);
 
                       // Find {{else}} at the SAME level (not nested)
                       let elsePos = -1;
@@ -483,6 +485,15 @@ export function renderTemplate(template: string, data: TemplateData): string {
             (m, prop) => {
               return item[prop] !== undefined && item[prop] !== null
                 ? String(item[prop])
+                : '';
+            },
+          );
+
+          itemContent = itemContent.replace(
+            /\{\{this\}\}/g,
+            () => {
+              return item !== undefined && item !== null
+                ? String(item)
                 : '';
             },
           );

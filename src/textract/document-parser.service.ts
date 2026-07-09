@@ -47,19 +47,26 @@ export class DocumentParserService {
       result.aadharCardNumber = aadharMatches[0].replace(/\s/g, '');
     }
 
-    // Name — usually on first or second line of Aadhar
+    // Name — on Aadhar, the true name is almost always the line exactly above the DOB line
     const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-    for (const line of lines) {
-      // Name lines are typically all caps or Title Case, no numbers
-      if (
-        /^[A-Za-z\s]{3,50}$/.test(line) &&
-        !line.toLowerCase().includes('government') &&
-        !line.toLowerCase().includes('india') &&
-        !line.toLowerCase().includes('aadhaar') &&
-        line.split(' ').length >= 2
-      ) {
-        result.nameAsAadharCard = line;
-        break;
+    const dobIndex = lines.findIndex(l => /(?:DOB|Date of Birth|DOB\s*:|Date of Birth\s*:|YOB)/i.test(l) || /\d{2}\/\d{2}\/\d{4}/.test(l));
+    
+    if (dobIndex > 0) {
+      // The line before DOB is the name
+      result.nameAsAadharCard = lines[dobIndex - 1];
+    } else {
+      // Fallback to old heuristic if DOB not found
+      for (const line of lines) {
+        if (
+          /^[A-Za-z\s]{3,50}$/.test(line) &&
+          !line.toLowerCase().includes('government') &&
+          !line.toLowerCase().includes('india') &&
+          !line.toLowerCase().includes('aadhaar') &&
+          line.split(' ').length >= 2
+        ) {
+          result.nameAsAadharCard = line;
+          break;
+        }
       }
     }
 

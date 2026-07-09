@@ -697,7 +697,7 @@ export class PdfService implements OnModuleDestroy {
       bankQuoteBranchAddress: bankQuoteData?.branchAddress,
       bankQuoteFirmPanCard: bankQuoteData?.firmPanCardNumber,
       bankQuoteContact: bankQuoteData?.contact || (quotation.clients && quotation.clients.length > 0 ? quotation.clients[0].phone : undefined) || customer?.phone,
-      bankQuotePartners: bankQuoteData?.partners,
+      bankQuotePartners: bankQuoteData?.partners?.filter((p: any) => p.nameAsOnAadhar || p.aadharNumber || p.panCardNumber),
       bankQuoteDocumentUrls: bankQuoteData?.documentUrls,
       
       showHeader: showHeader,

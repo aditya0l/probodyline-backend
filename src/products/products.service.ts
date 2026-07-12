@@ -200,7 +200,6 @@ export class ProductsService implements OnModuleInit {
           warranty: true,
           notes: true,
           productType: true,
-          mrp: true,
           categoryId: true,
           category: {
             select: { id: true, name: true },

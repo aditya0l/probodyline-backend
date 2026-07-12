@@ -146,16 +146,25 @@ export class ProductsService implements OnModuleInit {
     page?: number;
     limit?: number;
   }): Promise<{ data: any[]; total: number }> {
+    let searchIds: string[] | undefined;
+
+    if (filters?.search) {
+      const rawMatches = await this.prisma.$queryRaw<{id: string}[]>`
+        SELECT id FROM "products"
+        WHERE "deletedAt" IS NULL
+        AND (
+          "name" ILIKE ${'%' + filters.search + '%'} OR
+          "modelNumber" ILIKE ${'%' + filters.search + '%'} OR
+          "seriesName" ILIKE ${'%' + filters.search + '%'} OR
+          array_to_string("keyword", ' ') ILIKE ${'%' + filters.search + '%'}
+        )
+      `;
+      searchIds = rawMatches.map(m => m.id);
+    }
+
     const where: Prisma.ProductWhereInput = {
       deletedAt: null,
-      ...(filters?.search && {
-        OR: [
-          { name: { contains: filters.search, mode: 'insensitive' } },
-          { modelNumber: { contains: filters.search, mode: 'insensitive' } },
-          { seriesName: { contains: filters.search, mode: 'insensitive' } },
-          { keyword: { has: filters.search } },
-        ],
-      }),
+      ...(searchIds && { id: { in: searchIds } }),
       ...(filters?.productType && { productType: filters.productType }),
       ...(filters?.categoryId && { categoryId: filters.categoryId }),
     };

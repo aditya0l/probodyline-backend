@@ -55,7 +55,11 @@ export class FilesService {
     if (isThumbnail) {
       s.resize(200, 200, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 70 });
     } else {
-      s.resize(800, 800, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 });
+      if (key.includes('screenshots')) {
+        s.webp({ quality: 90 }); // Keep original resolution for screenshots
+      } else {
+        s.resize(2000, 2000, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 });
+      }
     }
     
     const processedBuffer = await s.toBuffer();

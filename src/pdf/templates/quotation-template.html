@@ -257,10 +257,10 @@
       {{#if bankQuoteDocumentUrls}}
       <div style="margin-top: 20px; page-break-before: always;">
         <div style="font-weight: bold; font-size: 10pt; margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Attached Documents</div>
-        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
           {{#each bankQuoteDocumentUrls}}
-          <div style="width: 100%; text-align: center; page-break-inside: avoid; margin-bottom: 10px;">
-            <img src="{{this}}" style="max-width: 100%; max-height: 900px; object-fit: contain; border: 1px solid #eee; padding: 5px; background: #fff;" />
+          <div style="width: 45%; text-align: center; margin-bottom: 10px;">
+            <img src="{{this}}" style="max-width: 100%; max-height: 400px; object-fit: contain; border: 1px solid #eee; padding: 5px; background: #fff;" />
           </div>
           {{/each}}
         </div>

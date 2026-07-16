@@ -1103,28 +1103,28 @@ export class SalesOrdersService {
         data: { dispatchDate: newDispatchDate },
       });
 
-      // D. Sync Dispatch Splits
-      const splits = await tx.dispatchSplit.findMany({
-        where: { salesOrderId },
+      // D. Sync only Split 1 (A) — other splits have their own independent dates
+      const splitA = await tx.dispatchSplit.findFirst({
+        where: { salesOrderId, splitNumber: 1 },
       });
 
-      for (const split of splits) {
+      if (splitA) {
         await tx.dispatchSplit.update({
-          where: { id: split.id },
+          where: { id: splitA.id },
           data: { dispatchDate: newDispatchDate },
         });
 
-        if (split.status === 'BOOKED') {
+        if (splitA.status === 'BOOKED') {
           await tx.stockTransaction.updateMany({
             where: {
-              referenceId: split.id,
+              referenceId: splitA.id,
               referenceType: 'DISPATCH_SPLIT',
             },
             data: { date: newDispatchDate },
           });
 
           await tx.booking.updateMany({
-            where: { dispatchSplitId: split.id },
+            where: { dispatchSplitId: splitA.id },
             data: { dispatchDate: newDispatchDate },
           });
         }

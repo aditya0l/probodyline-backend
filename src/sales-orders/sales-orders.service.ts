@@ -1791,7 +1791,7 @@ export class SalesOrdersService {
             }
           });
 
-          // Update any splits that were following the old master dispatch date
+          // Only update splits that were following the old master dispatch date
           if (body.dispatchDate && oldDispatchDate) {
             await tx.dispatchSplit.updateMany({
               where: {

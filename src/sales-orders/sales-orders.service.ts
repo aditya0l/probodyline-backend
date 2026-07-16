@@ -1775,8 +1775,14 @@ export class SalesOrdersService {
 
       // 5. Update Dispatch/Booking Date if provided
       if (body.dispatchDate || body.bookingDate) {
-        const so = await tx.salesOrder.findUnique({ where: { id: salesOrderId } });
+        const so = await tx.salesOrder.findUnique({ 
+          where: { id: salesOrderId },
+          include: { quotation: true }
+        });
+        
         if (so && (so as any).quotationId) {
+          const oldDispatchDate = (so as any).quotation?.dispatchDate;
+
           await tx.quotation.update({
             where: { id: (so as any).quotationId },
             data: {
@@ -1784,6 +1790,17 @@ export class SalesOrdersService {
               ...(body.bookingDate && { bookingDate: new Date(body.bookingDate) }),
             }
           });
+
+          // Update any splits that were following the old master dispatch date
+          if (body.dispatchDate && oldDispatchDate) {
+            await tx.dispatchSplit.updateMany({
+              where: {
+                salesOrderId,
+                dispatchDate: oldDispatchDate
+              },
+              data: { dispatchDate: new Date(body.dispatchDate) }
+            });
+          }
         }
       }
 

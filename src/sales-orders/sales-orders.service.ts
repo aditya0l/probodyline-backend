@@ -1071,7 +1071,7 @@ export class SalesOrdersService {
 
   // 6. Update Master Sales Order Date (Quotation Date)
   async updateMasterDispatchDate(salesOrderId: string, dispatchDate: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const so = await tx.salesOrder.findUnique({
         where: { id: salesOrderId },
         include: { quotation: true },
@@ -1146,9 +1146,11 @@ export class SalesOrdersService {
         },
       });
 
-      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
       return updatedSO;
     });
+
+    this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+    return result;
   }
 
   // 7. Update Generated Date

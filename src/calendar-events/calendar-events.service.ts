@@ -89,19 +89,20 @@ export class CalendarEventsService {
     ]);
 
     return {
-      salesOrders: salesOrders.map(so => {
-        const totalQuantity = so.quotation?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
-        const splitQuantity = so.splits.reduce((sum, split) => sum + split.items.reduce((s, item) => s + item.quantity, 0), 0);
-        return {
-          id: so.id,
-          salesOrderId: so.id,
-          soNumber: so.soNumber,
-          quotationId: so.quotationId,
-          gymName: so.quotation?.gymName || so.quotation?.clientName || 'Unknown Gym',
-          dispatchDate: so.quotation?.dispatchDate,
-          totalQuantity: totalQuantity - splitQuantity,
-        };
-      }).filter(so => so.totalQuantity > 0),
+      salesOrders: salesOrders
+        .filter(so => so.splits.length === 0) // Only show SO entry if it has no splits (splits are shown separately)
+        .map(so => {
+          const totalQuantity = so.quotation?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
+          return {
+            id: so.id,
+            salesOrderId: so.id,
+            soNumber: so.soNumber,
+            quotationId: so.quotationId,
+            gymName: so.quotation?.gymName || so.quotation?.clientName || 'Unknown Gym',
+            dispatchDate: so.quotation?.dispatchDate,
+            totalQuantity,
+          };
+        }),
       dispatchSplits: dispatchSplits.map(ds => ({
         id: ds.id,
         salesOrderId: ds.salesOrder?.id,

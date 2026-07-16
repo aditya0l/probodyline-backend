@@ -1690,7 +1690,7 @@ export class SalesOrdersService {
     
     await this.validateSOEdit(salesOrderId, body, user);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const existingItems = await tx.salesOrderItem.findMany({ where: { salesOrderId }});
       if (body.items !== undefined) {
         const items = body.items || [];
@@ -1814,10 +1814,12 @@ export class SalesOrdersService {
         }
       });
 
-      this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
-      this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
       return { success: true };
     });
+
+    this.eventsGateway.broadcastEntityUpdate('QUANTITY_REQUEST', salesOrderId);
+    this.eventsGateway.broadcastEntityUpdate('SALES_ORDER', salesOrderId);
+    return result;
   }
 
   async getStockReserved(salesOrderId: string) {

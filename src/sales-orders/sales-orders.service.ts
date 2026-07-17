@@ -487,8 +487,14 @@ export class SalesOrdersService {
 
     if (filters?.gymName || filters?.clientName || filters?.search) {
       whereClause.quotation = whereClause.quotation || {};
-      if (filters.gymName) (whereClause.quotation as any).gymName = filters.gymName;
-      if (filters.clientName) (whereClause.quotation as any).clientName = filters.clientName;
+      if (filters.gymName) (whereClause.quotation as any).gymName = { equals: filters.gymName, mode: 'insensitive' };
+      if (filters.clientName) {
+        whereClause.OR = [
+          ...(whereClause.OR || []),
+          { quotation: { clientName: { equals: filters.clientName, mode: 'insensitive' } } },
+          { quotation: { gymName: { equals: filters.clientName, mode: 'insensitive' } } },
+        ];
+      }
       if (filters.search) {
         whereClause.OR = [
           { soNumber: { contains: filters.search, mode: 'insensitive' } },

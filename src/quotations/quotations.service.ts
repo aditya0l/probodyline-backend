@@ -150,6 +150,7 @@ export class QuotationsService {
           gymName: true,
           clientName: true,
           leadName: true,
+          grandTotal: true,
           customer: {
             select: { id: true, name: true, gymName: true },
           },

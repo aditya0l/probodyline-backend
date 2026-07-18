@@ -680,23 +680,24 @@ export class SalesOrdersService {
 
       // Process each split
       for (const split of so.splits) {
-        if (split.status === 'BOOKED') {
-          // Physically delete DISPATCH_SPLIT Stock OUT transactions
-          await tx.stockTransaction.deleteMany({
-            where: {
-              referenceId: split.id,
-              referenceType: 'DISPATCH_SPLIT',
-            },
+        // Unconditionally clean up ANY stock transactions or bookings tied to this split
+        // This prevents edge cases where a split's status changed but its transactions were orphaned
+        await tx.stockTransaction.deleteMany({
+          where: {
+            referenceId: split.id,
+            referenceType: 'DISPATCH_SPLIT',
+          },
+        });
+
+        try {
+          await tx.booking.deleteMany({
+            where: { dispatchSplitId: split.id },
           });
+        } catch (e) {
+          console.warn('Failed to delete booking during unbook', e);
+        }
 
-          try {
-            await tx.booking.deleteMany({
-              where: { dispatchSplitId: split.id },
-            });
-          } catch (e) {
-            console.warn('Failed to delete booking during unbook', e);
-          }
-
+        if (split.status !== 'UNBOOKED') {
           // Update Split Status
           await tx.dispatchSplit.update({
             where: { id: split.id },

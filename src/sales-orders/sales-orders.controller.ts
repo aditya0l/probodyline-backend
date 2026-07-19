@@ -99,6 +99,8 @@ export class SalesOrdersController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 0;
     const limitNum = limit ? parseInt(limit, 10) : 100;
@@ -108,6 +110,8 @@ export class SalesOrdersController {
       search,
       page: pageNum,
       limit: limitNum,
+      sortBy,
+      sortDir: sortDir as 'asc' | 'desc',
     });
   }
 

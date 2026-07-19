@@ -475,6 +475,8 @@ export class SalesOrdersService {
     search?: string;
     page?: number;
     limit?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
   }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.SalesOrderWhereInput = {
       status: { not: 'UNBOOKED' }
@@ -508,9 +510,20 @@ export class SalesOrdersService {
     const page = filters?.page || 0;
     const limit = filters?.limit || 100;
 
+    let orderByClause: Prisma.SalesOrderOrderByWithRelationInput = { createdAt: 'desc' };
+    if (filters?.sortBy) {
+      const allowedQuotationFields = ['bookingDate', 'dispatchDate'];
+      if (allowedQuotationFields.includes(filters.sortBy)) {
+        orderByClause = { quotation: { [filters.sortBy]: filters.sortDir || 'desc' } };
+      } else if (filters.sortBy === 'createdAt') {
+        orderByClause = { createdAt: filters.sortDir || 'desc' };
+      }
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.salesOrder.findMany({
         where: whereClause,
+        orderBy: orderByClause,
         skip: page * limit,
         take: limit,
         select: {
@@ -527,6 +540,7 @@ export class SalesOrdersService {
               clientName: true,
               gymName: true,
               dispatchDate: true,
+              bookingDate: true,
             },
           },
           splits: {
@@ -540,7 +554,6 @@ export class SalesOrdersService {
             select: { splits: true },
           },
         },
-        orderBy: { createdAt: 'desc' },
       }),
       this.prisma.salesOrder.count({ where: whereClause }),
     ]);

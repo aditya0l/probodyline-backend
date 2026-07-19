@@ -101,6 +101,8 @@ export class QuotationsService {
     search?: string;
     page?: number;
     limit?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
   }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.QuotationWhereInput = { deletedAt: null };
     if (filters?.gymName) {
@@ -131,10 +133,18 @@ export class QuotationsService {
     const page = filters?.page || 0;
     const limit = filters?.limit || 100;
 
+    let orderByClause: Prisma.QuotationOrderByWithRelationInput = { createdAt: 'desc' };
+    if (filters?.sortBy) {
+      const allowedSortFields = ['createdAt', 'quoteDate', 'bookingDate', 'dispatchDate', 'installationDate', 'inaugurationDate'];
+      if (allowedSortFields.includes(filters.sortBy)) {
+        orderByClause = { [filters.sortBy]: filters.sortDir || 'desc' };
+      }
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.quotation.findMany({
         where: whereClause,
-        orderBy: { createdAt: 'desc' },
+        orderBy: orderByClause,
         skip: page * limit,
         take: limit,
         select: {

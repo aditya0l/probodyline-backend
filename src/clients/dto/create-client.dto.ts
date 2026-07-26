@@ -34,10 +34,12 @@ export class CreateClientDto {
   @IsString()
   clientName?: string;
 
-  @ApiPropertyOptional({ description: 'Phone number for verification' })
+  @ApiPropertyOptional({ description: 'Phone number' })
   @IsOptional()
   @IsString()
   phone?: string;
+
+
 
   @ApiPropertyOptional({ description: 'Email address' })
   @IsOptional()

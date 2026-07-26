@@ -616,7 +616,6 @@ model Client {
   stateCode       String?
   city            String?
   clientName      String?
-  phone           String?
   email           String?
   address         String?
   addressLine2    String?
@@ -627,7 +626,6 @@ model Client {
   panCardUrl      String?
   aadharCardUrl   String?
   profilePhoto    String?
-  isPhoneVerified Boolean   @default(false)
   salesInitial    String?
   createdBy       String?
   createdByUser   User?     @relation(fields: [createdBy], references: [id])
@@ -635,6 +633,7 @@ model Client {
   updatedAt       DateTime  @updatedAt
 
   // Relations
+  phones        ClientPhone[]
   gyms          ClientGym[]
   leads         ClientLead[]
   partners      ClientPartner[]
@@ -1255,6 +1254,24 @@ model ClientDocument {
 
   @@unique([clientId, documentType])
   @@map("client_documents")
+}
+
+model ClientPhone {
+  id                  String    @id @default(uuid())
+  phone               String
+  clientId            String
+  client              Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  isPrimary           Boolean   @default(false)
+  isDormant           Boolean   @default(false)
+  isPhoneVerified     Boolean   @default(false)
+  dormantAt           DateTime?
+  dormantBy           String?     
+  supersededByPhoneId String? 
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([phone], name: "unique_active_phone_partial")
+  @@map("client_phones")
 }
 
 model SharedLink {

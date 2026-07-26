@@ -39,6 +39,7 @@ import { CalendarEventsModule } from './calendar-events/calendar-events.module';
 import { OtpModule } from './otp/otp.module';
 import { FactoriesModule } from './factories/factories.module';
 import { TextractModule } from './textract/textract.module';
+import { ClientPhonesModule } from './client-phones/client-phones.module';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { TextractModule } from './textract/textract.module';
     OtpModule,
     FactoriesModule,
     TextractModule,
+    ClientPhonesModule,
   ],
   controllers: [AppController],
   providers: [

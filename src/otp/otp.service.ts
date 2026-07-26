@@ -143,8 +143,8 @@ export class OtpService {
             data: { isPhoneVerified: true },
           });
         } else if (entityType === 'CLIENT') {
-          await this.prisma.client.update({
-            where: { id: entityId },
+          await this.prisma.clientPhone.updateMany({
+            where: { clientId: entityId, phone: phone },
             data: { isPhoneVerified: true },
           });
         }

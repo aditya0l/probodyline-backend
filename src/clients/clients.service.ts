@@ -14,6 +14,7 @@ import { generateClientCode } from '../common/utils/client-code.util';
 
 import { EventsGateway } from '../events/events.gateway';
 import { FilesService } from '../files/files.service';
+import { normalizePhone } from '../common/utils/phone.util';
 import { CreateJourneyEventDto } from './dto/create-journey-event.dto';
 import { TextractService } from '../textract/textract.service';
 import { DocumentParserService } from '../textract/document-parser.service';
@@ -82,7 +83,7 @@ export class ClientsService {
           stateCode: true,
           tokenDate: true,
           salesInitial: true,
-          phone: true,
+          phones: true,
           email: true,
           address: true,
           addressLine2: true,
@@ -92,7 +93,6 @@ export class ClientsService {
           aadharCard: true,
           panCardUrl: true,
           aadharCardUrl: true,
-          isPhoneVerified: true,
           _count: {
             select: { gyms: true },
           },
@@ -135,6 +135,7 @@ export class ClientsService {
         journeyEvents: {
           orderBy: { createdAt: 'desc' },
         },
+        phones: true,
       },
     });
 
@@ -184,7 +185,6 @@ export class ClientsService {
         city: data.city,
         clientName: data.clientName,
         email: data.email,
-        phone: data.phone,
         address: data.address,
         addressLine2: data.addressLine2,
         area: data.area,
@@ -193,9 +193,17 @@ export class ClientsService {
         aadharCard: data.aadharCard,
         panCardUrl: data.panCardUrl,
         aadharCardUrl: data.aadharCardUrl,
-        isPhoneVerified: data.isPhoneVerified,
         // salesPerson removed
         salesInitial: salesTeam,
+        ...(data.phone ? {
+          phones: {
+            create: {
+              phone: normalizePhone(data.phone),
+              isPrimary: true,
+              isPhoneVerified: data.isPhoneVerified || false,
+            }
+          }
+        } : {}),
       } as any,
     });
 
@@ -229,7 +237,6 @@ export class ClientsService {
         city: data.city,
         clientName: data.clientName,
         email: data.email,
-        phone: data.phone,
         address: data.address,
         addressLine2: data.addressLine2,
         area: data.area,
@@ -238,7 +245,6 @@ export class ClientsService {
         aadharCard: data.aadharCard,
         panCardUrl: data.panCardUrl,
         aadharCardUrl: data.aadharCardUrl,
-        isPhoneVerified: data.isPhoneVerified,
         // salesPerson and salesInitial are not manually updatable
       },
     });

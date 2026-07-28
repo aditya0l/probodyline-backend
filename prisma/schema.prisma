@@ -118,7 +118,6 @@ model Product {
 }
 
 model Customer {
-
   id              String    @id @default(uuid())
   name            String
   gymName         String?
@@ -610,31 +609,32 @@ model StockTransaction {
 
 // Client Management Models
 model Client {
-  id              String    @id @default(uuid())
-  clientCode      String    @unique // Auto-generated, immutable
-  tokenDate       DateTime? // Business token/contract date, immutable
-  stateCode       String?
-  city            String?
-  clientName      String?
-  email           String?
-  address         String?
-  addressLine2    String?
-  area            String?
-  gst             String?
-  panCard         String?
-  aadharCard      String?
-  panCardUrl      String?
-  aadharCardUrl   String?
-  profilePhoto    String?
-  salesInitial    String?
-  createdBy       String?
-  createdByUser   User?     @relation(fields: [createdBy], references: [id])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  clientCode    String    @unique // Auto-generated, immutable
+  tokenDate     DateTime? // Business token/contract date, immutable
+  stateCode     String?
+  city          String?
+  clientName    String?
+  email         String?
+  address       String?
+  addressLine2  String?
+  area          String?
+  gst           String?
+  panCard       String?
+  aadharCard    String?
+  panCardUrl    String?
+  aadharCardUrl String?
+  profilePhoto  String?
+  salesInitial  String?
+  createdBy     String?
+  createdByUser User?     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
   phones        ClientPhone[]
   gyms          ClientGym[]
+  visits        ClientVisit[]
   leads         ClientLead[]
   partners      ClientPartner[]
   serviceCards  ServiceCard[]
@@ -722,9 +722,9 @@ enum JourneyEventType {
 
 // Gym Management Models
 model Gym {
-  documents     GymDocument[]
-  id               String    @id @default(uuid())
-  gymCode          String    @unique // Auto-generated, immutable
+  documents        GymDocument[]
+  id               String        @id @default(uuid())
+  gymCode          String        @unique // Auto-generated, immutable
   installationDate DateTime?
   stateCode        String?
   city             String?
@@ -737,9 +737,9 @@ model Gym {
   locationLink     String?
   locationQR       String? // Auto-generated from locationLink
   createdBy        String?
-  createdByUser    User?     @relation(fields: [createdBy], references: [id])
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdByUser    User?         @relation(fields: [createdBy], references: [id])
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   // Relations
   clients       ClientGym[]
@@ -983,6 +983,7 @@ enum UserRole {
   HOD_TECHNICAL
   SALES
   STAFF
+  GUARD
 }
 
 model User {
@@ -1017,6 +1018,7 @@ model User {
   createdQuantityRequests        QuantityChangeRequest[]     @relation("RequestCreator")
   reviewedQuantityRequests       QuantityChangeRequest[]     @relation("RequestReviewer")
   dispatchDateRequests           DispatchDateChangeRequest[] @relation("DispatchRequester")
+  clientVisits                   ClientVisit[]
 
   @@index([email])
   @@index([organizationId])
@@ -1192,14 +1194,6 @@ model OtpSession {
   @@map("otp_sessions")
 }
 
-
-
-
-
-
-
-
-
 enum GymDocumentType {
   PAN_CARD_CLIENT
   AADHAR_CARD
@@ -1210,19 +1204,19 @@ enum GymDocumentType {
 }
 
 model GymDocument {
-  id        String   @id @default(uuid())
-  gymId     String
-  documentType GymDocumentType
-  documentNumber String?
-  pdfUrl    String?
-  imageUrls String[]
-  fieldData Json?
-  verificationStatus String @default("NOT_UPLOADED")
-  verifiedAt DateTime?
-  verifiedBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  id                 String          @id @default(uuid())
+  gymId              String
+  documentType       GymDocumentType
+  documentNumber     String?
+  pdfUrl             String?
+  imageUrls          String[]
+  fieldData          Json?
+  verificationStatus String          @default("NOT_UPLOADED")
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  gym                Gym             @relation(fields: [gymId], references: [id], onDelete: Cascade)
 
   @@unique([gymId, documentType])
   @@map("gym_documents")
@@ -1238,19 +1232,19 @@ enum ClientDocumentType {
 }
 
 model ClientDocument {
-  id        String   @id @default(uuid())
-  clientId  String
-  documentType ClientDocumentType
-  documentNumber String?
-  pdfUrl    String?
-  imageUrls String[]
-  fieldData Json?
-  verificationStatus String @default("NOT_UPLOADED")
-  verifiedAt DateTime?
-  verifiedBy String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  client    Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id                 String             @id @default(uuid())
+  clientId           String
+  documentType       ClientDocumentType
+  documentNumber     String?
+  pdfUrl             String?
+  imageUrls          String[]
+  fieldData          Json?
+  verificationStatus String             @default("NOT_UPLOADED")
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  client             Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
   @@unique([clientId, documentType])
   @@map("client_documents")
@@ -1265,12 +1259,11 @@ model ClientPhone {
   isDormant           Boolean   @default(false)
   isPhoneVerified     Boolean   @default(false)
   dormantAt           DateTime?
-  dormantBy           String?     
-  supersededByPhoneId String? 
+  dormantBy           String?
+  supersededByPhoneId String?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  @@unique([phone], name: "unique_active_phone_partial")
   @@map("client_phones")
 }
 
@@ -1280,4 +1273,38 @@ model SharedLink {
   createdAt DateTime @default(now())
 
   @@map("shared_links")
+}
+
+model ClientVisit {
+  id            String   @id @default(uuid())
+  clientId      String
+  client        Client   @relation(fields: [clientId], references: [id])
+  guardId       String
+  guard         User     @relation(fields: [guardId], references: [id])
+  photoUrl      String
+  latitude      Float
+  longitude     Float
+  visitNumber   Int
+  otpVerifiedAt DateTime
+  createdAt     DateTime @default(now())
+
+  @@index([clientId])
+  @@index([guardId])
+  @@map("client_visits")
+}
+
+model GuardOtpSession {
+  id         String    @id @default(uuid())
+  jti        String    @unique
+  guardId    String
+  phone      String
+  consumed   Boolean   @default(false)
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([expiresAt])
+  @@index([jti])
+  @@index([phone])
+  @@map("guard_otp_sessions")
 }

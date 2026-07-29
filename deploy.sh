@@ -15,7 +15,7 @@ echo "📦 Installing dependencies..."
 npm install --legacy-peer-deps
 
 echo "🗄 Syncing database schema..."
-npx prisma db push
+npx prisma migrate deploy
 
 echo "🏗 Building project..."
 npm run build

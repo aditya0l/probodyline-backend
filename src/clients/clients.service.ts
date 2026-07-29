@@ -135,6 +135,14 @@ export class ClientsService {
         journeyEvents: {
           orderBy: { createdAt: 'desc' },
         },
+        clientVisits: {
+          include: {
+            guard: {
+              select: { name: true }
+            }
+          },
+          orderBy: { createdAt: 'desc' },
+        },
         phones: true,
       },
     });

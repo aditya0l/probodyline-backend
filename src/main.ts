@@ -18,6 +18,11 @@ import { json, urlencoded } from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Trust the nginx reverse proxy so Express reads real client IP
+  // from X-Forwarded-For (required for per-IP rate limiting)
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
+
   // Configure JSON and URL-encoded request body size limits to 15MB
   app.use(json({ limit: '15mb' }));
   app.use(urlencoded({ limit: '15mb', extended: true }));

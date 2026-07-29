@@ -40,6 +40,7 @@ import { OtpModule } from './otp/otp.module';
 import { FactoriesModule } from './factories/factories.module';
 import { TextractModule } from './textract/textract.module';
 import { ClientPhonesModule } from './client-phones/client-phones.module';
+import { GuardModule } from './guard/guard.module';
 
 @Module({
   imports: [
@@ -105,6 +106,7 @@ import { ClientPhonesModule } from './client-phones/client-phones.module';
     FactoriesModule,
     TextractModule,
     ClientPhonesModule,
+    GuardModule,
   ],
   controllers: [AppController],
   providers: [

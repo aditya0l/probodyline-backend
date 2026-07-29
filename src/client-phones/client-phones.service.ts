@@ -7,48 +7,85 @@ import { normalizePhone } from '../common/utils/phone.util';
 export class ClientPhonesService {
   constructor(private prisma: PrismaService) {}
 
-  async addPhone(clientId: string, rawPhone: string) {
+  /**
+   * Single source of truth for phone existence checks.
+   * Returns whether an active (non-dormant) ClientPhone exists for this number,
+   * and the associated clientId if so. No other client data is returned.
+   */
+  async findActiveByPhone(rawPhone: string): Promise<{ exists: boolean; clientId: string | null }> {
     const phone = normalizePhone(rawPhone);
-    
-    // Quick pre-check (reduces transaction bloat)
-    const activePhone = await this.prisma.clientPhone.findFirst({
+    const record = await this.prisma.clientPhone.findFirst({
+      where: { phone, isDormant: false },
+      select: { clientId: true },
+    });
+    return record
+      ? { exists: true, clientId: record.clientId }
+      : { exists: false, clientId: null };
+  }
+
+  /**
+   * Core phone-creation logic that runs inside an existing transaction.
+   * Handles: isPrimary auto-set, dormant supersededByPhoneId tracking,
+   * and P2002 unique constraint race-condition catch.
+   */
+  async addPhoneInTx(
+    tx: any, // Prisma transaction client
+    clientId: string,
+    rawPhone: string,
+    isPhoneVerified: boolean = false, // default false — only Guard passes true
+  ) {
+    const phone = normalizePhone(rawPhone);
+
+    // Pre-check for active conflict
+    const activePhone = await tx.clientPhone.findFirst({
       where: { phone, isDormant: false },
     });
-
     if (activePhone) {
       throw new ConflictException('This number is already registered to another profile');
     }
 
-    const existingCount = await this.prisma.clientPhone.count({ where: { clientId } });
+    const existingCount = await tx.clientPhone.count({ where: { clientId } });
     const isPrimary = existingCount === 0;
 
-    const dormantPhone = await this.prisma.clientPhone.findFirst({
+    const dormantPhone = await tx.clientPhone.findFirst({
       where: { phone, isDormant: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     try {
-      // Transaction wrapper for create + superseded flip
-      return await this.prisma.$transaction(async (tx) => {
-        const newPhone = await tx.clientPhone.create({
-          data: { phone, clientId, isPrimary },
-        });
-
-        if (dormantPhone) {
-          await tx.clientPhone.update({
-            where: { id: dormantPhone.id },
-            data: { supersededByPhoneId: newPhone.id },
-          });
-        }
-
-        return newPhone;
+      const newPhone = await tx.clientPhone.create({
+        data: { phone, clientId, isPrimary, isPhoneVerified },
       });
+
+      if (dormantPhone) {
+        await tx.clientPhone.update({
+          where: { id: dormantPhone.id },
+          data: { supersededByPhoneId: newPhone.id },
+        });
+      }
+
+      return newPhone;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-         throw new ConflictException('This number is already registered to another profile');
+        throw new ConflictException('This number is already registered to another profile');
       }
       throw error;
     }
+  }
+
+  async addPhone(clientId: string, rawPhone: string) {
+    // Quick pre-check outside transaction (reduces transaction bloat)
+    const phone = normalizePhone(rawPhone);
+    const activePhone = await this.prisma.clientPhone.findFirst({
+      where: { phone, isDormant: false },
+    });
+    if (activePhone) {
+      throw new ConflictException('This number is already registered to another profile');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      return this.addPhoneInTx(tx, clientId, rawPhone);
+    });
   }
 
   async markDormant(id: string, adminId: string) {

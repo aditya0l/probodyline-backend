@@ -7,5 +7,5 @@ export class SendOtpDto {
 
   @IsOptional()
   @IsString()
-  entityType?: 'CUSTOMER' | 'MANAGER' | 'TRAINER' | 'LEAD' | 'CLIENT';
+  entityType?: 'CUSTOMER' | 'MANAGER' | 'TRAINER' | 'LEAD' | 'CLIENT' | 'GUARD';
 }

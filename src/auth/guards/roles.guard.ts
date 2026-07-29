@@ -51,6 +51,15 @@ export class RolesGuard implements CanActivate {
       }
     }
 
+    // Guard: ONLY /guard routes and /auth routes
+    if (user.role === UserRole.GUARD) {
+      const isGuardRoute = path.includes('/api/guard');
+      const isAuth = path.includes('/api/auth');
+      if (!isGuardRoute && !isAuth) {
+        return false;
+      }
+    }
+
     if (!requiredRoles) {
       return true;
     }

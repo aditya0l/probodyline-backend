@@ -21,8 +21,8 @@ export class OtpService {
   async sendOtp(sendOtpDto: SendOtpDto) {
     const { phone, entityType } = sendOtpDto;
     
-    // Resend cooldown check for CLIENT
-    if (entityType === 'CLIENT') {
+    // Resend cooldown check for CLIENT and GUARD
+    if (entityType === 'CLIENT' || entityType === 'GUARD') {
       const recentOtp = await this.prisma.otpSession.findFirst({
         where: {
           phone,
@@ -41,6 +41,9 @@ export class OtpService {
     
     if (entityType === 'CLIENT') {
       otp = Math.floor(100 + Math.random() * 900).toString();
+      expiresAt.setSeconds(expiresAt.getSeconds() + 90); // 90 seconds expiry
+    } else if (entityType === 'GUARD') {
+      otp = Math.floor(100000 + Math.random() * 900000).toString();
       expiresAt.setSeconds(expiresAt.getSeconds() + 90); // 90 seconds expiry
     } else {
       otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -96,9 +99,9 @@ export class OtpService {
       throw new BadRequestException('Invalid or expired OTP');
     }
 
-    // Verify OTP match and handle attempts for CLIENT
+    // Verify OTP match and handle attempts for CLIENT and GUARD
     if (session.otp !== otp) {
-      if (entityType === 'CLIENT') {
+      if (entityType === 'CLIENT' || entityType === 'GUARD') {
         const newAttempts = session.attempts + 1;
         if (newAttempts >= 5) {
           await this.prisma.otpSession.update({

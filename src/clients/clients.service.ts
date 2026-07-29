@@ -135,7 +135,7 @@ export class ClientsService {
         journeyEvents: {
           orderBy: { createdAt: 'desc' },
         },
-        clientVisits: {
+        visits: {
           include: {
             guard: {
               select: { name: true }

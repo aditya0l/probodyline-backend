@@ -119,7 +119,7 @@ export class QuotationsService {
   }): Promise<{ data: any[]; total: number }> {
     const whereClause: Prisma.QuotationWhereInput = { deletedAt: null };
     if (filters?.gymName) {
-      whereClause.gymName = { equals: filters.gymName, mode: 'insensitive' };
+      whereClause.gymName = { contains: filters.gymName, mode: 'insensitive' };
     }
     if (filters?.clientName) {
       whereClause.clientName = { contains: filters.clientName, mode: 'insensitive' };

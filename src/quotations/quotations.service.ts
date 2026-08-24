@@ -98,6 +98,19 @@ export class QuotationsService {
   async findAll(filters?: {
     gymName?: string;
     clientName?: string;
+    leadName?: string;
+    quotationNumber?: string;
+    status?: string;
+    quoteDateFrom?: string;
+    quoteDateTo?: string;
+    bookingDateFrom?: string;
+    bookingDateTo?: string;
+    dispatchDateFrom?: string;
+    dispatchDateTo?: string;
+    installationDateFrom?: string;
+    installationDateTo?: string;
+    inaugurationDateFrom?: string;
+    inaugurationDateTo?: string;
     search?: string;
     page?: number;
     limit?: number;
@@ -109,13 +122,48 @@ export class QuotationsService {
       whereClause.gymName = { equals: filters.gymName, mode: 'insensitive' };
     }
     if (filters?.clientName) {
-      // Sometimes the client name in the directory is saved as the gym name in quotations
-      whereClause.OR = [
-        ...(whereClause.OR || []),
-        { clientName: { equals: filters.clientName, mode: 'insensitive' } },
-        { gymName: { equals: filters.clientName, mode: 'insensitive' } },
-      ];
+      whereClause.clientName = { contains: filters.clientName, mode: 'insensitive' };
     }
+    if (filters?.leadName) {
+      whereClause.leadName = { contains: filters.leadName, mode: 'insensitive' };
+    }
+    if (filters?.quotationNumber) {
+      whereClause.quoteNumber = { contains: filters.quotationNumber, mode: 'insensitive' };
+    }
+    if (filters?.status) {
+      // e.g. "DRAFT,CONFIRMED" or just "DRAFT"
+      const statuses = filters.status.split(',');
+      whereClause.status = { in: statuses };
+    }
+
+    // Dates
+    const applyDateFilter = (from?: string, to?: string) => {
+      if (!from && !to) return undefined;
+      const dateFilter: any = {};
+      if (from) dateFilter.gte = new Date(from);
+      if (to) {
+        const toDate = new Date(to);
+        toDate.setHours(23, 59, 59, 999);
+        dateFilter.lte = toDate;
+      }
+      return dateFilter;
+    };
+
+    const quoteDateFilter = applyDateFilter(filters?.quoteDateFrom, filters?.quoteDateTo);
+    if (quoteDateFilter) whereClause.createdAt = quoteDateFilter; // Using createdAt for Quote Date
+
+    const bookingDateFilter = applyDateFilter(filters?.bookingDateFrom, filters?.bookingDateTo);
+    if (bookingDateFilter) whereClause.bookingDate = bookingDateFilter;
+
+    const dispatchDateFilter = applyDateFilter(filters?.dispatchDateFrom, filters?.dispatchDateTo);
+    if (dispatchDateFilter) whereClause.dispatchDate = dispatchDateFilter;
+
+    const installationDateFilter = applyDateFilter(filters?.installationDateFrom, filters?.installationDateTo);
+    if (installationDateFilter) whereClause.installationDate = installationDateFilter;
+
+    const inaugurationDateFilter = applyDateFilter(filters?.inaugurationDateFrom, filters?.inaugurationDateTo);
+    if (inaugurationDateFilter) whereClause.inaugurationDate = inaugurationDateFilter;
+
     const user = userContext.getStore();
     if (user && user.role === 'SALES') {
       whereClause.createdBy = user.id;

@@ -1,0 +1,30 @@
+--- src/sales-orders/sales-orders.service.ts
++++ src/sales-orders/sales-orders.service.ts
+@@ -1565,6 +1565,24 @@
+     if (!soItem || !soItem.quotationItemId) return null;
+ 
++    if (soItem.quotationItemId) {
++      await prisma.quotationItem.update({
++        where: { id: soItem.quotationItemId },
++        data: { quantity: newQty, totalAmount: newQty * Number((soItem as any).rate || 0) }
++      });
++      
++      const qi = await prisma.quotationItem.findUnique({
++        where: { id: soItem.quotationItemId },
++        select: { quotationId: true }
++      });
++      
++      if (qi?.quotationId && soItem.productId) {
++        await prisma.stockTransaction.updateMany({
++          where: {
++            referenceId: qi.quotationId,
++            referenceType: 'PI_BOOKING',
++            productId: soItem.productId
++          },
++          data: { quantity: -newQty }
++        });
++      }
++    }
++
+     const splitItems = await prisma.dispatchSplitItem.findMany({
+       where: { quotationItemId: soItem.quotationItemId },

@@ -1,0 +1,1172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id                 String   @id @default(uuid())
+  name               String
+  address            String
+  gst                String
+  phone              String
+  email              String
+  website            String
+  contactPerson      String
+  logo               String?
+  bankDetails        String?
+  termsAndConditions String?
+  warrantyInfo       String?
+  defaultGstRate     Decimal  @default(18) @db.Decimal(5, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  users              User[]
+
+  @@map("organizations")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  parentId    String?
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id                   String              @id @default(uuid())
+  srNo                 Int
+  priority             Int                 @default(1)
+  name                 String?
+  modelNumber          String              @unique
+  image                String?
+  images               String[]
+  price                Decimal?            @db.Decimal(12, 2)
+  productType          String?
+  categoryId           String?
+  seriesName           String?
+  packagingDescription String[]
+  keyword              String[]
+  todaysStock          Int?                @default(0)
+  stockPlus360Days     Int?                @default(0)
+  dateSelectStock      DateTime?
+  stockByDate          Json?
+  mrpStickers          String[]
+  customDeclarations   String[]
+  cartonLabel          String?
+  machineArtwork       String?
+  brochure             String[]
+  thumbnail            String?
+  cousinMachine        String[]
+  orderTogether        String[]
+  swapMachine          String[]
+  brand                String?
+  warranty             String?
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  deletedAt            DateTime?
+  isDormant            Boolean             @default(false)
+  qrCode               String?
+  instagramLink        String?
+  youtubeLink          String?
+  lqip                 String?
+  brochureFilename     String?
+  brochureSize         Int?
+  brochureUrl          String?
+  badge                String?
+  isFavorite           Boolean             @default(false)
+  bookings             Booking[]
+  category             Category?           @relation(fields: [categoryId], references: [id])
+  purchaseOrderItems   PurchaseOrderItem[]
+  quotationItems       QuotationItem[]
+  salesOrderItems      SalesOrderItem[]
+  stockTransactions    StockTransaction[]
+
+  @@index([name])
+  @@index([modelNumber])
+  @@index([seriesName])
+  @@index([productType])
+  @@index([deletedAt])
+  @@index([categoryId])
+  @@index([isDormant])
+  @@index([modelNumber, seriesName, categoryId])
+  @@map("products")
+}
+
+model Customer {
+  id                String      @id @default(uuid())
+  name              String
+  gymName           String?
+  address           String?
+  city              String?
+  area              String?
+  gst               String?
+  phone             String
+  email             String?     @unique
+  contactPerson     String?
+  notes             String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+  aadharCard        String?
+  addressLine2      String?
+  panCard           String?
+  aadharCardUrl     String?
+  isPhoneVerified   Boolean     @default(false)
+  panCardUrl        String?
+  primaryQuotations Quotation[] @relation("QuotationPrimaryCustomer")
+  quotations        Quotation[] @relation("QuotationMultipleClients")
+
+  @@index([name])
+  @@map("customers")
+}
+
+model Quotation {
+  id                   String          @id @default(uuid())
+  quoteNumber          String          @unique
+  status               String          @default("draft")
+  customerId           String?
+  companyName          String
+  companyAddress       String
+  companyLogo          String?
+  companyGST           String
+  companyPhone         String
+  companyEmail         String
+  companyWebsite       String
+  companyContactPerson String
+  clientName           String?
+  clientAddress        String?
+  clientCity           String?
+  gymName              String?
+  gymArea              String?
+  clientGST            String?
+  deliveryDate         DateTime?
+  subtotal             Decimal         @db.Decimal(12, 2)
+  gstRate              Decimal         @default(18) @db.Decimal(5, 2)
+  gstAmount            Decimal         @db.Decimal(12, 2)
+  grandTotal           Decimal         @db.Decimal(12, 2)
+  bankDetails          String?
+  termsAndConditions   String?
+  warrantyInfo         String?
+  visibleColumns       Json?
+  template             String          @default("default")
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  deletedAt            DateTime?
+  leadName             String?
+  bookingDate          DateTime?
+  dispatchDate         DateTime?
+  installationDate     DateTime?
+  inaugurationDate     DateTime?
+  clientAadharCard     String?
+  clientAddressLine2   String?
+  clientPanCard        String?
+  notes                String?
+  clientEmail          String?
+  clientPhone          String?
+  createdBy            String?
+  challans             Challan[]
+  items                QuotationItem[]
+  createdByUser        User?           @relation(fields: [createdBy], references: [id])
+  customer             Customer?       @relation("QuotationPrimaryCustomer", fields: [customerId], references: [id])
+  salesOrders          SalesOrder?
+  clients              Customer[]      @relation("QuotationMultipleClients")
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([quoteNumber])
+  @@index([status, createdAt])
+  @@index([createdAt, status, clientName, gymName])
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id                   String              @id @default(uuid())
+  quotationId          String
+  srNo                 Int
+  productId            String?
+  productName          String
+  productImage         String?
+  modelNumber          String?
+  rate                 Decimal             @db.Decimal(12, 2)
+  quantity             Int
+  totalAmount          Decimal             @db.Decimal(12, 2)
+  priority             Int?
+  productType          String?
+  seriesName           String?
+  packagingDescription String[]
+  keyword              String[]
+  todaysStock          Int?
+  stockPlus360Days     Int?
+  cousinMachine        String?
+  orderTogether        String?
+  swapMachine          String?
+  category             String?
+  brand                String?
+  warranty             String?
+  notes                String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  dispatchSplitItems   DispatchSplitItem[]
+  product              Product?            @relation(fields: [productId], references: [id])
+  quotation            Quotation           @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  salesOrderItems      SalesOrderItem[]
+
+  @@index([quotationId])
+  @@index([productId])
+  @@map("quotation_items")
+}
+
+model SalesOrder {
+  id                   String                      @id @default(uuid())
+  quotationId          String                      @unique
+  soNumber             String                      @unique
+  status               String                      @default("DRAFT")
+  subtotal             Decimal                     @default(0) @db.Decimal(12, 2)
+  gstAmount            Decimal                     @default(0) @db.Decimal(12, 2)
+  grandTotal           Decimal                     @default(0) @db.Decimal(12, 2)
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  userId               String?
+  needsResync          Boolean                     @default(false)
+  challans             Challan[]
+  dispatchDateRequests DispatchDateChangeRequest[]
+  splits               DispatchSplit[]
+  quantityRequests     QuantityChangeRequest[]
+  activities           SalesOrderActivity[]
+  items                SalesOrderItem[]
+  quotation            Quotation                   @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  user                 User?                       @relation(fields: [userId], references: [id])
+  serviceCards         ServiceCard[]
+
+  @@index([quotationId])
+  @@index([status])
+  @@index([createdAt, status])
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id               String                  @id @default(uuid())
+  salesOrderId     String
+  quotationItemId  String?
+  productId        String?
+  productName      String
+  modelNumber      String?
+  quantity         Int
+  rate             Decimal                 @db.Decimal(12, 2)
+  mrp              Decimal?                @db.Decimal(12, 2)
+  totalAmount      Decimal                 @db.Decimal(12, 2)
+  notes            String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  sortOrder        Int                     @default(0)
+  quantityRequests QuantityChangeRequest[]
+  product          Product?                @relation(fields: [productId], references: [id])
+  quotationItem    QuotationItem?          @relation(fields: [quotationItemId], references: [id])
+  salesOrder       SalesOrder              @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([salesOrderId])
+  @@index([quotationItemId])
+  @@index([productId])
+  @@map("sales_order_items")
+}
+
+model QuantityChangeRequest {
+  id               String         @id @default(uuid())
+  salesOrderId     String
+  salesOrderItemId String
+  requestedBy      String
+  requestType      String         @default("DECREASE")
+  currentQty       Int
+  requestedQty     Int
+  reason           String
+  status           String         @default("PENDING")
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  user             User           @relation("RequestCreator", fields: [requestedBy], references: [id], onDelete: Cascade)
+  reviewer         User?          @relation("RequestReviewer", fields: [reviewedBy], references: [id])
+  salesOrder       SalesOrder     @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  salesOrderItem   SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
+
+  @@index([salesOrderId])
+  @@index([status])
+  @@map("quantity_change_requests")
+}
+
+model DispatchDateChangeRequest {
+  id              String     @id @default(uuid())
+  salesOrderId    String
+  currentDate     DateTime
+  requestedDate   DateTime
+  requestType     String
+  reason          String?
+  status          String     @default("PENDING")
+  requestedBy     String
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  requestedByUser User       @relation("DispatchRequester", fields: [requestedBy], references: [id])
+  salesOrder      SalesOrder @relation(fields: [salesOrderId], references: [id])
+
+  @@index([salesOrderId])
+  @@index([status])
+  @@map("dispatch_date_change_requests")
+}
+
+model SalesOrderActivity {
+  id           String     @id @default(uuid())
+  salesOrderId String
+  action       String
+  changedBy    String?
+  changedAt    DateTime   @default(now())
+  details      Json?
+  user         User?      @relation(fields: [changedBy], references: [id])
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([salesOrderId])
+  @@index([changedAt])
+  @@map("sales_order_activities")
+}
+
+model DispatchSplit {
+  id           String              @id @default(uuid())
+  salesOrderId String
+  splitNumber  Int
+  dispatchDate DateTime?
+  status       String              @default("DRAFT")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  bookedAt     DateTime?
+  label        String?
+  bookings     Booking[]
+  items        DispatchSplitItem[]
+  salesOrder   SalesOrder          @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([salesOrderId, splitNumber])
+  @@index([salesOrderId])
+  @@map("dispatch_splits")
+}
+
+model DispatchSplitItem {
+  id              String        @id @default(uuid())
+  dispatchSplitId String
+  quotationItemId String
+  quantity        Int
+  dispatchSplit   DispatchSplit @relation(fields: [dispatchSplitId], references: [id], onDelete: Cascade)
+  quotationItem   QuotationItem @relation(fields: [quotationItemId], references: [id], onDelete: Cascade)
+
+  @@index([dispatchSplitId])
+  @@index([quotationItemId])
+  @@map("dispatch_split_items")
+}
+
+model PurchaseOrder {
+  id                  String               @id @default(uuid())
+  poNumber            String               @unique
+  supplierName        String
+  bookedOn            DateTime             @default(now())
+  jaipurArrival       DateTime?
+  jaipurArrivalManual Boolean              @default(false)
+  piNo                String?
+  approvedOn          DateTime?
+  status              String               @default("DRAFT")
+  notes               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  userId              String?
+  factoryId           String
+  piDate              DateTime?
+  items               PurchaseOrderItem[]
+  splits              PurchaseOrderSplit[]
+  factory             Factory              @relation(fields: [factoryId], references: [id])
+  user                User?                @relation(fields: [userId], references: [id])
+
+  @@index([poNumber])
+  @@index([status])
+  @@index([createdAt, status, jaipurArrival])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String                   @id @default(uuid())
+  purchaseOrderId String
+  productId       String?
+  productName     String
+  productImage    String?
+  modelNumber     String?
+  rate            Decimal                  @db.Decimal(12, 2)
+  quantity        Int
+  amount          Decimal                  @db.Decimal(12, 2)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  product         Product?                 @relation(fields: [productId], references: [id])
+  purchaseOrder   PurchaseOrder            @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  splitItems      PurchaseOrderSplitItem[]
+
+  @@index([purchaseOrderId])
+  @@index([productId])
+  @@map("purchase_order_items")
+}
+
+model PurchaseOrderSplit {
+  id              String                   @id @default(uuid())
+  purchaseOrderId String
+  splitNumber     Int
+  jaipurArrival   DateTime?
+  label           String?
+  status          String                   @default("DRAFT")
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  sortDate        DateTime?
+  containerNumber String?
+  invoiceNumber   String?
+  items           PurchaseOrderSplitItem[]
+  purchaseOrder   PurchaseOrder            @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([purchaseOrderId, splitNumber])
+  @@index([purchaseOrderId])
+  @@map("purchase_order_splits")
+}
+
+model PurchaseOrderSplitItem {
+  id                   String              @id @default(uuid())
+  purchaseOrderSplitId String?
+  purchaseOrderItemId  String
+  quantity             Int
+  factorySplitId       String?
+  factorySplit         FactorySplit?       @relation(fields: [factorySplitId], references: [id], onDelete: Cascade)
+  purchaseOrderItem    PurchaseOrderItem   @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  split                PurchaseOrderSplit? @relation(fields: [purchaseOrderSplitId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderSplitId])
+  @@index([purchaseOrderItemId])
+  @@map("purchase_order_split_items")
+}
+
+model Factory {
+  id             String          @id @default(uuid())
+  name           String          @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  lastActiveAt   DateTime?
+  splits         FactorySplit[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("factories")
+}
+
+model FactorySplit {
+  id             String                   @id @default(uuid())
+  factoryId      String
+  dateRangeLabel String
+  tag            String?
+  color          String?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  sortDate       DateTime?
+  factory        Factory                  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  items          PurchaseOrderSplitItem[]
+
+  @@unique([factoryId, dateRangeLabel])
+  @@index([factoryId])
+  @@map("factory_splits")
+}
+
+model Vendor {
+  id            String    @id @default(uuid())
+  name          String
+  address       String?
+  contactPerson String?
+  phone         String?
+  email         String?
+  gst           String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  @@map("vendors")
+}
+
+model StockTransaction {
+  id              String               @id @default(uuid())
+  productId       String
+  transactionType StockTransactionType
+  quantity        Int
+  referenceType   String?
+  referenceId     String?
+  date            DateTime
+  notes           String?
+  createdAt       DateTime             @default(now())
+  createdBy       String?
+  createdByUser   User?                @relation(fields: [createdBy], references: [id])
+  product         Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, date])
+  @@index([date])
+  @@index([productId, date, transactionType])
+  @@map("stock_transactions")
+}
+
+model Client {
+  id            String               @id @default(uuid())
+  clientCode    String               @unique
+  tokenDate     DateTime?
+  stateCode     String?
+  city          String?
+  clientName    String?
+  salesInitial  String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  aadharCard    String?
+  aadharCardUrl String?
+  address       String?
+  addressLine2  String?
+  area          String?
+  email         String?
+  gst           String?
+  panCard       String?
+  panCardUrl    String?
+  createdBy     String?
+  profilePhoto  String?
+  documents     ClientDocument[]
+  gyms          ClientGym[]
+  journeyEvents ClientJourneyEvent[]
+  leads         ClientLead[]
+  partners      ClientPartner[]
+  phones        ClientPhone[]
+  client_visits client_visits[]
+  createdByUser User?                @relation(fields: [createdBy], references: [id])
+  serviceCards  ServiceCard[]
+
+  @@index([clientCode])
+  @@index([stateCode, city])
+  @@index([salesInitial])
+  @@index([stateCode, city, clientCode])
+  @@map("clients")
+}
+
+model ClientGym {
+  id       String   @id @default(uuid())
+  clientId String
+  gymId    String
+  linkedOn DateTime @default(now())
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  gym      Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, gymId])
+  @@map("client_gyms")
+}
+
+model ClientLead {
+  id       String   @id @default(uuid())
+  clientId String
+  leadId   String
+  linkedOn DateTime @default(now())
+  client   Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead     Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, leadId])
+  @@map("client_leads")
+}
+
+model ClientPartner {
+  id           String   @id @default(uuid())
+  clientId     String
+  partnerType  String
+  partnerRefId String
+  linkedOn     DateTime @default(now())
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@map("client_partners")
+}
+
+model ClientJourneyEvent {
+  id           String           @id @default(uuid())
+  clientId     String
+  eventType    JourneyEventType
+  eventDate    DateTime?
+  details      String?
+  linkedName   String?
+  relationship String?
+  photoUrl     String?
+  createdBy    String
+  createdAt    DateTime         @default(now())
+  client       Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([clientId, eventType])
+  @@map("client_journey_events")
+}
+
+model Gym {
+  id               String                   @id @default(uuid())
+  gymCode          String                   @unique
+  installationDate DateTime?
+  stateCode        String?
+  city             String?
+  gymName          String?
+  branchCode       Float?
+  branchTitle      String?
+  salesInitial     String?
+  instagramLink    String?
+  locationLink     String?
+  locationQR       String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  callSign         String?
+  createdBy        String?
+  clients          ClientGym[]
+  documents        GymDocument[]
+  managers         GymManager[]
+  media            GymMedia[]
+  technicians      GymTechnician[]
+  trainers         GymTrainer[]
+  createdByUser    User?                    @relation(fields: [createdBy], references: [id])
+  inaugurations    InaugurationCommitment[]
+  serviceCards     ServiceCard[]
+
+  @@index([gymCode])
+  @@index([stateCode, city])
+  @@index([salesInitial])
+  @@index([stateCode, city, gymName, gymCode])
+  @@map("gyms")
+}
+
+model InaugurationCommitment {
+  id            String   @id @default(uuid())
+  gymId         String
+  createdAt     DateTime @default(now())
+  committedFor  DateTime
+  committedOn   DateTime @default(now())
+  createdBy     String?
+  note          String?
+  source        String
+  createdByUser User?    @relation(fields: [createdBy], references: [id])
+  gym           Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@map("inauguration_commitments")
+}
+
+model GymTechnician {
+  id           String   @id @default(uuid())
+  gymId        String
+  linkedOn     DateTime @default(now())
+  technicianId String
+  gym          Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, technicianId])
+  @@map("gym_technicians")
+}
+
+model GymMedia {
+  id         String   @id @default(uuid())
+  gymId      String
+  mediaType  String
+  uploadedAt DateTime @default(now())
+  uploadedBy String?
+  url        String
+  gym        Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@map("gym_media")
+}
+
+model GymManager {
+  id        String   @id @default(uuid())
+  gymId     String
+  managerId String
+  linkedOn  DateTime @default(now())
+  gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  manager   Manager  @relation(fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, managerId])
+  @@map("gym_managers")
+}
+
+model GymTrainer {
+  id        String   @id @default(uuid())
+  gymId     String
+  trainerId String
+  linkedOn  DateTime @default(now())
+  gym       Gym      @relation(fields: [gymId], references: [id], onDelete: Cascade)
+  trainer   Trainer  @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, trainerId])
+  @@map("gym_trainers")
+}
+
+model Manager {
+  id              String       @id @default(uuid())
+  managerCode     String       @unique
+  fullName        String
+  phone           String
+  alternatePhone  String?
+  email           String?      @unique
+  stateCode       String?
+  city            String?
+  address         String?
+  instagramLink   String?
+  profilePhoto    String?
+  locationLink    String?
+  locationQR      String?
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  isPhoneVerified Boolean      @default(false)
+  aadharCard      String?
+  aadharCardUrl   String?
+  panCard         String?
+  panCardUrl      String?
+  gyms            GymManager[]
+
+  @@index([managerCode])
+  @@index([stateCode, city])
+  @@map("managers")
+}
+
+model Trainer {
+  id              String       @id @default(uuid())
+  trainerCode     String       @unique
+  fullName        String
+  phone           String
+  alternatePhone  String?
+  email           String?      @unique
+  stateCode       String?
+  city            String?
+  address         String?
+  specialisation  String?
+  instagramLink   String?
+  profilePhoto    String?
+  locationLink    String?
+  locationQR      String?
+  notes           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  experience      Int?
+  isPhoneVerified Boolean      @default(false)
+  aadharCard      String?
+  aadharCardUrl   String?
+  panCard         String?
+  panCardUrl      String?
+  gyms            GymTrainer[]
+
+  @@index([trainerCode])
+  @@index([stateCode, city])
+  @@map("trainers")
+}
+
+model Lead {
+  id            String              @id @default(uuid())
+  phone         String?
+  email         String?
+  source        String?
+  status        String              @default("NEW")
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  deletedAt     DateTime?
+  leadNumber    String              @unique
+  name          String
+  createdBy     String?
+  clients       ClientLead[]
+  statusHistory LeadStatusHistory[]
+  createdByUser User?               @relation(fields: [createdBy], references: [id])
+
+  @@index([leadNumber])
+  @@index([status])
+  @@map("leads")
+}
+
+model LeadStatusHistory {
+  id        String   @id @default(uuid())
+  leadId    String
+  status    String
+  changedAt DateTime @default(now())
+  changedBy String?
+  note      String?
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@map("lead_status_history")
+}
+
+model Booking {
+  id               String         @id @default(uuid())
+  quotationId      String
+  quotationItemId  String
+  quoteNumber      String
+  productId        String
+  productName      String
+  productThumbnail String?
+  modelNumber      String?
+  dispatchDate     DateTime
+  bookedOn         DateTime
+  customerName     String?
+  gymName          String?
+  requiredQuantity Int
+  status           BookingStatus  @default(CONFIRM)
+  waitingQuantity  Int            @default(0)
+  stateCode        String?
+  city             String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  dispatchSplitId  String?
+  dispatchSplit    DispatchSplit? @relation(fields: [dispatchSplitId], references: [id])
+  product          Product        @relation(fields: [productId], references: [id])
+
+  @@index([productId, dispatchDate])
+  @@index([quotationId])
+  @@index([dispatchDate])
+  @@map("bookings")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  action     String
+  userId     String?
+  changes    Json?
+  timestamp  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+model User {
+  id                             String                      @id @default(uuid())
+  organizationId                 String?
+  email                          String                      @unique
+  password                       String
+  name                           String
+  role                           UserRole                    @default(STAFF)
+  isActive                       Boolean                     @default(true)
+  lastLoginAt                    DateTime?
+  createdAt                      DateTime                    @default(now())
+  updatedAt                      DateTime                    @updatedAt
+  managerId                      String?
+  createdCalendarEvents          CalendarEvent[]
+  createdChallans                Challan[]
+  client_visits                  client_visits[]
+  createdClients                 Client[]
+  dispatchDateRequests           DispatchDateChangeRequest[] @relation("DispatchRequester")
+  createdGyms                    Gym[]
+  createdInaugurationCommitments InaugurationCommitment[]
+  createdLeads                   Lead[]
+  createdPurchaseOrders          PurchaseOrder[]
+  createdQuantityRequests        QuantityChangeRequest[]     @relation("RequestCreator")
+  reviewedQuantityRequests       QuantityChangeRequest[]     @relation("RequestReviewer")
+  createdQuotations              Quotation[]
+  salesOrderActivities           SalesOrderActivity[]
+  createdSalesOrders             SalesOrder[]
+  createdServiceCards            ServiceCard[]
+  createdStockTransactions       StockTransaction[]
+  manager                        User?                       @relation("UserManager", fields: [managerId], references: [id])
+  team                           User[]                      @relation("UserManager")
+  organization                   Organization?               @relation(fields: [organizationId], references: [id])
+
+  @@index([email])
+  @@index([organizationId])
+  @@map("users")
+}
+
+model ServiceCard {
+  id                            String            @id @default(uuid())
+  serialNumber                  Int               @unique @default(autoincrement())
+  filledOnDate                  DateTime          @default(now())
+  installationDate              DateTime?
+  stateCode                     String?
+  city                          String?
+  gymId                         String?
+  gymName                       String?
+  branchCode                    Float?
+  branchTitle                   String?
+  salesInitial                  String?
+  contactAtGym                  String?
+  contactNo                     String?
+  engineers                     Json?
+  landmark                      String?
+  locationQR                    String?
+  visitType                     String?
+  installationAndServiceCharges Float?
+  estimatedExpense              Float?
+  techEngineerName              String?
+  reimbursementTravel           Float?
+  reimbursementHotel            Float?
+  reimbursementFood             Float?
+  reimbursementOilSpray         Float?
+  reimbursementSpare            Float?
+  startDate                     DateTime?
+  startTime                     String?
+  techActualExpense             Float?
+  expenseLog                    Json?
+  endDate                       DateTime?
+  endTime                       String?
+  pendingWork                   Boolean           @default(false)
+  waitingTimeOnClientRequest    String?
+  engineerSign                  String?
+  sAmount                       Float?
+  otAmount                      Float?
+  accountsActualExpense         Float?
+  accountsReimbursement         Float?
+  netCtc                        Float?
+  salesOrderId                  String?
+  createdAt                     DateTime          @default(now())
+  updatedAt                     DateTime          @updatedAt
+  productNotes                  Json?
+  status                        ServiceCardStatus @default(STARTED)
+  createdBy                     String?
+  clientId                      String?
+  clientName                    String?
+  client                        Client?           @relation(fields: [clientId], references: [id])
+  createdByUser                 User?             @relation(fields: [createdBy], references: [id])
+  gym                           Gym?              @relation(fields: [gymId], references: [id])
+  salesOrder                    SalesOrder?       @relation(fields: [salesOrderId], references: [id])
+
+  @@index([serialNumber])
+  @@index([gymId])
+  @@index([salesOrderId])
+  @@index([createdAt, status, gymId])
+  @@map("service_cards")
+}
+
+model Challan {
+  id                String        @id @default(uuid())
+  chnNumber         String        @unique
+  date              DateTime      @default(now())
+  recipientName     String?
+  address           String?
+  salesOrderId      String?
+  goodsDispatchedBy String?
+  checkedBy         String?
+  grNo              String?
+  vehicleNo         String?
+  driverName        String?
+  mobNo             String?
+  vehicleType       String?
+  freightAmt        String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  editHistory       Json?
+  quotationId       String?
+  createdBy         String?
+  items             ChallanItem[]
+  createdByUser     User?         @relation(fields: [createdBy], references: [id])
+  quotation         Quotation?    @relation(fields: [quotationId], references: [id])
+  salesOrder        SalesOrder?   @relation(fields: [salesOrderId], references: [id])
+
+  @@index([chnNumber])
+  @@index([salesOrderId])
+  @@index([quotationId])
+  @@index([date])
+  @@map("challans")
+}
+
+model ChallanItem {
+  id          String  @id @default(uuid())
+  challanId   String
+  description String?
+  modelNos    String?
+  packages    String?
+  quantity    Int?
+  editHistory Json?
+  challan     Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+
+  @@index([challanId])
+  @@map("challan_items")
+}
+
+model CalendarEvent {
+  id            String   @id @default(uuid())
+  date          DateTime
+  title         String
+  notes         String?
+  color         String   @default("#FAC775")
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdByUser User?    @relation(fields: [createdBy], references: [id])
+
+  @@index([date])
+  @@map("calendar_events")
+}
+
+model OtpSession {
+  id        String   @id @default(uuid())
+  phone     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isUsed    Boolean  @default(false)
+  attempts  Int      @default(0)
+
+  @@index([phone, otp])
+  @@map("otp_sessions")
+}
+
+model GymDocument {
+  id                 String          @id @default(uuid())
+  gymId              String
+  documentType       GymDocumentType
+  documentNumber     String?
+  pdfUrl             String?
+  imageUrls          String[]
+  fieldData          Json?
+  verificationStatus String          @default("NOT_UPLOADED")
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  gym                Gym             @relation(fields: [gymId], references: [id], onDelete: Cascade)
+
+  @@unique([gymId, documentType])
+  @@map("gym_documents")
+}
+
+model ClientDocument {
+  id                 String             @id @default(uuid())
+  clientId           String
+  documentType       ClientDocumentType
+  documentNumber     String?
+  pdfUrl             String?
+  imageUrls          String[]
+  fieldData          Json?
+  verificationStatus String             @default("NOT_UPLOADED")
+  verifiedAt         DateTime?
+  verifiedBy         String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  client             Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, documentType])
+  @@map("client_documents")
+}
+
+model ClientPhone {
+  id                  String    @id @default(uuid())
+  phone               String
+  clientId            String
+  isPrimary           Boolean   @default(false)
+  isDormant           Boolean   @default(false)
+  isPhoneVerified     Boolean   @default(false)
+  dormantAt           DateTime?
+  dormantBy           String?
+  supersededByPhoneId String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  client              Client    @relation(fields: [clientId], references: [id])
+
+  @@map("client_phones")
+}
+
+model SharedLink {
+  id        String   @id @default(uuid())
+  url       String
+  createdAt DateTime @default(now())
+
+  @@map("shared_links")
+}
+
+model client_visits {
+  id            String   @id
+  clientId      String
+  guardId       String
+  photoUrl      String
+  latitude      Float
+  longitude     Float
+  visitNumber   Int
+  otpVerifiedAt DateTime
+  createdAt     DateTime @default(now())
+  clients       Client   @relation(fields: [clientId], references: [id])
+  users         User     @relation(fields: [guardId], references: [id])
+
+  @@index([clientId])
+  @@index([guardId])
+}
+
+model guard_otp_sessions {
+  id         String    @id
+  jti        String    @unique
+  guardId    String
+  phone      String
+  consumed   Boolean   @default(false)
+  consumedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+
+  @@index([expiresAt])
+  @@index([jti])
+  @@index([phone])
+}
+
+enum StockTransactionType {
+  IN
+  OUT
+  ADJUSTMENT
+  SALE
+  PURCHASE
+}
+
+enum JourneyEventType {
+  CREATED
+  PICKUP_SCHEDULED
+  LINKED_TO_CLIENT
+  LINKED_TO_GYM_PARTNER
+  LINKED_TO_GYM_TRAINER
+  DELINKED_FROM_GYM
+  SHOWROOM_VISIT
+  VIDEO_CALL_SCHEDULED
+  QO_SENT
+  MANUAL_NOTE
+}
+
+enum BookingStatus {
+  CONFIRM
+  WAITING_LIST
+}
+
+enum UserRole {
+  ADMIN
+  HOD_TECHNICAL
+  SALES
+  STAFF
+  GUARD
+}
+
+enum ServiceCardStatus {
+  STARTED
+  PENDING
+  COMPLETE
+}
+
+enum GymDocumentType {
+  PAN_CARD_CLIENT
+  AADHAR_CARD
+  GST_CERTIFICATE
+  PAN_CARD_FIRM
+  RENT_AGREEMENT
+  BANK_DETAILS
+}
+
+enum ClientDocumentType {
+  PAN_CARD_CLIENT
+  AADHAR_CARD
+  GST_CERTIFICATE
+  PAN_CARD_FIRM
+  RENT_AGREEMENT
+  BANK_DETAILS
+}

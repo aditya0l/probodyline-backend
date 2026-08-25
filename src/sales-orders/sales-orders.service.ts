@@ -62,6 +62,7 @@ export class SalesOrdersService {
       // Copy QuotationItems to SalesOrderItems
       const quotationItems = await db.quotationItem.findMany({
         where: { quotationId },
+        orderBy: { srNo: 'asc' },
       });
 
       if (quotationItems.length > 0) {
@@ -70,6 +71,7 @@ export class SalesOrdersService {
           quotationItemId: qi.id,
           productId: qi.productId,
           productName: qi.productName,
+          productImage: qi.productImage,
           modelNumber: qi.modelNumber,
           quantity: qi.quantity,
           rate: qi.rate,
@@ -107,6 +109,7 @@ export class SalesOrdersService {
 
           const quotationItems = await db.quotationItem.findMany({
             where: { quotationId },
+        orderBy: { srNo: 'asc' },
           });
 
           if (quotationItems.length > 0) {
@@ -115,6 +118,7 @@ export class SalesOrdersService {
               quotationItemId: qi.id,
               productId: qi.productId,
               productName: qi.productName,
+          productImage: qi.productImage,
               modelNumber: qi.modelNumber,
               quantity: qi.quantity,
               rate: qi.rate,
@@ -1862,6 +1866,7 @@ export class SalesOrdersService {
                 salesOrderId,
                 productId: item.productId,
                 productName: item.productName,
+                productImage: item.productImage,
                 modelNumber: item.modelNumber,
                 quantity: qtyNum,
                 rate: rateNum,
@@ -1953,7 +1958,7 @@ export class SalesOrdersService {
   async syncFromQuotation(salesOrderId: string) {
     const so = await this.prisma.salesOrder.findUnique({
       where: { id: salesOrderId },
-      include: { quotation: { include: { items: true } } }
+      include: { quotation: { include: { items: { orderBy: { srNo: 'asc' } } } } }
     });
 
     if (!so || !so.quotation) {
@@ -1978,17 +1983,19 @@ export class SalesOrdersService {
     });
 
     if (so.quotation.items.length > 0) {
-      const salesOrderItemsData = so.quotation.items.map(qi => ({
+      const salesOrderItemsData = so.quotation.items.map((qi, index) => ({
         salesOrderId: so.id,
         quotationItemId: qi.id,
         productId: qi.productId,
         productName: qi.productName,
+          productImage: qi.productImage,
         modelNumber: qi.modelNumber,
         quantity: qi.quantity,
         rate: qi.rate,
         mrp: qi.rate,
         totalAmount: qi.totalAmount,
-        notes: qi.notes
+        notes: qi.notes,
+        sortOrder: index + 1
       }));
 
       await this.prisma.salesOrderItem.createMany({

@@ -1,0 +1,53 @@
+--- src/sales-orders/sales-orders.service.ts
++++ src/sales-orders/sales-orders.service.ts
+@@ -628,6 +628,26 @@
+           where: { id: splitItem.id },
+           data: { quantity: Math.max(0, newSplitQty) }
+         });
++        
++        if (soItem.productId) {
++          await prisma.stockTransaction.updateMany({
++            where: {
++              referenceId: splitItem.dispatchSplit.id,
++              referenceType: 'DISPATCH_SPLIT',
++              productId: soItem.productId
++            },
++            data: { quantity: -Math.max(0, newSplitQty) }
++          });
++          
++          await prisma.booking.updateMany({
++            where: {
++              dispatchSplitId: splitItem.dispatchSplit.id,
++              productId: soItem.productId
++            },
++            data: { requiredQuantity: Math.max(0, newSplitQty) }
++          });
++        }
+ 
+         remainingDiff -= canRemove;
+       } else {
+@@ -636,6 +656,26 @@
+           data: { quantity: splitItem.quantity + remainingDiff }
+         });
++        
++        if (soItem.productId) {
++          await prisma.stockTransaction.updateMany({
++            where: {
++              referenceId: splitItem.dispatchSplit.id,
++              referenceType: 'DISPATCH_SPLIT',
++              productId: soItem.productId
++            },
++            data: { quantity: -(splitItem.quantity + remainingDiff) }
++          });
++          
++          await prisma.booking.updateMany({
++            where: {
++              dispatchSplitId: splitItem.dispatchSplit.id,
++              productId: soItem.productId
++            },
++            data: { requiredQuantity: splitItem.quantity + remainingDiff }
++          });
++        }
+ 
+         remainingDiff = 0;
+       }

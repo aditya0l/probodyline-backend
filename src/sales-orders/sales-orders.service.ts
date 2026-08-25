@@ -1568,10 +1568,36 @@ export class SalesOrdersService {
 
     const soItem = await prisma.salesOrderItem.findUnique({
       where: { id: salesOrderItemId },
-      select: { quotationItemId: true, productId: true }
+      select: { quotationItemId: true, productId: true, rate: true }
     });
 
     if (!soItem || !soItem.quotationItemId) return null;
+
+    if (soItem.quotationItemId) {
+      await prisma.quotationItem.update({
+        where: { id: soItem.quotationItemId },
+        data: { 
+          quantity: newQty,
+          totalAmount: newQty * Number(soItem.rate || 0)
+        }
+      });
+      
+      const qi = await prisma.quotationItem.findUnique({
+        where: { id: soItem.quotationItemId },
+        select: { quotationId: true }
+      });
+      
+      if (qi?.quotationId && soItem.productId) {
+        await prisma.stockTransaction.updateMany({
+          where: {
+            referenceId: qi.quotationId,
+            referenceType: { in: ['PI_BOOKING', 'QUOTATION'] },
+            productId: soItem.productId
+          },
+          data: { quantity: -newQty }
+        });
+      }
+    }
 
     const splitItems = await prisma.dispatchSplitItem.findMany({
       where: { quotationItemId: soItem.quotationItemId },

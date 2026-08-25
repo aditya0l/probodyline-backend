@@ -276,10 +276,33 @@ export class SalesOrdersService {
 
       if (updates.items) {
         for (const item of updates.items) {
-          await tx.dispatchSplitItem.update({
+          const splitItem = await tx.dispatchSplitItem.update({
             where: { id: item.id },
             data: { quantity: item.quantity },
+            include: { quotationItem: true }
           });
+          
+          if (splitItem.quotationItem.productId) {
+            await tx.stockTransaction.updateMany({
+              where: {
+                referenceId: splitId,
+                referenceType: 'DISPATCH_SPLIT',
+                productId: splitItem.quotationItem.productId
+              },
+              data: { quantity: -item.quantity }
+            });
+            
+            await tx.booking.updateMany({
+              where: {
+                dispatchSplitId: splitId,
+                productId: splitItem.quotationItem.productId
+              },
+              data: { requiredQuantity: item.quantity }
+            });
+            
+            await syncProductStock(tx, splitItem.quotationItem.productId);
+            this.eventsGateway.broadcastEntityUpdate('STOCK', splitItem.quotationItem.productId);
+          }
         }
       }
 
@@ -1582,12 +1605,50 @@ export class SalesOrdersService {
           data: { quantity: Math.max(0, newSplitQty) }
         });
 
+        if (soItem.productId) {
+          await prisma.stockTransaction.updateMany({
+            where: {
+              referenceId: splitItem.dispatchSplit.id,
+              referenceType: 'DISPATCH_SPLIT',
+              productId: soItem.productId
+            },
+            data: { quantity: -Math.max(0, newSplitQty) }
+          });
+          
+          await prisma.booking.updateMany({
+            where: {
+              dispatchSplitId: splitItem.dispatchSplit.id,
+              productId: soItem.productId
+            },
+            data: { requiredQuantity: Math.max(0, newSplitQty) }
+          });
+        }
+
         remainingDiff -= canRemove;
       } else {
         await prisma.dispatchSplitItem.update({
           where: { id: splitItem.id },
           data: { quantity: splitItem.quantity + remainingDiff }
         });
+
+        if (soItem.productId) {
+          await prisma.stockTransaction.updateMany({
+            where: {
+              referenceId: splitItem.dispatchSplit.id,
+              referenceType: 'DISPATCH_SPLIT',
+              productId: soItem.productId
+            },
+            data: { quantity: -(splitItem.quantity + remainingDiff) }
+          });
+          
+          await prisma.booking.updateMany({
+            where: {
+              dispatchSplitId: splitItem.dispatchSplit.id,
+              productId: soItem.productId
+            },
+            data: { requiredQuantity: splitItem.quantity + remainingDiff }
+          });
+        }
 
         remainingDiff = 0;
       }
@@ -1791,6 +1852,7 @@ export class SalesOrdersService {
         await this.recalculateSOTotals(salesOrderId, tx);
 
         for (const productId of productIdsToBroadcast) {
+          await syncProductStock(tx, productId);
           this.eventsGateway.broadcastEntityUpdate('STOCK', productId);
         }
       }

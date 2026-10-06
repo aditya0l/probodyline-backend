@@ -1850,6 +1850,28 @@ export class SalesOrdersService {
                     quotationId: so.quotationId,
                   }
                 });
+                // Delete PI_BOOKING stock transactions for this item
+                if (item.productId && so.quotationId) {
+                  const stockTx = await tx.stockTransaction.findFirst({
+                    where: {
+                      referenceType: 'PI_BOOKING',
+                      referenceId: so.quotationId,
+                      productId: item.productId,
+                    }
+                  });
+                  if (stockTx) {
+                    await tx.stockTransaction.delete({ where: { id: stockTx.id } });
+                  }
+                }
+              }
+              
+              // Delete the underlying QuotationItem to keep quote and SO in sync
+              try {
+                await tx.quotationItem.delete({
+                  where: { id: item.quotationItemId }
+                });
+              } catch (e) {
+                // Ignore if already deleted
               }
             }
             // Track the deleted product for stock sync

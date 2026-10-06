@@ -1908,7 +1908,7 @@ export class SalesOrdersService {
               include: { quotation: true }
             });
             
-            let qItemId = null;
+            let qItemId: string | null = null;
             
             // 1. If SO has a quotation, create the QuotationItem first to stay in sync
             if (so && so.quotationId) {
@@ -1921,7 +1921,6 @@ export class SalesOrdersService {
                   modelNumber: item.modelNumber,
                   quantity: qtyNum,
                   rate: rateNum,
-                  mrp: rateNum,
                   totalAmount,
                   srNo: index + 1
                 }
@@ -1945,7 +1944,7 @@ export class SalesOrdersService {
                 await tx.booking.create({
                   data: {
                     quotationId: so.quotationId,
-                    quotationItemId: qItemId,
+                    quotationItemId: qItemId!,
                     quoteNumber: so.quotation.quoteNumber,
                     productId: item.productId,
                     productName: item.productName,
@@ -1953,7 +1952,7 @@ export class SalesOrdersService {
                     dispatchDate: so.quotation.dispatchDate || new Date(),
                     bookedOn: so.quotation.bookingDate || new Date(),
                     requiredQuantity: qtyNum,
-                    status: 'DRAFT',
+                    status: 'CONFIRM',
                     waitingQuantity: qtyNum,
                     customerName: so.quotation.clientName,
                     gymName: so.quotation.gymName,

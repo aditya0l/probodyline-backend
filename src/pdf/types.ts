@@ -136,6 +136,7 @@ export interface PDFTemplateData {
   showSubtotalLabel?: boolean;
   bankDetails?: string;
   termsAndConditions?: string;
+  showTermsAndConditions?: boolean;
   warrantyInfo?: string;
   isWholesale?: boolean;
   isRetail?: boolean;

@@ -718,6 +718,7 @@ export class PdfService implements OnModuleDestroy {
       isLoadingSlip: templateType === 'loading',
       bankDetails: quotation.bankDetails || undefined,
       termsAndConditions: quotation.termsAndConditions || undefined,
+      showTermsAndConditions: quotation.visibleColumns ? (quotation.visibleColumns as any).termsAndConditions !== false : true,
       warrantyInfo: quotation.warrantyInfo || undefined,
       computerGeneratedText: `This is a computer Generated Quotation, Page 1 of 1 for #${quotation.quoteNumber || quotation.id}, ${quotation.status === 'BOOKED' ? 'Booked' : 'Booking Pending'}`,
 

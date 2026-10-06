@@ -1810,10 +1810,50 @@ export class SalesOrdersService {
       if (body.items !== undefined) {
         const items = body.items || [];
         const incomingItemIds = items.filter((i: any) => i.id).map((i: any) => i.id);
+        const productIdsToBroadcast = new Set<string>();
 
-        // 1. Delete removed items
+        // 1. Delete removed items and clean up stock/booking references
         for (const item of existingItems) {
           if (!incomingItemIds.includes(item.id)) {
+            // Clean up dispatch split items referencing this SO item's quotation item
+            if (item.quotationItemId) {
+              // Find dispatch split items for this quotation item in this SO's splits
+              const so = await tx.salesOrder.findUnique({
+                where: { id: salesOrderId },
+                include: { splits: true }
+              });
+              if (so) {
+                const splitIds = so.splits.map(s => s.id);
+                // Delete dispatch split items
+                await tx.dispatchSplitItem.deleteMany({
+                  where: {
+                    quotationItemId: item.quotationItemId,
+                    dispatchSplitId: { in: splitIds }
+                  }
+                });
+                // Delete stock transactions tied to these splits for this product
+                if (item.productId) {
+                  for (const split of so.splits) {
+                    await tx.stockTransaction.deleteMany({
+                      where: {
+                        productId: item.productId,
+                        referenceType: 'DISPATCH_SPLIT',
+                        referenceId: split.id,
+                      }
+                    });
+                  }
+                }
+                // Delete booking records for this quotation item
+                await tx.booking.deleteMany({
+                  where: {
+                    quotationItemId: item.quotationItemId,
+                    quotationId: so.quotationId,
+                  }
+                });
+              }
+            }
+            // Track the deleted product for stock sync
+            if (item.productId) productIdsToBroadcast.add(item.productId);
             await tx.salesOrderItem.delete({ where: { id: item.id } });
           }
         }
@@ -1837,7 +1877,6 @@ export class SalesOrdersService {
           });
         }
 
-        const productIdsToBroadcast = new Set<string>();
 
         // 3. Upsert items
         for (const [index, item] of items.entries()) {
@@ -1863,9 +1902,72 @@ export class SalesOrdersService {
               if (productId) productIdsToBroadcast.add(productId);
             }
           } else {
+            // Find the SO to get the quotationId and status
+            const so = await tx.salesOrder.findUnique({ 
+              where: { id: salesOrderId },
+              include: { quotation: true }
+            });
+            
+            let qItemId = null;
+            
+            // 1. If SO has a quotation, create the QuotationItem first to stay in sync
+            if (so && so.quotationId) {
+              const newQItem = await tx.quotationItem.create({
+                data: {
+                  quotationId: so.quotationId,
+                  productId: item.productId,
+                  productName: item.productName,
+                  productImage: item.productImage,
+                  modelNumber: item.modelNumber,
+                  quantity: qtyNum,
+                  rate: rateNum,
+                  mrp: rateNum,
+                  totalAmount,
+                  srNo: index + 1
+                }
+              });
+              qItemId = newQItem.id;
+              
+              // 2. If the Quotation/SO was already confirmed/booked, reserve stock for this new item immediately
+              if (so.quotation && so.quotation.status === 'CONFIRMED' && item.productId) {
+                await tx.stockTransaction.create({
+                  data: {
+                    productId: item.productId,
+                    transactionType: 'OUT',
+                    quantity: -qtyNum,
+                    referenceType: 'PI_BOOKING',
+                    referenceId: so.quotationId,
+                    date: so.quotation.bookingDate || new Date(),
+                    notes: `Direct edit add on booked SO: ${so.soNumber}`,
+                  },
+                });
+                
+                await tx.booking.create({
+                  data: {
+                    quotationId: so.quotationId,
+                    quotationItemId: qItemId,
+                    quoteNumber: so.quotation.quoteNumber,
+                    productId: item.productId,
+                    productName: item.productName,
+                    modelNumber: item.modelNumber,
+                    dispatchDate: so.quotation.dispatchDate || new Date(),
+                    bookedOn: so.quotation.bookingDate || new Date(),
+                    requiredQuantity: qtyNum,
+                    status: 'DRAFT',
+                    waitingQuantity: qtyNum,
+                    customerName: so.quotation.clientName,
+                    gymName: so.quotation.gymName,
+                    city: so.quotation.clientCity,
+                  },
+                });
+              }
+            }
+
+            // 3. Create the SalesOrderItem linked to the new QuotationItem
             await tx.salesOrderItem.create({
               data: {
                 salesOrderId,
+                quotationItemId: qItemId,
                 productId: item.productId,
                 productName: item.productName,
                 productImage: item.productImage,

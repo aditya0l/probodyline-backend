@@ -1958,7 +1958,7 @@ export class SalesOrdersService {
                     quantity: -qtyNum,
                     referenceType: 'PI_BOOKING',
                     referenceId: so.quotationId,
-                    date: so.quotation.bookingDate || new Date(),
+                    date: new Date(),
                     notes: `Direct edit add on booked SO: ${so.soNumber}`,
                   },
                 });
@@ -1972,7 +1972,7 @@ export class SalesOrdersService {
                     productName: item.productName,
                     modelNumber: item.modelNumber,
                     dispatchDate: so.quotation.dispatchDate || new Date(),
-                    bookedOn: so.quotation.bookingDate || new Date(),
+                    bookedOn: new Date(),
                     requiredQuantity: qtyNum,
                     status: 'CONFIRM',
                     waitingQuantity: qtyNum,

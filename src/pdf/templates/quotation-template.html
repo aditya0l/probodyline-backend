@@ -199,18 +199,18 @@
               <tr>
                 <td colspan="{{colSpanMinusTwo}}"></td>
                 <td class="totals-label-inline" style="text-align: center !important;">TOTAL</td>
-                <td class="col-right totals-value-inline">{{subtotal}}</td>
+                <td class="totals-value-inline">{{subtotal}}</td>
               </tr>
               {{/if}}
               <tr class="gst-highlight-row">
                 <td colspan="{{colSpanMinusTwo}}" class="gst-text-left">TOTAL INCLUDING {{gstRate}}% GST INR {{grandTotal}}/-</td>
                 <td class="gst-label">GST {{gstRate}}%</td>
-                <td class="col-right gst-value">{{gstAmount}}</td>
+                <td class="gst-value">{{gstAmount}}</td>
               </tr>
               <tr class="g-total-inline-row">
                 <td colspan="{{colSpanMinusTwo}}" class="amount-words-left">{{amountInWords}}</td>
                 <td class="g-total-label">G. TOTAL</td>
-                <td class="col-right g-total-value">{{grandTotal}}</td>
+                <td class="g-total-value">{{grandTotal}}</td>
               </tr>
           {{/if}}
         </tbody>

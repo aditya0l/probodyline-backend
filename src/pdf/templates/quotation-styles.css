@@ -441,13 +441,14 @@ body.landscape .no-image-placeholder {
 
 /* Inline Totals CSS */
 .totals-label-inline {
-  text-align: right;
+  text-align: center !important;
   font-weight: bold;
   padding-right: 10px !important;
   
 }
 
 .totals-value-inline {
+  text-align: center !important;
   font-weight: bold;
 }
 
@@ -460,13 +461,13 @@ body.landscape .no-image-placeholder {
 }
 
 .gst-text-left {
-  text-align: center;
+  text-align: center !important;
   padding-left: 10px !important;
   
 }
 
 .gst-label {
-  text-align: center;
+  text-align: center !important;
   padding-right: 10px !important;
   
   
@@ -474,7 +475,7 @@ body.landscape .no-image-placeholder {
 }
 
 .gst-value {
-  text-align: right;
+  text-align: center !important;
   
 }
 
@@ -484,7 +485,7 @@ body.landscape .no-image-placeholder {
 }
 
 .amount-words-left {
-  text-align: center;
+  text-align: left !important;
   color: #000;
   font-size: 8.5pt;
   vertical-align: middle;
@@ -492,7 +493,7 @@ body.landscape .no-image-placeholder {
 }
 
 .g-total-label {
-  text-align: center;
+  text-align: center !important;
   font-weight: bold;
   font-size: 11pt;
   vertical-align: middle;
@@ -510,6 +511,7 @@ body.landscape .no-image-placeholder {
 }
 
 .g-total-value {
+  text-align: center !important;
   font-weight: bold;
   font-size: 11pt;
   vertical-align: middle;
@@ -568,7 +570,7 @@ body.landscape .no-image-placeholder {
   color: var(--text-primary);
   line-height: 1.5;
   white-space: pre-line;
-  font-weight: bold;
+  
 }
 
 /* Disclaimer */

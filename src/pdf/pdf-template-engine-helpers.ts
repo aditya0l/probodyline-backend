@@ -79,11 +79,12 @@ export function getColumnClass(colId: QuotationColumnId): string {
     colId === 'mrp' ||
     colId === 'quantity' ||
     colId === 'productImage' ||
-    colId === 'modelNumber'
+    colId === 'modelNumber' ||
+    colId === 'amount' ||
+    colId === 'totalAmount'
   ) {
     cls += ' col-center';
   } else if (
-    colId === 'totalAmount' ||
     colId === 'todaysStock' ||
     colId === 'stockPlus360Days'
   ) {

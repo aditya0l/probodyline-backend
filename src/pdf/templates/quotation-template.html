@@ -179,7 +179,9 @@
             <td class="{{this.className}}">
               {{#if this.isImage}}
                 {{#if this.value}}
-                <img src="{{{this.value}}}" alt="Product" class="product-image">
+                <div class="product-image-wrapper">
+                  <img src="{{{this.value}}}" alt="Product" class="product-image">
+                </div>
                 {{else}}
                 <div class="no-image-placeholder"></div>
                 {{/if}}

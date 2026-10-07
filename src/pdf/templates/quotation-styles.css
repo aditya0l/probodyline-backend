@@ -234,7 +234,7 @@ body.landscape .products-table .col-quantity { width: 5% !important; }
 body.landscape .products-table .col-totalAmount { width: 7% !important; }
 
 .products-table thead {
-  display: table-row-group;
+  display: table-header-group;
 }
 
 .products-table tbody {

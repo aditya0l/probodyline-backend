@@ -558,9 +558,9 @@ body.landscape .no-image-placeholder {
 }
 
 .bank-details-title {
-  font-weight: bold;
+  font-weight: 800 !important;
   font-size: 8pt;
-  color: var(--text-secondary);
+  color: #000 !important;
   margin-bottom: 2px;
   text-transform: uppercase;
 }

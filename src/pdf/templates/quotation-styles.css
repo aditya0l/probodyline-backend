@@ -214,7 +214,7 @@ body.landscape .quotation-container {
 .products-table .col-srNo { width: 5%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
 .products-table .col-productImage { width: 18%; padding-left: 2px !important; padding-right: 2px !important; text-align: center !important; }
 .products-table .col-productName { width: 37%; }
-.products-table .col-modelNumber { width: 10%; word-break: break-all !important; }
+.products-table .col-modelNumber { width: 10%; word-break: break-word !important; }
 .products-table .col-quantity { width: 8%; }
 .products-table .col-rate { width: 10%; }
 .products-table .col-totalAmount { width: 12%; }
@@ -330,12 +330,14 @@ body.landscape .product-name-txt {
   width: 100%;
   height: 140px;
   margin: 0 auto;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .product-image {
   width: 100% !important;
   height: 100% !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
   background-color: transparent;
   display: block;
   margin: 0 auto;

@@ -323,24 +323,20 @@ body.landscape .product-name-txt {
 
 /* Images */
 .product-image-wrapper {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   width: 100%;
+  max-width: 100%;
   height: 140px;
-  margin: 0 auto;
   border-radius: 4px;
   overflow: hidden;
+  background-color: #f9fafb;
 }
 
 .product-image {
   width: 100% !important;
+  max-width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
-  background-color: transparent;
   display: block;
-  margin: 0 auto;
 }
 
 .product-image-hover {

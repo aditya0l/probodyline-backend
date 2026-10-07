@@ -600,22 +600,22 @@ export class PdfService implements OnModuleDestroy {
 
       // Quotation Info
       quoteNumber: quotation.quoteNumber,
-      quoteDate: this.formatDateWithTime(quotation.createdAt),
-      currentDate: this.formatDateFriendly(new Date()),
+      quoteDate: this.formatDateAbbrev(quotation.createdAt),
+      currentDate: `Date - ${this.formatDateAbbrev(new Date())}`,
       deliveryDate: quotation.deliveryDate
-        ? this.formatDateFriendly(quotation.deliveryDate)
+        ? this.formatDateAbbrev(quotation.deliveryDate)
         : undefined,
       bookingDate: quotation.bookingDate
-        ? this.formatDateFriendly(quotation.bookingDate)
+        ? this.formatDateAbbrev(quotation.bookingDate)
         : undefined,
       dispatchDate: quotation.dispatchDate
-        ? this.formatDateFriendly(quotation.dispatchDate)
+        ? this.formatDateAbbrev(quotation.dispatchDate)
         : undefined,
       installationDate: quotation.installationDate
-        ? this.formatDateFriendly(quotation.installationDate)
+        ? this.formatDateAbbrev(quotation.installationDate)
         : undefined,
       inaugurationDate: quotation.inaugurationDate
-        ? this.formatDateFriendly(quotation.inaugurationDate)
+        ? this.formatDateAbbrev(quotation.inaugurationDate)
         : undefined,
       templateType: templateType,
       isDefaultTemplate: templateType === 'default',
@@ -641,7 +641,17 @@ export class PdfService implements OnModuleDestroy {
       client2AadharCard: quotation.clients && quotation.clients.length > 1 ? (quotation.clients[1].aadharCard || undefined) : undefined,
 
       // Client Info (Default)
-      clientName: (isBankQuote && bankQuoteData?.clientAadharName) ? bankQuoteData.clientAadharName : (quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].name || undefined) : (customer?.name || quotation.clientName || undefined)),
+            clientName: await (async () => {
+        if (isBankQuote && bankQuoteData?.clientAadharName) return bankQuoteData.clientAadharName;
+        let code = quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].name || undefined) : (customer?.name || quotation.clientName || undefined);
+        if (code) {
+          try {
+            const clientRec = await this.prisma.client.findFirst({ where: { clientCode: code } });
+            if (clientRec && clientRec.clientName) return clientRec.clientName;
+          } catch (e) {}
+        }
+        return code;
+      })(),
       clientAddress: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].address || undefined) : (customer?.address || quotation.clientAddress || undefined),
       clientAddressLine2: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].addressLine2 || undefined) : (customer?.addressLine2 || quotation.clientAddressLine2 || undefined),
       clientCity: quotation.clients && quotation.clients.length > 0 ? (quotation.clients[0].city || undefined) : (customer?.city || quotation.clientCity || undefined),
@@ -781,6 +791,19 @@ export class PdfService implements OnModuleDestroy {
   /**
    * Format date as dd/mm/yyyy
    */
+  
+  /**
+   * Format date as DD/Mon/YYYY (e.g. 06/Oct/2026)
+   */
+  private formatDateAbbrev(date: Date | string): string {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const year = d.getFullYear();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = months[d.getMonth()];
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${day}/${month}/${year}`;
+  }
+
   private formatDateFriendly(date: Date | string): string {
     const d = typeof date === 'string' ? new Date(date) : date;
     const year = d.getFullYear();

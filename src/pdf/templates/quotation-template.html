@@ -101,7 +101,7 @@
           {{#if nameAsPanCard}}<div class="field-group"><div class="field-label">NAME AS PAN</div><div class="field-value">{{nameAsPanCard}}</div></div>{{/if}}
           {{#if nameAsAadharCard}}<div class="field-group"><div class="field-label">NAME AS AADHAR</div><div class="field-value">{{nameAsAadharCard}}</div></div>{{/if}}
           
-          {{#if showAddressLine1Field}}<div class="field-group" style="grid-column: span 2;"><div class="field-label">ADDRESS</div><div class="field-value">{{#if clientAddress}}{{{clientAddress}}}{{#if clientAddressLine2}}, {{{clientAddressLine2}}}{{/if}}{{#if clientCity}}, {{clientCity}}{{/if}}{{else}}{{#if clientCity}}{{clientCity}}{{else}}<span class="field-muted">Not provided</span>{{/if}}{{/if}}</div></div>{{/if}}
+          {{#if showAddressLine1Field}}<div class="field-group" ><div class="field-label">ADDRESS</div><div class="field-value">{{#if clientAddress}}{{{clientAddress}}}{{#if clientAddressLine2}}, {{{clientAddressLine2}}}{{/if}}{{#if clientCity}}, {{clientCity}}{{/if}}{{else}}{{#if clientCity}}{{clientCity}}{{else}}<span class="field-muted">Not provided</span>{{/if}}{{/if}}</div></div>{{/if}}
           
           {{#if showGstNoField}}<div class="field-group"><div class="field-label">GST NO.</div><div class="field-value">{{#if clientGST}}{{clientGST}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}
           {{#if showBookingDateField}}<div class="field-group"><div class="field-label">BOOKING DATE</div><div class="field-value">{{#if bookingDate}}{{bookingDate}}{{else}}<span class="field-muted">Not provided</span>{{/if}}</div></div>{{/if}}

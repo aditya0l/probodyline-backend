@@ -234,7 +234,7 @@ body.landscape .products-table .col-quantity { width: 5% !important; }
 body.landscape .products-table .col-totalAmount { width: 7% !important; }
 
 .products-table thead {
-  display: table-header-group;
+  display: table-row-group;
 }
 
 .products-table tbody {
@@ -453,7 +453,6 @@ body.landscape .no-image-placeholder {
 
 .gst-highlight-row td {
   background-color: #FFB3B3 !important;
-  border-color: #FFB3B3 !important;
   color: #000 !important;
   font-weight: bold !important;
   padding-top: 6px !important;
@@ -569,6 +568,7 @@ body.landscape .no-image-placeholder {
   color: var(--text-primary);
   line-height: 1.5;
   white-space: pre-line;
+  font-weight: bold;
 }
 
 /* Disclaimer */

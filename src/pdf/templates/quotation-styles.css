@@ -444,7 +444,7 @@ body.landscape .no-image-placeholder {
   text-align: right;
   font-weight: bold;
   padding-right: 10px !important;
-  border-right: none !important;
+  
 }
 
 .totals-value-inline {
@@ -462,20 +462,20 @@ body.landscape .no-image-placeholder {
 .gst-text-left {
   text-align: center;
   padding-left: 10px !important;
-  border-right: none !important;
+  
 }
 
 .gst-label {
   text-align: center;
   padding-right: 10px !important;
-  border-right: none !important;
-  border-left: none !important;
+  
+  
   white-space: nowrap !important;
 }
 
 .gst-value {
   text-align: right;
-  border-left: none !important;
+  
 }
 
 .g-total-inline-row td {
@@ -488,7 +488,7 @@ body.landscape .no-image-placeholder {
   color: #000;
   font-size: 8.5pt;
   vertical-align: middle;
-  border-right: none !important;
+  
 }
 
 .g-total-label {
@@ -497,8 +497,8 @@ body.landscape .no-image-placeholder {
   font-size: 11pt;
   vertical-align: middle;
   padding-right: 10px !important;
-  border-right: none !important;
-  border-left: none !important;
+  
+  
   white-space: nowrap !important;
 }
 
@@ -513,7 +513,7 @@ body.landscape .no-image-placeholder {
   font-weight: bold;
   font-size: 11pt;
   vertical-align: middle;
-  border-left: none !important;
+  
 }
 
 /* Amount in words */
@@ -622,15 +622,15 @@ body.landscape .no-image-placeholder {
 .card-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 16px;
+  gap: 2px 16px;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
   border: 1px solid var(--border);
-  padding: 6px 10px;
+  padding: 4px 8px;
   background: #fdfdfd;
 }
 

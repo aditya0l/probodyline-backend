@@ -77,7 +77,8 @@ export function getColumnClass(colId: QuotationColumnId): string {
     colId === 'priority' ||
     colId === 'rate' ||
     colId === 'mrp' ||
-    colId === 'quantity'
+    colId === 'quantity' ||
+    colId === 'productImage'
   ) {
     cls += ' col-center';
   } else if (

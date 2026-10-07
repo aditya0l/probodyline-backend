@@ -622,15 +622,15 @@ body.landscape .no-image-placeholder {
 .card-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 6px 16px;
 }
 
 .field-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   border: 1px solid var(--border);
-  padding: 8px 12px;
+  padding: 6px 10px;
   background: #fdfdfd;
 }
 

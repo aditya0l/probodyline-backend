@@ -80,7 +80,6 @@ export function getColumnClass(colId: QuotationColumnId): string {
     colId === 'quantity' ||
     colId === 'productImage' ||
     colId === 'modelNumber' ||
-    colId === 'amount' ||
     colId === 'totalAmount'
   ) {
     cls += ' col-center';

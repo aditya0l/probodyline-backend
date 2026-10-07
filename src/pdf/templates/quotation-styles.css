@@ -485,7 +485,7 @@ body.landscape .no-image-placeholder {
 }
 
 .amount-words-left {
-  text-align: left !important;
+  text-align: center !important;
   color: #000;
   font-size: 8.5pt;
   vertical-align: middle;

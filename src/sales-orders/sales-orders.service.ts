@@ -1306,6 +1306,7 @@ export class SalesOrdersService {
           orderBy: { createdAt: 'asc' },
         },
         quotation: true,
+        splits: true,
       },
     });
 
@@ -1313,6 +1314,8 @@ export class SalesOrdersService {
 
     const masterDispatchDate = so.quotation?.dispatchDate;
     if (!masterDispatchDate) return [];
+
+    const splitIds = so.splits?.map(s => s.id) || [];
 
     const statuses = await Promise.all(
       so.items.map(async (item) => {
@@ -1339,13 +1342,30 @@ export class SalesOrdersService {
         }
 
         // 2. Find this specific order's transaction in the ledger to inherit its exact allocation status
-        const targetRefId = so.quotationId || so.id;
-        const orderRow = ledgerRows.find(r => r.referenceId === targetRefId);
+        const orderRow = ledgerRows.find(r => 
+          r.referenceId === so.quotationId ||
+          r.referenceId === so.id ||
+          splitIds.includes(r.referenceId) ||
+          (r.orderNumber && r.orderNumber.includes(so.soNumber)) ||
+          (r.notes && r.notes.includes(so.soNumber))
+        );
+
+        // Also check booking record for this order & product
+        const booking = await this.prisma.booking.findFirst({
+          where: {
+            quotationId: so.quotationId,
+            productId: product.id,
+          },
+          orderBy: { createdAt: 'desc' }
+        });
 
         if (orderRow) {
           stockOnDispatchDate = orderRow.stockOnDispatchDate;
           status = orderRow.status || 'WAITING LIST';
           statusQty = orderRow.statusQty || 0;
+        } else if (booking) {
+          status = booking.status === 'CONFIRM' ? 'CONFIRM' : (booking.waitingQuantity > 0 && booking.waitingQuantity < requiredQty ? 'PARTIAL' : 'WAITING LIST');
+          statusQty = booking.waitingQuantity || 0;
         } else {
           // Fallback if transaction isn't found (e.g. fresh unbooked order)
           // Use the ATP of the masterDispatchDate
@@ -1748,6 +1768,21 @@ export class SalesOrdersService {
           where: { id: request.salesOrder.quotationId },
           data: { dispatchDate: request.requestedDate }
         });
+
+        // Sync master stock transactions and bookings
+        await tx.stockTransaction.updateMany({
+          where: {
+            referenceId: request.salesOrder.quotationId,
+            transactionType: 'OUT',
+            referenceType: { in: ['QUOTATION', 'PI_BOOKING'] },
+          },
+          data: { date: request.requestedDate },
+        });
+
+        await tx.booking.updateMany({
+          where: { quotationId: request.salesOrder.quotationId },
+          data: { dispatchDate: request.requestedDate },
+        });
       }
 
       await tx.dispatchSplit.updateMany({
@@ -1757,6 +1792,25 @@ export class SalesOrdersService {
         },
         data: { dispatchDate: request.requestedDate }
       });
+
+      // Also sync split stock transactions and bookings
+      const affectedSplits = await tx.dispatchSplit.findMany({
+        where: { salesOrderId, dispatchDate: request.requestedDate }
+      });
+      for (const split of affectedSplits) {
+        await tx.stockTransaction.updateMany({
+          where: {
+            referenceId: split.id,
+            referenceType: 'DISPATCH_SPLIT',
+            transactionType: 'OUT',
+          },
+          data: { date: request.requestedDate },
+        });
+        await tx.booking.updateMany({
+          where: { dispatchSplitId: split.id },
+          data: { dispatchDate: request.requestedDate },
+        });
+      }
 
       await tx.salesOrderActivity.create({
         data: {
@@ -1924,10 +1978,13 @@ export class SalesOrdersService {
               if (productId) productIdsToBroadcast.add(productId);
             }
           } else {
-            // Find the SO to get the quotationId and status
+            // Find the SO to get the quotationId, status and active splits
             const so = await tx.salesOrder.findUnique({ 
               where: { id: salesOrderId },
-              include: { quotation: true }
+              include: { 
+                quotation: true,
+                splits: { orderBy: { splitNumber: 'asc' } }
+              }
             });
             
             let qItemId: string | null = null;
@@ -1951,36 +2008,82 @@ export class SalesOrdersService {
               
               // 2. If the Quotation/SO was already confirmed/booked, reserve stock for this new item immediately
               if (so.quotation && so.quotation.status === 'CONFIRMED' && item.productId) {
-                await tx.stockTransaction.create({
-                  data: {
-                    productId: item.productId,
-                    transactionType: 'OUT',
-                    quantity: -qtyNum,
-                    referenceType: 'PI_BOOKING',
-                    referenceId: so.quotationId,
-                    date: so.quotation.bookingDate || new Date(),
-                    notes: `Direct edit add on booked SO: ${so.soNumber}`,
-                  },
-                });
-                
-                await tx.booking.create({
-                  data: {
-                    quotationId: so.quotationId,
-                    quotationItemId: qItemId!,
-                    quoteNumber: so.quotation.quoteNumber,
-                    productId: item.productId,
-                    productName: item.productName,
-                    modelNumber: item.modelNumber,
-                    dispatchDate: so.quotation.dispatchDate || new Date(),
-                    bookedOn: so.quotation.bookingDate || new Date(),
-                    requiredQuantity: qtyNum,
-                    status: 'CONFIRM',
-                    waitingQuantity: qtyNum,
-                    customerName: so.quotation.clientName,
-                    gymName: so.quotation.gymName,
-                    city: so.quotation.clientCity,
-                  },
-                });
+                const activeSplit = so.splits?.find((s: any) => s.status === 'BOOKED') || so.splits?.[0];
+                const effectiveDispatchDate = activeSplit?.dispatchDate || so.quotation.dispatchDate || new Date();
+                const effectiveBookingDate = so.quotation.bookingDate || new Date();
+
+                if (activeSplit) {
+                  await tx.dispatchSplitItem.create({
+                    data: {
+                      dispatchSplitId: activeSplit.id,
+                      quotationItemId: qItemId!,
+                      quantity: qtyNum,
+                    }
+                  });
+
+                  await tx.stockTransaction.create({
+                    data: {
+                      productId: item.productId,
+                      transactionType: 'OUT',
+                      quantity: -qtyNum,
+                      referenceType: 'DISPATCH_SPLIT',
+                      referenceId: activeSplit.id,
+                      date: effectiveDispatchDate,
+                      notes: `Direct edit add on booked SO: ${so.soNumber} / Sp-${activeSplit.splitNumber}`,
+                    },
+                  });
+
+                  await tx.booking.create({
+                    data: {
+                      quotationId: so.quotationId,
+                      quotationItemId: qItemId!,
+                      quoteNumber: `${so.soNumber} A/${String.fromCharCode(64 + Math.max(so.splits?.length || 1, 1))}`,
+                      productId: item.productId,
+                      productName: item.productName,
+                      modelNumber: item.modelNumber,
+                      dispatchDate: effectiveDispatchDate,
+                      bookedOn: effectiveBookingDate,
+                      requiredQuantity: qtyNum,
+                      status: 'CONFIRM',
+                      waitingQuantity: 0,
+                      customerName: so.quotation.clientName,
+                      gymName: so.quotation.gymName,
+                      city: so.quotation.clientCity,
+                      dispatchSplitId: activeSplit.id,
+                    },
+                  });
+                } else {
+                  await tx.stockTransaction.create({
+                    data: {
+                      productId: item.productId,
+                      transactionType: 'OUT',
+                      quantity: -qtyNum,
+                      referenceType: 'PI_BOOKING',
+                      referenceId: so.quotationId,
+                      date: effectiveDispatchDate,
+                      notes: `Direct edit add on booked SO: ${so.soNumber}`,
+                    },
+                  });
+
+                  await tx.booking.create({
+                    data: {
+                      quotationId: so.quotationId,
+                      quotationItemId: qItemId!,
+                      quoteNumber: so.quotation.quoteNumber,
+                      productId: item.productId,
+                      productName: item.productName,
+                      modelNumber: item.modelNumber,
+                      dispatchDate: effectiveDispatchDate,
+                      bookedOn: effectiveBookingDate,
+                      requiredQuantity: qtyNum,
+                      status: 'CONFIRM',
+                      waitingQuantity: 0,
+                      customerName: so.quotation.clientName,
+                      gymName: so.quotation.gymName,
+                      city: so.quotation.clientCity,
+                    },
+                  });
+                }
               }
             }
 
@@ -2017,7 +2120,7 @@ export class SalesOrdersService {
       if (body.dispatchDate || body.bookingDate) {
         const so = await tx.salesOrder.findUnique({ 
           where: { id: salesOrderId },
-          include: { quotation: true }
+          include: { quotation: true, splits: true }
         });
         
         if (so && (so as any).quotationId) {
@@ -2031,14 +2134,42 @@ export class SalesOrdersService {
             }
           });
 
-          // Only update splits that were following the old master dispatch date
-          if (body.dispatchDate && oldDispatchDate) {
-            await tx.dispatchSplit.updateMany({
+          // Update splits and sync stock transactions & bookings
+          if (body.dispatchDate) {
+            const newDispatchDate = new Date(body.dispatchDate);
+            if (oldDispatchDate) {
+              await tx.dispatchSplit.updateMany({
+                where: {
+                  salesOrderId,
+                  dispatchDate: oldDispatchDate
+                },
+                data: { dispatchDate: newDispatchDate }
+              });
+            }
+
+            const splitIds = (so as any).splits?.map((s: any) => s.id) || [];
+            await tx.stockTransaction.updateMany({
               where: {
-                salesOrderId,
-                dispatchDate: oldDispatchDate
+                OR: [
+                  { referenceId: (so as any).quotationId, referenceType: { in: ['QUOTATION', 'PI_BOOKING'] } },
+                  { referenceId: { in: splitIds }, referenceType: 'DISPATCH_SPLIT' }
+                ],
+                transactionType: 'OUT',
               },
-              data: { dispatchDate: new Date(body.dispatchDate) }
+              data: { date: newDispatchDate },
+            });
+
+            await tx.booking.updateMany({
+              where: { quotationId: (so as any).quotationId },
+              data: { dispatchDate: newDispatchDate },
+            });
+          }
+
+          if (body.bookingDate) {
+            const newBookingDate = new Date(body.bookingDate);
+            await tx.booking.updateMany({
+              where: { quotationId: (so as any).quotationId },
+              data: { bookedOn: newBookingDate },
             });
           }
         }

@@ -17,6 +17,8 @@ export interface ShareFile {
 const IMAGE_EXT = /\.(webp|png|jpe?g|avif|gif)$/i;
 const MAX_DIMENSION = 2048;
 const JPEG_QUALITY = 82;
+const MAX_INPUT_PIXELS = 50_000_000;
+const GENERIC_TYPES = new Set(['', 'binary/octet-stream', 'application/octet-stream']);
 
 @Injectable()
 export class ShareProxyService {
@@ -57,6 +59,10 @@ export class ShareProxyService {
       if (!this.allowedHosts.includes(parsed.host)) {
         throw new BadRequestException('Host is not allowed');
       }
+      // Query strings / fragments would make the same object look like many (unbounded cache + CPU).
+      if (url.includes('?') || url.includes('#')) {
+        throw new BadRequestException('Query string or fragment is not allowed');
+      }
       let key: string;
       try {
         key = decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
@@ -88,24 +94,32 @@ export class ShareProxyService {
     if (source.kind === 's3') {
       // Cache lookup only when the extension already tells us it is an image.
       if (IMAGE_EXT.test(baseName)) {
-        const cached = await this.readCache(url);
+        const cached = await this.readCache(source.key);
         if (cached) return this.imageResult(cached, name, baseName);
       }
       const obj = await this.getObject(source.key);
-      const contentType: string = obj.ContentType || '';
-      if (IMAGE_EXT.test(baseName) || contentType.startsWith('image/')) {
+      const stored: string = String(obj.ContentType || '').split(';')[0].trim().toLowerCase();
+      if (IMAGE_EXT.test(baseName) || stored.startsWith('image/')) {
         const raw = Buffer.from(await obj.Body.transformToByteArray());
         const jpeg = await this.toJpeg(raw);
-        this.writeCache(url, jpeg);
+        this.writeCache(source.key, jpeg);
         return this.imageResult(jpeg, name, baseName);
+      }
+      // Generic stored types fall back to the extension; only PDFs are served as-is.
+      const contentType = GENERIC_TYPES.has(stored) ? this.contentTypeFromName(baseName) : stored;
+      if (contentType !== 'application/pdf') {
+        throw new BadRequestException('Unsupported file type');
       }
       return {
         body: obj.Body as Readable,
-        contentType: contentType || this.contentTypeFromName(baseName),
+        contentType,
         filename: this.fileName(name, baseName, false),
       };
     }
 
+    if (!IMAGE_EXT.test(baseName) && this.contentTypeFromName(baseName) !== 'application/pdf') {
+      throw new BadRequestException('Unsupported file type');
+    }
     let raw: Buffer;
     try {
       raw = await fs.promises.readFile(path.join(process.cwd(), source.path));
@@ -128,21 +142,21 @@ export class ShareProxyService {
   }
 
   private toJpeg(buffer: Buffer): Promise<Buffer> {
-    return sharp(buffer)
+    return sharp(buffer, { limitInputPixels: MAX_INPUT_PIXELS })
       .rotate()
       .resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality: JPEG_QUALITY })
       .toBuffer();
   }
 
-  private cacheKey(url: string): string {
-    return `share-cache/${createHash('sha1').update(url).digest('hex')}.jpg`;
+  private cacheKey(bucketKey: string): string {
+    return `share-cache/${createHash('sha1').update(bucketKey).digest('hex')}.jpg`;
   }
 
-  private async readCache(url: string): Promise<Buffer | null> {
+  private async readCache(bucketKey: string): Promise<Buffer | null> {
     try {
       const res = await this.s3Client.send(
-        new GetObjectCommand({ Bucket: this.bucketName, Key: this.cacheKey(url) }),
+        new GetObjectCommand({ Bucket: this.bucketName, Key: this.cacheKey(bucketKey) }),
       );
       return Buffer.from(await res.Body!.transformToByteArray());
     } catch (err) {
@@ -151,12 +165,12 @@ export class ShareProxyService {
     }
   }
 
-  private writeCache(url: string, body: Buffer): void {
+  private writeCache(bucketKey: string, body: Buffer): void {
     this.s3Client
       .send(
         new PutObjectCommand({
           Bucket: this.bucketName,
-          Key: this.cacheKey(url),
+          Key: this.cacheKey(bucketKey),
           Body: body,
           ContentType: 'image/jpeg',
         }),

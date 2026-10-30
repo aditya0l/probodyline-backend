@@ -80,6 +80,14 @@ describe('ShareProxyService', () => {
       expect(() => service.resolveSource(u)).toThrow(BadRequestException);
     });
 
+    it.each([
+      'https://probodyline-uploads.s3.us-east-1.amazonaws.com/products/a.webp?x=1',
+      'https://cdn.example.net/products/a.webp?x=1',
+      'https://probodyline-uploads.s3.us-east-1.amazonaws.com/products/a.webp#frag',
+    ])('rejects query string or fragment on bucket urls: %s', (u) => {
+      expect(() => service.resolveSource(u)).toThrow(BadRequestException);
+    });
+
     it('rejects path traversal', () => {
       expect(() => service.resolveSource('/uploads/../../etc/passwd')).toThrow(BadRequestException);
     });
@@ -98,7 +106,7 @@ describe('ShareProxyService', () => {
 
       expect(result.contentType).toBe('image/jpeg');
       expect((await sharp(result.body as Buffer).metadata()).format).toBe('jpeg');
-      const cacheKey = `share-cache/${sha1(S3_URL)}.jpg`;
+      const cacheKey = `share-cache/${sha1('products/a.webp')}.jpg`;
       const first = send.mock.calls[0][0];
       expect(first).toBeInstanceOf(GetObjectCommand);
       expect(first.input.Key).toBe(cacheKey);
@@ -189,6 +197,43 @@ describe('ShareProxyService', () => {
 
       const result = await service.getShareFile(S3_URL);
       expect(result.filename).toBe('a.jpg');
+    });
+  
+    it('uses the same cache key regardless of host (CloudFront vs S3)', async () => {
+      send.mockResolvedValueOnce({ Body: bodyOf(await makeImage(4, 4, 'png')), ContentType: 'image/jpeg' });
+      await service.getShareFile('https://cdn.example.net/products/a.webp');
+      expect(send.mock.calls[0][0].input.Key).toBe(`share-cache/${sha1('products/a.webp')}.jpg`);
+    });
+
+    it('rejects non-image, non-PDF objects with 400 (.txt)', async () => {
+      send.mockResolvedValueOnce({ Body: Readable.from(['hi']), ContentType: 'text/plain' });
+      await expect(
+        service.getShareFile('https://probodyline-uploads.s3.us-east-1.amazonaws.com/docs/a.txt'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects text/html stored under a .pdf-less key with 400', async () => {
+      send.mockResolvedValueOnce({ Body: Readable.from(['<html>']), ContentType: 'text/html' });
+      await expect(
+        service.getShareFile('https://probodyline-uploads.s3.us-east-1.amazonaws.com/docs/page'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('serves a .pdf stored as binary/octet-stream as application/pdf', async () => {
+      const stream = Readable.from([Buffer.from('%PDF-1.4')]);
+      send.mockResolvedValueOnce({ Body: stream, ContentType: 'binary/octet-stream' });
+      const result = await service.getShareFile(
+        'https://probodyline-uploads.s3.us-east-1.amazonaws.com/docs/spec.pdf',
+      );
+      expect(result.contentType).toBe('application/pdf');
+      expect(result.body).toBe(stream);
+    });
+
+    it('rejects a generic-typed non-pdf with 400', async () => {
+      send.mockResolvedValueOnce({ Body: Readable.from(['x']), ContentType: '' });
+      await expect(
+        service.getShareFile('https://probodyline-uploads.s3.us-east-1.amazonaws.com/docs/a.bin'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 });

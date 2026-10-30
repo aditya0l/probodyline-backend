@@ -22,6 +22,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { FilesService } from './files.service';
+import { ShareProxyService } from './share-proxy.service';
+import { Readable } from 'stream';
 import type { Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -29,7 +31,10 @@ import * as path from 'path';
 @ApiTags('files')
 @Controller('files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(
+    private readonly filesService: FilesService,
+    private readonly shareProxyService: ShareProxyService,
+  ) {}
 
   @Post('upload')
   @ApiOperation({ summary: 'Upload a file' })
@@ -87,6 +92,38 @@ export class FilesController {
       originalFilename: file.originalname,
       fileSize: file.size,
     };
+  }
+
+  @Get('share-proxy')
+  @ApiOperation({
+    summary: 'Fetch an allow-listed file for sharing (images converted to JPEG)',
+  })
+  @ApiQuery({ name: 'url', required: true, description: 'File URL or uploads path' })
+  @ApiQuery({ name: 'name', required: false, description: 'Download file name' })
+  @ApiResponse({ status: 200, description: 'File content' })
+  @ApiResponse({ status: 400, description: 'Missing or non-allow-listed url' })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  async shareProxy(
+    @Query('url') url: string,
+    @Query('name') name: string | undefined,
+    @Res() res: Response,
+  ) {
+    if (!url || typeof url !== 'string') {
+      throw new BadRequestException('url is required');
+    }
+    const file = await this.shareProxyService.getShareFile(
+      url,
+      typeof name === 'string' ? name : undefined,
+    );
+    res.setHeader('Content-Type', file.contentType);
+    res.setHeader('Content-Disposition', `inline; filename="${file.filename}"`);
+    res.setHeader('Cache-Control', 'private, max-age=31536000, immutable');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition');
+    if (Buffer.isBuffer(file.body)) {
+      res.send(file.body);
+    } else {
+      (file.body as Readable).pipe(res);
+    }
   }
 
   @Get('*path')

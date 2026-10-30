@@ -131,6 +131,7 @@ export class FilesController {
       body.on('error', (err) => {
         this.logger.error(`share-proxy stream failed: ${err.message}`);
         if (!res.headersSent) {
+          res.removeHeader('Content-Type');
           res.removeHeader('Cache-Control');
           res.removeHeader('Content-Disposition');
           res.status(502).json({ message: 'Failed to stream file' });

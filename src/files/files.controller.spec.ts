@@ -115,6 +115,8 @@ describe('FilesController share-proxy', () => {
       .query({ url: 'uploads/doc.pdf' })
       .expect(502);
     expect(res.headers['cache-control']).toBeUndefined();
+    expect(res.headers['content-type']).toMatch(/json/);
+    expect(res.body.message).toBe('Failed to stream file');
   });
 
   it('returns 400 when url is missing', async () => {

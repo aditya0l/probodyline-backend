@@ -9,6 +9,7 @@ import {
   Res,
   Query,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -31,6 +32,8 @@ import * as path from 'path';
 @ApiTags('files')
 @Controller('files')
 export class FilesController {
+  private readonly logger = new Logger(FilesController.name);
+
   constructor(
     private readonly filesService: FilesService,
     private readonly shareProxyService: ShareProxyService,
@@ -122,7 +125,21 @@ export class FilesController {
     if (Buffer.isBuffer(file.body)) {
       res.send(file.body);
     } else {
-      (file.body as Readable).pipe(res);
+      // Not stream.pipeline: it destroys `res` on error, which would make
+      // the 502 response below impossible when no bytes were sent yet.
+      const body = file.body as Readable;
+      body.on('error', (err) => {
+        this.logger.error(`share-proxy stream failed: ${err.message}`);
+        if (!res.headersSent) {
+          res.removeHeader('Cache-Control');
+          res.removeHeader('Content-Disposition');
+          res.status(502).json({ message: 'Failed to stream file' });
+        } else {
+          res.destroy(err);
+        }
+      });
+      res.on('close', () => body.destroy());
+      body.pipe(res);
     }
   }
 

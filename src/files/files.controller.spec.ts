@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import request from 'supertest';
+import { Readable } from 'stream';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
 import { ShareProxyService } from './share-proxy.service';
@@ -58,6 +59,62 @@ describe('FilesController share-proxy', () => {
       'Content-Disposition',
     );
     expect(res.body.toString()).toBe('jpegbytes');
+  });
+
+  it('streams a non-image body', async () => {
+    shareProxy.getShareFile.mockResolvedValue({
+      body: Readable.from([Buffer.from('%PDF-1.4')]),
+      contentType: 'application/pdf',
+      filename: 'doc.pdf',
+    });
+    const res = await request(app.getHttpServer())
+      .get('/files/share-proxy')
+      .query({ url: 'uploads/doc.pdf' })
+      .buffer(true)
+      .parse((r, cb) => {
+        const chunks: Buffer[] = [];
+        r.on('data', (c: Buffer) => chunks.push(c));
+        r.on('end', () => cb(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    expect(res.headers['content-type']).toContain('application/pdf');
+    expect((res.body as Buffer).toString()).toBe('%PDF-1.4');
+  });
+
+  it('aborts cleanly when the stream errors mid-transfer', async () => {
+    const stream = new Readable({ read() {} });
+    stream.push(Buffer.alloc(1024, 1));
+    setTimeout(() => stream.destroy(new Error('socket reset')), 20);
+    shareProxy.getShareFile.mockResolvedValue({
+      body: stream,
+      contentType: 'application/pdf',
+      filename: 'doc.pdf',
+    });
+    const uncaught = jest.fn();
+    process.on('uncaughtException', uncaught);
+    await expect(
+      request(app.getHttpServer())
+        .get('/files/share-proxy')
+        .query({ url: 'uploads/doc.pdf' })
+        .timeout(3000),
+    ).rejects.toBeDefined();
+    process.off('uncaughtException', uncaught);
+    expect(uncaught).not.toHaveBeenCalled();
+  });
+
+  it('returns 502 when the stream fails before any data', async () => {
+    const stream = new Readable({ read() {} });
+    setTimeout(() => stream.destroy(new Error('boom')), 10);
+    shareProxy.getShareFile.mockResolvedValue({
+      body: stream,
+      contentType: 'application/pdf',
+      filename: 'doc.pdf',
+    });
+    const res = await request(app.getHttpServer())
+      .get('/files/share-proxy')
+      .query({ url: 'uploads/doc.pdf' })
+      .expect(502);
+    expect(res.headers['cache-control']).toBeUndefined();
   });
 
   it('returns 400 when url is missing', async () => {

@@ -57,15 +57,26 @@ export class ShareProxyService {
       if (!this.allowedHosts.includes(parsed.host)) {
         throw new BadRequestException('Host is not allowed');
       }
-      const key = decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
+      let key: string;
+      try {
+        key = decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
+      } catch {
+        throw new BadRequestException('Invalid url');
+      }
       if (!key) throw new BadRequestException('Invalid url');
       return { kind: 's3', key };
     }
 
-    const normalized = path.normalize(url.replace(/^\/+/, ''));
-    if (!normalized || normalized === '.' || normalized.startsWith('..') || path.isAbsolute(normalized)) {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(url)) {
+      throw new BadRequestException('Unsupported url');
+    }
+    const cwd = process.cwd();
+    const uploadsRoot = path.resolve(cwd, 'uploads');
+    const resolved = path.resolve(cwd, url.replace(/^\/+/, ''));
+    if (!resolved.startsWith(uploadsRoot + path.sep)) {
       throw new BadRequestException('Invalid path');
     }
+    const normalized = path.relative(cwd, resolved);
     return { kind: 'local', path: normalized };
   }
 

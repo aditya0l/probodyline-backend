@@ -51,6 +51,35 @@ describe('ShareProxyService', () => {
       expect(() => service.resolveSource('https://evil.com/x.jpg')).toThrow(BadRequestException);
     });
 
+    it.each(['/.env', '/package.json', '/src/main.ts', '/uploads', '/uploads/../package.json'])(
+      'rejects local path outside uploads: %s',
+      (p) => {
+        expect(() => service.resolveSource(p)).toThrow(BadRequestException);
+      },
+    );
+
+    it('allows names starting with two dots inside uploads', () => {
+      expect(service.resolveSource('/uploads/..foo.jpg')).toEqual({
+        kind: 'local',
+        path: 'uploads/..foo.jpg',
+      });
+    });
+
+    it('rejects malformed percent-encoding with 400', () => {
+      expect(() =>
+        service.resolveSource('https://probodyline-uploads.s3.us-east-1.amazonaws.com/a%zz'),
+      ).toThrow(BadRequestException);
+    });
+
+    it.each([
+      'https://probodyline-uploads.s3.us-east-1.amazonaws.com.evil.com/x.jpg',
+      'https://probodyline-uploads.s3.us-east-1.amazonaws.com@evil.com/x.jpg',
+      'ftp://probodyline-uploads.s3.us-east-1.amazonaws.com/x.jpg',
+      'file:///etc/passwd',
+    ])('rejects allow-list bypass: %s', (u) => {
+      expect(() => service.resolveSource(u)).toThrow(BadRequestException);
+    });
+
     it('rejects path traversal', () => {
       expect(() => service.resolveSource('/uploads/../../etc/passwd')).toThrow(BadRequestException);
     });

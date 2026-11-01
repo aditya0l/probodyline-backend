@@ -158,21 +158,12 @@ export class FilesController {
       : filepath;
     const fullPath = this.filesService.getFilePath(safeFilePath);
 
-    if (!fs.existsSync(fullPath)) {
-      const dir = path.dirname(fullPath);
-      res.status(404).json({
-        message: 'File not found',
-        debug: {
-          attemptedPath: fullPath,
-          originalParam: filepath,
-          cwd: process.cwd(),
-          exists: false,
-          dirExists: fs.existsSync(dir),
-          filesInDir: fs.existsSync(dir)
-            ? fs.readdirSync(dir)
-            : 'Dir not found',
-        },
-      });
+    if (!fullPath || !fs.existsSync(fullPath)) {
+      // Details stay in the server log: this route is public.
+      this.logger.warn(
+        `File not found: ${JSON.stringify(safeFilePath)} -> ${fullPath ?? 'rejected (outside uploads)'}`,
+      );
+      res.status(404).json({ message: 'File not found' });
       return;
     }
 

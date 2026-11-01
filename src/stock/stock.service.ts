@@ -653,7 +653,7 @@ export class StockService {
       await Promise.all([
         this.prisma.stockTransaction.findMany({
           where: { productId: { in: ids }, date: { gte: tomorrowMidnight } },
-          orderBy: { date: 'asc' },
+          orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         }),
         this.prisma.stockTransaction.findMany({
           where: {
@@ -661,7 +661,7 @@ export class StockService {
             date: { gt: targetNextInDate },
             transactionType: { in: ['IN', 'PURCHASE'] },
           },
-          orderBy: { date: 'asc' },
+          orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
         }),
         relatedModels.length > 0
           ? this.prisma.product.findMany({
@@ -767,7 +767,7 @@ export class StockService {
           gte: tomorrowMidnight, // Strictly tomorrow midnight onwards
         },
       },
-      orderBy: { date: 'asc' },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
     });
 
     // 4. Next In Date Logic (Relative to selectedDate or today)
@@ -780,7 +780,7 @@ export class StockService {
         date: { gt: targetNextInDate },
         transactionType: { in: ['IN', 'PURCHASE'] },
       },
-      orderBy: { date: 'asc' },
+      orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
     });
 
     // 6. Resolve Names

@@ -2,10 +2,14 @@ import { Test } from '@nestjs/testing';
 import {
   BadRequestException,
   INestApplication,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import request from 'supertest';
 import { Readable } from 'stream';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
 import { ShareProxyService } from './share-proxy.service';
@@ -152,5 +156,110 @@ describe('FilesController share-proxy', () => {
     expect(filesService.getFilePath).toHaveBeenCalledWith('products/x.webp');
     expect(res.body.message).toBe('File not found');
     expect(shareProxy.getShareFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('FilesController GET /files/*path', () => {
+  let app: INestApplication;
+  let root: string;
+  let warn: jest.SpyInstance;
+
+  beforeAll(() => {
+    root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'files-')));
+    fs.mkdirSync(path.join(root, 'uploads', 'products'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'uploads', 'products', 'ok.txt'), 'hello');
+    fs.writeFileSync(path.join(root, '.env'), 'SECRET=1');
+  });
+
+  afterAll(() => {
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  beforeEach(async () => {
+    jest.spyOn(process, 'cwd').mockReturnValue(root);
+    warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
+    const moduleRef = await Test.createTestingModule({
+      controllers: [FilesController],
+      providers: [
+        FilesService,
+        { provide: ShareProxyService, useValue: { getShareFile: jest.fn() } },
+      ],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+    jest.restoreAllMocks();
+  });
+
+  it('serves a file inside uploads', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/files/uploads/products/ok.txt')
+      .expect(200);
+    expect(res.text).toBe('hello');
+  });
+
+  it('returns a plain 404 with no server details', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/files/uploads/products/missing.webp')
+      .expect(404);
+    expect(res.body).toEqual({ message: 'File not found' });
+    expect(res.text).not.toContain(root);
+    expect(res.text).not.toContain('ok.txt');
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining('uploads/products/missing.webp'),
+    );
+  });
+
+  it.each([
+    ['a file outside uploads', '/files/.env'],
+    ['an encoded ../', '/files/uploads/..%2F.env'],
+    ['encoded dot segments', '/files/uploads/%2e%2e/.env'],
+    ['an encoded absolute path', '/files/%2Fetc%2Fpasswd'],
+    ['a double-encoded ../', '/files/uploads/%252e%252e/.env'],
+    ['an encoded NUL byte', '/files/uploads/products/ok.txt%00.png'],
+  ])('rejects %s', async (_label, url) => {
+    const res = await request(app.getHttpServer()).get(url).expect(404);
+    expect(res.body).toEqual({ message: 'File not found' });
+    expect(res.text).not.toContain('SECRET');
+  });
+});
+
+describe('FilesService.getFilePath', () => {
+  const service = new FilesService();
+  const root = path.resolve('/srv/app');
+
+  beforeEach(() => {
+    jest.spyOn(process, 'cwd').mockReturnValue(root);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('resolves paths inside uploads', () => {
+    expect(service.getFilePath('uploads/products/a.webp')).toBe(
+      path.join(root, 'uploads', 'products', 'a.webp'),
+    );
+    expect(service.getFilePath('/uploads/a.pdf')).toBe(
+      path.join(root, 'uploads', 'a.pdf'),
+    );
+  });
+
+  it.each([
+    '',
+    '.env',
+    'uploads',
+    'uploads/',
+    'uploadsx/a.webp',
+    '../etc/passwd',
+    'uploads/../.env',
+    'uploads/../../etc/passwd',
+    '/etc/passwd',
+    'uploads/a.webp\0.png',
+  ])('rejects %j', (input) => {
+    expect(service.getFilePath(input)).toBeNull();
   });
 });

@@ -160,7 +160,17 @@ export class FilesService {
     }
   }
 
-  getFilePath(relativePath: string): string {
-    return path.join(process.cwd(), relativePath);
+  /**
+   * Resolves a public file path to an absolute path inside `<cwd>/uploads`.
+   * Returns null for anything that would land outside it (`..`, absolute
+   * paths, NUL bytes), so the public GET route can't read app files.
+   */
+  getFilePath(relativePath: string): string | null {
+    if (!relativePath || relativePath.includes('\0')) return null;
+    const cwd = process.cwd();
+    const uploadsRoot = path.resolve(cwd, 'uploads');
+    const resolved = path.resolve(cwd, relativePath.replace(/^\/+/, ''));
+    if (!resolved.startsWith(uploadsRoot + path.sep)) return null;
+    return resolved;
   }
 }

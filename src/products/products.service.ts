@@ -40,6 +40,8 @@ export class ProductsService implements OnModuleInit {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
+    const salesPromise = this.salesTotals(thirtyDaysAgo);
+    salesPromise.catch(() => {}); // awaited below; avoids an unhandled rejection while other queries run
     const products = await this.prisma.product.findMany({
       where: { deletedAt: null },
       select: {
@@ -64,28 +66,6 @@ export class ProductsService implements OnModuleInit {
         category: {
           select: { id: true, name: true }
         },
-        _count: {
-          select: { quotationItems: true }
-        },
-        stockTransactions: {
-          where: { transactionType: 'OUT' },
-          select: { quantity: true, date: true }
-        },
-        quotationItems: {
-          select: {
-            rate: true,
-            dispatchSplitItems: {
-              select: {
-                quantity: true,
-                dispatchSplit: {
-                  select: {
-                    salesOrder: { select: { status: true } }
-                  }
-                }
-              }
-            }
-          }
-        }
       }
     });
 
@@ -96,41 +76,72 @@ export class ProductsService implements OnModuleInit {
     });
     const popularity = rankPopularity(products.map(p => p.id), counts);
 
+    const sales = await salesPromise;
+    const none = { totalSold: 0, trendingSold: 0, totalRevenue: 0, totalQuoted: 0 };
+
     const data = products.map(p => {
-      const totalSold = p.stockTransactions
-        .reduce((sum, t) => sum + Math.abs(t.quantity || 0), 0);
-
-      const trendingSold = p.stockTransactions
-        .filter(t => new Date(t.date) >= thirtyDaysAgo)
-        .reduce((sum, t) => sum + Math.abs(t.quantity || 0), 0);
-
-      const totalRevenue = p.quotationItems.reduce((sum, qi) => {
-        const confirmedSplits = qi.dispatchSplitItems.filter(
-          i => i.dispatchSplit?.salesOrder?.status === 'COMPLETED' || i.dispatchSplit?.salesOrder?.status === 'CONFIRMED'
-        );
-        const splitQty = confirmedSplits.reduce((qSum, i) => qSum + (i.quantity || 0), 0);
-        return sum + (splitQty * Number(qi.rate || 0));
-      }, 0);
-
-      const totalQuoted = p._count.quotationItems;
-
-      const { stockTransactions, quotationItems, _count, ...productBase } = p;
-
       const pop = popularity.get(p.id)!;
+      const totals = sales.get(p.id) ?? none;
 
       return {
-        ...productBase,
+        ...p,
         badge: pop.badge,
         popularity: pop,
-        totalSold,
-        trendingSold,
-        totalRevenue,
-        totalQuoted
+        totalSold: totals.totalSold,
+        trendingSold: totals.trendingSold,
+        totalRevenue: totals.totalRevenue,
+        totalQuoted: totals.totalQuoted
       };
     });
 
     statsCache = { data, timestamp: Date.now() };
     return data;
+  }
+
+  /**
+   * Per-product sales totals, summed in the database:
+   * - totalSold / trendingSold: |quantity| of OUT stock transactions (all time / since `trendingSince`)
+   * - totalRevenue: split quantity x rate on CONFIRMED or COMPLETED sales orders
+   * - totalQuoted: number of quotation items for the product
+   */
+  private async salesTotals(trendingSince: Date) {
+    const [sold, revenue, quoted] = await Promise.all([
+      this.prisma.$queryRaw<{ productId: string; total: bigint | null; trending: bigint | null }[]>`
+        SELECT "productId",
+               SUM(ABS("quantity")) AS total,
+               SUM(ABS("quantity")) FILTER (WHERE "date" >= ${trendingSince}) AS trending
+        FROM "stock_transactions"
+        WHERE "transactionType" = 'OUT'
+        GROUP BY "productId"`,
+      this.prisma.$queryRaw<{ productId: string; revenue: Prisma.Decimal | null }[]>`
+        SELECT qi."productId", SUM(dsi."quantity" * qi."rate") AS revenue
+        FROM "dispatch_split_items" dsi
+        JOIN "dispatch_splits" ds ON ds."id" = dsi."dispatchSplitId"
+        JOIN "sales_orders" so ON so."id" = ds."salesOrderId"
+        JOIN "quotation_items" qi ON qi."id" = dsi."quotationItemId"
+        WHERE so."status" IN ('COMPLETED', 'CONFIRMED')
+          AND qi."productId" IS NOT NULL
+        GROUP BY qi."productId"`,
+      this.prisma.quotationItem.groupBy({
+        by: ['productId'],
+        where: { productId: { not: null } },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const totals = new Map<string, { totalSold: number; trendingSold: number; totalRevenue: number; totalQuoted: number }>();
+    const entry = (id: string) => {
+      let e = totals.get(id);
+      if (!e) totals.set(id, (e = { totalSold: 0, trendingSold: 0, totalRevenue: 0, totalQuoted: 0 }));
+      return e;
+    };
+    for (const r of sold) {
+      entry(r.productId).totalSold = Number(r.total ?? 0);
+      entry(r.productId).trendingSold = Number(r.trending ?? 0);
+    }
+    for (const r of revenue) entry(r.productId).totalRevenue = Number(r.revenue ?? 0);
+    for (const r of quoted) if (r.productId) entry(r.productId).totalQuoted = r._count._all;
+    return totals;
   }
 
   /** Shares and quotation appearances per product over the popularity windows. */

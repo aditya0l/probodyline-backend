@@ -12,7 +12,17 @@ function fakePrisma(products: any[], transactions: any[]) {
       if ('gt' in cond && !(v > cond.gt)) return false;
       return true;
     });
-  const byDate = (a: any, b: any) => a.date.getTime() - b.date.getTime();
+  // Sorts by the requested keys only; anything unordered keeps array order.
+  const sortBy = (orderBy: any) => {
+    const keys = (Array.isArray(orderBy) ? orderBy : [orderBy]).map((o: any) => Object.keys(o)[0]);
+    return (a: any, b: any) => {
+      for (const k of keys) {
+        const d = a[k].getTime() - b[k].getTime();
+        if (d !== 0) return d;
+      }
+      return 0;
+    };
+  };
   const counter = { queries: 0 };
   return {
     counter,
@@ -27,13 +37,13 @@ function fakePrisma(products: any[], transactions: any[]) {
       },
     },
     stockTransaction: {
-      findMany: async ({ where }: any) => {
+      findMany: async ({ where, orderBy }: any) => {
         counter.queries++;
-        return transactions.filter((t) => matches(t, where)).sort(byDate);
+        return transactions.filter((t) => matches(t, where)).sort(sortBy(orderBy));
       },
-      findFirst: async ({ where }: any) => {
+      findFirst: async ({ where, orderBy }: any) => {
         counter.queries++;
-        return transactions.filter((t) => matches(t, where)).sort(byDate)[0] ?? null;
+        return transactions.filter((t) => matches(t, where)).sort(sortBy(orderBy))[0] ?? null;
       },
     },
   };
@@ -58,6 +68,7 @@ describe('StockService.getBulkProjectedStock', () => {
     id: `${productId}-${offset}-${transactionType}`,
     productId,
     date: day(offset),
+    createdAt: day(-30),
     transactionType,
     quantity,
   });
@@ -123,5 +134,20 @@ describe('StockService.getBulkProjectedStock', () => {
     const prisma = fakePrisma(products, transactions);
     const service = new StockService(prisma as any, {} as any);
     await expect(service.getBulkProjectedStock(['nope'], ymd(0))).resolves.toEqual([]);
+  });
+
+  it('orders same-day transactions by createdAt, whatever order the rows arrive in', async () => {
+    const product = { id: 'p5', name: 'Dumbbell', modelNumber: 'D-1', todaysStock: 3, cousinMachine: [], orderTogether: [], swapMachine: [], deletedAt: null };
+    const out = { id: 'out', productId: 'p5', date: day(30), createdAt: day(-2), transactionType: 'OUT', quantity: 1 };
+    const inn = { id: 'in', productId: 'p5', date: day(30), createdAt: day(-1), transactionType: 'IN', quantity: 4 };
+
+    for (const rows of [[out, inn], [inn, out]]) {
+      const service = new StockService(fakePrisma([product], rows) as any, {} as any);
+      const single = await service.getStockProjection('p5', ymd(0));
+      const [bulk] = await service.getBulkProjectedStock(['p5'], ymd(0));
+      // Physical stock today is 0; the OUT was booked first, so the day dips to -1.
+      expect(single.stockOnDate).toBe(-1);
+      expect(bulk.stockOnDate).toBe(-1);
+    }
   });
 });

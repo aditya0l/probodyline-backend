@@ -1270,6 +1270,8 @@ export class SalesOrdersService {
           orderBy: { createdAt: 'desc' }
         },
         quotation: {
+          // The detail page never reads the base64 logo (~160 KB); PDFs load it server-side.
+          omit: { companyLogo: true },
           include: {
             customer: true,
             clients: true,

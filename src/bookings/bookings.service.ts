@@ -140,13 +140,22 @@ export class BookingsService {
           gymName: true,
           status: true,
           waitingQuantity: true,
+          productThumbnail: true,
+          product: { select: { image: true, images: true, thumbnail: true } },
         },
       }),
       this.prisma.booking.count({ where }),
     ]);
 
+    // Show the product's current main image; the booking's saved thumbnail is only a fallback.
+    const withImages = bookings.map(({ product, ...b }) => ({
+      ...b,
+      productThumbnail:
+        product?.image || product?.images?.[0] || product?.thumbnail || b.productThumbnail,
+    }));
+
     // Calculate status dynamically for each booking using FIFO priority
-    const bookingsWithStatus = await this.calculateDynamicStatus(bookings, filters?.sortOrder);
+    const bookingsWithStatus = await this.calculateDynamicStatus(withImages, filters?.sortOrder);
 
     return { data: bookingsWithStatus, total };
   }

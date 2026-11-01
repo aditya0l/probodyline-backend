@@ -613,46 +613,117 @@ export class StockService {
   }
 
   /**
-   * Bulk get stock projection for multiple products
+   * Bulk get stock projection for multiple products.
+   * Loads every product's transactions in a few batched queries, then runs the
+   * same calculation as getStockProjection (computeProjection) per product.
    */
   async getBulkProjectedStock(productIds: string[], selectedDate: string) {
-    // 1. Get all products with necessary fields
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds } },
       select: {
         id: true,
+        name: true,
         todaysStock: true,
+        cousinMachine: true,
+        orderTogether: true,
+        swapMachine: true,
       },
     });
+    if (products.length === 0) return [];
 
-    const results = await Promise.all(
-      products.map(async (product) => {
-        try {
-          const projection = await this.getStockProjection(
-            product.id,
-            selectedDate,
-          );
-          return {
-            productId: product.id,
-            ...projection,
-            // Map to frontend expected keys if different, but getStockProjection returns extensive data
-            stockAtDispatch: projection.stockAfterOrderOnDate,
-            stockPlus30: projection.stockAfterOrderPlus30Days,
-            currentStock: projection.todaysPhysicalStock,
-          };
-        } catch (e) {
-          return {
-            productId: product.id,
-            stockAtDispatch: 0,
-            stockPlus30: 0,
-            currentStock: 0,
-            status: 'SAFE',
-          };
-        }
-      }),
+    const ids = products.map((p) => p.id);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrowMidnight = new Date(today);
+    tomorrowMidnight.setDate(tomorrowMidnight.getDate() + 1);
+    const targetNextInDate = selectedDate ? new Date(selectedDate) : new Date(today);
+    targetNextInDate.setHours(0, 0, 0, 0);
+
+    const relatedModels = Array.from(
+      new Set(
+        products.flatMap((p) => [
+          ...(p.cousinMachine || []),
+          ...(p.orderTogether || []),
+          ...(p.swapMachine || []),
+        ]),
+      ),
     );
 
-    return results;
+    const [futureTransactions, nextInCandidates, relatedProducts] =
+      await Promise.all([
+        this.prisma.stockTransaction.findMany({
+          where: { productId: { in: ids }, date: { gte: tomorrowMidnight } },
+          orderBy: { date: 'asc' },
+        }),
+        this.prisma.stockTransaction.findMany({
+          where: {
+            productId: { in: ids },
+            date: { gt: targetNextInDate },
+            transactionType: { in: ['IN', 'PURCHASE'] },
+          },
+          orderBy: { date: 'asc' },
+        }),
+        relatedModels.length > 0
+          ? this.prisma.product.findMany({
+              where: { modelNumber: { in: relatedModels }, deletedAt: null },
+              select: { name: true, modelNumber: true },
+            })
+          : Promise.resolve([] as { name: string | null; modelNumber: string }[]),
+      ]);
+
+    const txByProduct = new Map<string, StockTransaction[]>();
+    for (const tx of futureTransactions) {
+      const list = txByProduct.get(tx.productId);
+      if (list) list.push(tx);
+      else txByProduct.set(tx.productId, [tx]);
+    }
+    const nextInByProduct = new Map<string, StockTransaction>();
+    for (const tx of nextInCandidates) {
+      if (!nextInByProduct.has(tx.productId)) nextInByProduct.set(tx.productId, tx);
+    }
+    // Same output as one findMany per list: names in result order, joined with ', '
+    const resolveProductName = (modelNumbers: string[] | null): string | null => {
+      if (!modelNumbers || modelNumbers.length === 0) return null;
+      const wanted = new Set(modelNumbers);
+      return (
+        relatedProducts
+          .filter((p) => wanted.has(p.modelNumber))
+          .map((p) => p.name)
+          .join(', ') || null
+      );
+    };
+
+    return products.map((product) => {
+      try {
+        const projection = this.computeProjection(
+          product,
+          txByProduct.get(product.id) || [],
+          nextInByProduct.get(product.id) || null,
+          selectedDate,
+          {
+            cousinMachineName: resolveProductName(product.cousinMachine),
+            orderTogetherName: resolveProductName(product.orderTogether),
+            swapMachineName: resolveProductName(product.swapMachine),
+          },
+        );
+        return {
+          productId: product.id,
+          ...projection,
+          // Map to frontend expected keys if different, but getStockProjection returns extensive data
+          stockAtDispatch: projection.stockAfterOrderOnDate,
+          stockPlus30: projection.stockAfterOrderPlus30Days,
+          currentStock: projection.todaysPhysicalStock,
+        };
+      } catch (e) {
+        return {
+          productId: product.id,
+          stockAtDispatch: 0,
+          stockPlus30: 0,
+          currentStock: 0,
+          status: 'SAFE',
+        };
+      }
+    });
   }
 
   /**
@@ -681,7 +752,6 @@ export class StockService {
       throw new NotFoundException('Product not found');
     }
 
-    const currentStock = product.todaysStock || 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -699,6 +769,66 @@ export class StockService {
       },
       orderBy: { date: 'asc' },
     });
+
+    // 4. Next In Date Logic (Relative to selectedDate or today)
+    const targetNextInDate = selectedDate ? new Date(selectedDate) : today;
+    targetNextInDate.setHours(0, 0, 0, 0);
+
+    const nextInTx = await this.prisma.stockTransaction.findFirst({
+      where: {
+        productId,
+        date: { gt: targetNextInDate },
+        transactionType: { in: ['IN', 'PURCHASE'] },
+      },
+      orderBy: { date: 'asc' },
+    });
+
+    // 6. Resolve Names
+    const resolveProductName = async (
+      modelNumbers: string[] | null,
+    ): Promise<string | null> => {
+      if (!modelNumbers || modelNumbers.length === 0) return null;
+      const relatedProducts = await this.prisma.product.findMany({
+        where: {
+          modelNumber: { in: modelNumbers },
+          deletedAt: null,
+        },
+        select: {
+          name: true,
+        },
+      });
+      return relatedProducts.map((p) => p.name).join(', ') || null;
+    };
+
+    const [cousinMachineName, orderTogetherName, swapMachineName] =
+      await Promise.all([
+        resolveProductName(product.cousinMachine),
+        resolveProductName(product.orderTogether),
+        resolveProductName(product.swapMachine),
+      ]);
+
+    return this.computeProjection(product, futureTransactions, nextInTx, selectedDate, {
+      cousinMachineName,
+      orderTogetherName,
+      swapMachineName,
+    });
+  }
+
+  /** The projection maths, shared by the single and bulk endpoints. No I/O. */
+  private computeProjection(
+    product: { todaysStock: number | null },
+    futureTransactions: StockTransaction[],
+    nextInTx: StockTransaction | null,
+    selectedDate: string,
+    names: {
+      cousinMachineName: string | null;
+      orderTogetherName: string | null;
+      swapMachineName: string | null;
+    },
+  ) {
+    const currentStock = product.todaysStock || 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // Calculate Today's Real Physical Stock (Total - Future Changes)
     let futureSum = 0;
@@ -798,18 +928,6 @@ export class StockService {
     );
 
     // 4. Next In Date Logic (Relative to selectedDate or today)
-    const targetNextInDate = selectedDate ? new Date(selectedDate) : today;
-    targetNextInDate.setHours(0, 0, 0, 0);
-
-    const nextInTx = await this.prisma.stockTransaction.findFirst({
-      where: {
-        productId,
-        date: { gt: targetNextInDate },
-        transactionType: { in: ['IN', 'PURCHASE'] },
-      },
-      orderBy: { date: 'asc' },
-    });
-
     const nextInInfo = nextInTx
       ? {
           date: new Date(nextInTx.date).toISOString().split('T')[0],
@@ -834,29 +952,7 @@ export class StockService {
       }
     }
 
-    // 6. Resolve Names
-    const resolveProductName = async (
-      modelNumbers: string[] | null,
-    ): Promise<string | null> => {
-      if (!modelNumbers || modelNumbers.length === 0) return null;
-      const relatedProducts = await this.prisma.product.findMany({
-        where: {
-          modelNumber: { in: modelNumbers },
-          deletedAt: null,
-        },
-        select: {
-          name: true,
-        },
-      });
-      return relatedProducts.map((p) => p.name).join(', ') || null;
-    };
-
-    const [cousinMachineName, orderTogetherName, swapMachineName] =
-      await Promise.all([
-        resolveProductName(product.cousinMachine),
-        resolveProductName(product.orderTogether),
-        resolveProductName(product.swapMachine),
-      ]);
+    const { cousinMachineName, orderTogetherName, swapMachineName } = names;
 
     return {
       todaysPhysicalStock, // New field for frontend

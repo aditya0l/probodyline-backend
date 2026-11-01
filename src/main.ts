@@ -2,6 +2,7 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
+import compression from 'compression';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -22,6 +23,10 @@ async function bootstrap() {
   // from X-Forwarded-For (required for per-IP rate limiting)
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.set('trust proxy', 1);
+
+  // Gzip API responses (nginx only compresses text/html). Images and PDFs
+  // are skipped by compression's default filter, so file streams are untouched.
+  app.use(compression());
 
   // Configure JSON and URL-encoded request body size limits to 15MB
   app.use(json({ limit: '15mb' }));

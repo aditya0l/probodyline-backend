@@ -9,6 +9,12 @@ import { PrismaService } from '../common/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto, UpdateProductMediaDto } from './dto/update-product.dto';
 import { Product, Prisma } from '@prisma/client';
+import {
+  rankPopularity,
+  type ActivityCounts,
+  POPULARITY_WINDOW_DAYS,
+  TRENDING_WINDOW_DAYS,
+} from './popularity';
 
 let statsCache: { data: any[]; timestamp: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -83,6 +89,13 @@ export class ProductsService implements OnModuleInit {
       }
     });
 
+    // Badges are best-effort: if the counts fail, the media library still loads without them.
+    const counts = await this.activityCounts().catch(err => {
+      console.error('[ProductsService] popularity counts failed:', err?.message || err);
+      return new Map<string, ActivityCounts>();
+    });
+    const popularity = rankPopularity(products.map(p => p.id), counts);
+
     const data = products.map(p => {
       const totalSold = p.stockTransactions
         .reduce((sum, t) => sum + Math.abs(t.quantity || 0), 0);
@@ -103,8 +116,12 @@ export class ProductsService implements OnModuleInit {
 
       const { stockTransactions, quotationItems, _count, ...productBase } = p;
 
+      const pop = popularity.get(p.id)!;
+
       return {
         ...productBase,
+        badge: pop.badge,
+        popularity: pop,
         totalSold,
         trendingSold,
         totalRevenue,
@@ -114,6 +131,65 @@ export class ProductsService implements OnModuleInit {
 
     statsCache = { data, timestamp: Date.now() };
     return data;
+  }
+
+  /** Shares and quotation appearances per product over the popularity windows. */
+  private async activityCounts(): Promise<Map<string, ActivityCounts>> {
+    const day = 24 * 60 * 60 * 1000;
+    const since180 = new Date(Date.now() - POPULARITY_WINDOW_DAYS * day);
+    const since7 = new Date(Date.now() - TRENDING_WINDOW_DAYS * day);
+
+    const [shares180, shares7, quotes] = await Promise.all([
+      this.prisma.productShareEvent.groupBy({
+        by: ['productId'],
+        where: { createdAt: { gte: since180 } },
+        _count: { _all: true },
+      }),
+      this.prisma.productShareEvent.groupBy({
+        by: ['productId'],
+        where: { createdAt: { gte: since7 } },
+        _count: { _all: true },
+      }),
+      this.prisma.$queryRaw<{ productId: string; q180: bigint; q7: bigint }[]>`
+        SELECT qi."productId",
+               COUNT(DISTINCT qi."quotationId") AS q180,
+               COUNT(DISTINCT qi."quotationId") FILTER (WHERE q."createdAt" >= ${since7}) AS q7
+        FROM "quotation_items" qi
+        JOIN "quotations" q ON q."id" = qi."quotationId"
+        WHERE q."createdAt" >= ${since180}
+          AND q."deletedAt" IS NULL
+          AND qi."productId" IS NOT NULL
+        GROUP BY qi."productId"`,
+    ]);
+
+    const counts = new Map<string, ActivityCounts>();
+    const entry = (id: string) => {
+      let e = counts.get(id);
+      if (!e) counts.set(id, (e = { shares180: 0, shares7: 0, quotes180: 0, quotes7: 0 }));
+      return e;
+    };
+    for (const s of shares180) entry(s.productId).shares180 = s._count._all;
+    for (const s of shares7) entry(s.productId).shares7 = s._count._all;
+    for (const q of quotes) {
+      entry(q.productId).quotes180 = Number(q.q180);
+      entry(q.productId).quotes7 = Number(q.q7);
+    }
+    return counts;
+  }
+
+  /** Logs one share per product (deduped) and refreshes the badges. */
+  async recordShares(productIds: string[], source?: string, userId?: string) {
+    const ids = Array.from(new Set(productIds));
+    const existing = await this.prisma.product.findMany({
+      where: { id: { in: ids }, deletedAt: null },
+      select: { id: true },
+    });
+    if (existing.length === 0) return { recorded: 0 };
+    await this.prisma.productShareEvent.createMany({
+      data: existing.map(p => ({ productId: p.id, source, userId })),
+    });
+    this.invalidateStatsCache();
+    return { recorded: existing.length };
   }
 
   async onModuleInit() {

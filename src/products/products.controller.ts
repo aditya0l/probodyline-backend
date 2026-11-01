@@ -21,6 +21,8 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto, UpdateProductMediaDto } from './dto/update-product.dto';
 import { BatchOpeningStockDto } from './dto/opening-stock.dto';
+import { RecordSharesDto } from './dto/record-shares.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('products')
 @Controller('products')
@@ -60,6 +62,14 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: 'List of products with stats' })
   findAllWithStats() {
     return this.productsService.findAllWithStats();
+  }
+
+  @Post('share-events')
+  @ApiOperation({ summary: 'Record that products were shared on WhatsApp (feeds popularity badges)' })
+  @ApiResponse({ status: 201, description: 'Number of products recorded' })
+  @ApiBody({ type: RecordSharesDto })
+  recordShares(@Body() dto: RecordSharesDto, @CurrentUser() user: any) {
+    return this.productsService.recordShares(dto.productIds, dto.source, user?.id);
   }
 
 

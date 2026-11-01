@@ -117,6 +117,19 @@ model Product {
   @@map("products")
 }
 
+// One row per product per WhatsApp share; feeds the Bestseller/Popular/Trending badges.
+model ProductShareEvent {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String?
+  source    String? // "media", "product", ...
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+  @@index([createdAt])
+  @@map("product_share_events")
+}
+
 model Customer {
   id              String    @id @default(uuid())
   name            String

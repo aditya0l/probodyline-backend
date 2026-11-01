@@ -328,14 +328,15 @@ body.landscape .product-name-txt {
   height: 140px;
   border-radius: 4px;
   overflow: hidden;
-  background-color: #f9fafb;
+  /* White so photos shot on white blend in; whole photo shown, never cropped */
+  background-color: #ffffff;
 }
 
 .product-image {
   width: 100% !important;
   max-width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
   display: block;
 }
 

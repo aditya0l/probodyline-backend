@@ -123,6 +123,11 @@ describe('AuthService', () => {
 
       expect(result.accessToken).toBe('jwt_token');
       expect(result.user.email).toBe(loginDto.email);
+      // PrismaService omits password globally; login must opt back in to compare the hash.
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ omit: { password: false } }),
+      );
+      expect(result.user).not.toHaveProperty('password');
     });
 
     it('should throw UnauthorizedException with invalid credentials', async () => {

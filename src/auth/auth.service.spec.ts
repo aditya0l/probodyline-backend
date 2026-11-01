@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../common/prisma.service';
+import { SmsService } from './sms.service';
 import { UnauthorizedException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -38,6 +39,10 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: SmsService,
+          useValue: { sendOtp: jest.fn() },
         },
       ],
     }).compile();

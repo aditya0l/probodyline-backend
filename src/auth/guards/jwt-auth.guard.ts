@@ -2,6 +2,31 @@ import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/com
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 
+// Public routes, matched on the request path only (query string stripped).
+// A prefix matches the path itself or anything below it ("/api/files" matches
+// "/api/files/x" but not "/api/filesx"). method: undefined means any method.
+const PUBLIC_ROUTES: { prefix: string; method?: string }[] = [
+  { prefix: '/api/auth/login' },
+  { prefix: '/api/auth/register' },
+  { prefix: '/api/auth/verify' },
+  // Was public via the old substring match on '/api/auth/verify'; kept as-is.
+  { prefix: '/api/auth/verify-otp' },
+  // Shared file links (incl. /api/files/share-proxy) are opened without a token.
+  { prefix: '/api/files', method: 'GET' },
+  { prefix: '/api/pdf', method: 'GET' },
+  { prefix: '/api/pdf/shorten' },
+];
+
+export function isPublicRoute(method: string, url: string): boolean {
+  const path = (url || '').split('?')[0].split('#')[0].toLowerCase();
+  const verb = (method || '').toUpperCase();
+  return PUBLIC_ROUTES.some(
+    (route) =>
+      (!route.method || route.method === verb || (route.method === 'GET' && verb === 'HEAD')) &&
+      (path === route.prefix || path.startsWith(route.prefix + '/')),
+  );
+}
+
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
   constructor(private configService: ConfigService) {
@@ -10,14 +35,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();
-    if (
-      request.url.includes('/api/auth/login') || 
-      request.url.includes('/api/auth/register') || 
-      request.url.includes('/api/auth/verify') ||
-      request.url.includes('/api/files') ||
-      (request.url.includes('/api/pdf') && request.method === 'GET') ||
-      request.url.includes('/api/pdf/shorten')
-    ) {
+    if (isPublicRoute(request.method, request.originalUrl ?? request.url)) {
       return true;
     }
 
@@ -25,9 +43,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err: any, user: any, info: any, context: ExecutionContext, status?: any) {
-    if (context) {
-      console.log('JWT GUARD HEADERS:', context.switchToHttp().getRequest().headers);
-    }
     if (err || !user) {
       console.error('JwtAuthGuard failed:', { err, info: info?.message || info, user: !!user });
       throw err || new UnauthorizedException();

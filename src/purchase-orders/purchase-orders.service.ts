@@ -250,9 +250,22 @@ export class PurchaseOrdersService {
             where: { purchaseOrderId: id, productId: { in: removedProductIds } }
           });
         }
-      } else if (jaipurArrivalChanged) {
-        editedProductIds = po.items.map(i => i.productId!).filter(Boolean);
       }
+
+      // When the arrival date moves, every remaining product's "PO Pending" row
+      // must be rebuilt on the new date — regardless of whether items were sent.
+      // (The edit form always sends items, so this used to be skipped and the
+      // pending rows stayed on the old date.) Split rows are dated per shipment
+      // and are intentionally left alone.
+      if (jaipurArrivalChanged) {
+        const removed = new Set(removedProductIds);
+        const remaining = po.items
+          .map(i => i.productId)
+          .filter((pid): pid is string => !!pid && !removed.has(pid));
+        editedProductIds = [...editedProductIds, ...remaining];
+      }
+      // De-dupe so the rebuild loop never creates two pending rows per product.
+      editedProductIds = Array.from(new Set(editedProductIds));
 
       [...editedProductIds, ...newProductIds, ...removedProductIds].forEach(pid => affectedProductIds.add(pid));
 

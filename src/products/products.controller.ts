@@ -73,6 +73,17 @@ export class ProductsController {
   }
 
 
+  @Get('similar')
+  @ApiOperation({ summary: 'Find products with a similar model number (ignores case, spaces, dashes, underscores, dots)' })
+  @ApiQuery({ name: 'modelNumber', required: true, type: String })
+  @ApiQuery({ name: 'excludeId', required: false, type: String })
+  findSimilar(
+    @Query('modelNumber') modelNumber: string,
+    @Query('excludeId') excludeId?: string,
+  ) {
+    return this.productsService.findSimilar(modelNumber ?? '', excludeId);
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all products with filtering and pagination' })
   @ApiQuery({

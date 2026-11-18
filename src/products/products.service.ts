@@ -18,6 +18,7 @@ import {
 
 let statsCache: { data: any[]; timestamp: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+import { modelKey } from './model-key';
 import { QRCodeService } from './qr-code.service';
 import { EventsGateway } from '../events/events.gateway';
 
@@ -31,6 +32,31 @@ export class ProductsService implements OnModuleInit {
 
   invalidateStatsCache() {
     statsCache = null;
+  }
+
+  /** Up to 5 non-deleted products whose model number matches ignoring case/punctuation/spaces. */
+  async findSimilar(modelNumber: string, excludeId?: string) {
+    const key = modelKey(modelNumber);
+    if (!key) return [];
+    const exclude = excludeId || null;
+    return this.prisma.$queryRaw<
+      Array<{
+        id: string;
+        name: string | null;
+        modelNumber: string;
+        seriesName: string | null;
+        image: string | null;
+        thumbnail: string | null;
+      }>
+    >`
+      SELECT "id", "name", "modelNumber", "seriesName", "image", "thumbnail"
+      FROM "products"
+      WHERE "deletedAt" IS NULL
+        AND regexp_replace(lower("modelNumber"), '[^a-z0-9]', '', 'g') = ${key}
+        AND (${exclude}::text IS NULL OR "id" <> ${exclude}::text)
+      ORDER BY "modelNumber" ASC
+      LIMIT 5
+    `;
   }
 
   async findAllWithStats() {

@@ -22,6 +22,17 @@ export enum ErrorCode {
   DATABASE_ERROR = 'DATABASE_ERROR',
 }
 
+/**
+ * The database refuses stock rows on dormant products (trigger
+ * block_stock_on_dormant_product). Returns the readable part of that error,
+ * e.g. "BL05_TT is dormant and cannot take stock in or out", or null.
+ */
+export function dormantStockMessage(exception: unknown): string | null {
+  const text = exception instanceof Error ? exception.message : String(exception ?? '');
+  const m = text.match(/PRODUCT_DORMANT: ([^\n"]+?)(?:\s*$|["\n])/m);
+  return m ? m[1].trim() : null;
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
@@ -41,7 +52,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let error: string | object = 'Internal Server Error';
     let errorCode = ErrorCode.INTERNAL_ERROR;
 
-    if (exception instanceof HttpException) {
+    const dormant = dormantStockMessage(exception);
+    if (dormant) {
+      status = HttpStatus.BAD_REQUEST;
+      errorCode = ErrorCode.BAD_REQUEST;
+      message = `${dormant}. Use the active product instead.`;
+      error = message;
+    } else if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 

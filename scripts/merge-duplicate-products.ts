@@ -2,6 +2,13 @@
  * Merge duplicate products whose model numbers differ only in punctuation/case
  * (e.g. "BL05_TT" and "BL_05_TT"), so stock, orders and POs stop being split.
  *
+ * One product per group stays active (the keeper): the one written in the
+ * underscore naming (most underscores, e.g. BL_05_TT), then the most used,
+ * then the oldest. Everything is moved onto it. The others are NOT deleted:
+ * they are marked dormant, keep their model number, and the database refuses
+ * any new stock IN/OUT on them (trigger from migration
+ * 20261123000000_block_stock_on_dormant_products).
+ *
  *   npx ts-node scripts/merge-duplicate-products.ts                       # dry run (default, writes nothing)
  *   npx ts-node scripts/merge-duplicate-products.ts --only BL05_TT        # limit to some groups (repeatable)
  *   npx ts-node scripts/merge-duplicate-products.ts --keep <productId>    # force the keeper of its group (repeatable)
@@ -147,9 +154,12 @@ export function groupByModelKey<T extends Groupable>(products: T[]): Map<string,
 const byAge = (a: Groupable, b: Groupable) =>
   a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id);
 
+export const underscoreCount = (modelNumber: string) => (modelNumber.match(/_/g) ?? []).length;
+
 /**
- * Keeper = forced by --keep if one of the members, else the most referencing
- * rows, tie -> oldest createdAt (then id, for determinism).
+ * Keeper = forced by --keep if one of the members, else the one in the
+ * underscore naming (most underscores), then most referencing rows, then
+ * oldest createdAt (then id, for determinism).
  */
 export function chooseKeeper<T extends Groupable>(
   members: T[],
@@ -161,12 +171,15 @@ export function chooseKeeper<T extends Groupable>(
     throw new Error(`--keep names ${forced.length} products of the same group: ${forced.map((f) => f.id).join(', ')}`);
   }
   if (forced.length === 1) return { keeper: forced[0], reason: '--keep' };
+  const refs = (m: T) => refCounts.get(m.id) ?? 0;
   const sorted = [...members].sort(
-    (a, b) => (refCounts.get(b.id) ?? 0) - (refCounts.get(a.id) ?? 0) || byAge(a, b),
+    (a, b) => underscoreCount(b.modelNumber) - underscoreCount(a.modelNumber) || refs(b) - refs(a) || byAge(a, b),
   );
-  const top = sorted[0];
-  const tie = sorted.length > 1 && (refCounts.get(sorted[1].id) ?? 0) === (refCounts.get(top.id) ?? 0);
-  return { keeper: top, reason: tie ? 'tie on references -> oldest' : 'most references' };
+  const [top, second] = sorted;
+  if (!second) return { keeper: top, reason: 'only member' };
+  if (underscoreCount(top.modelNumber) > underscoreCount(second.modelNumber)) return { keeper: top, reason: 'underscore naming' };
+  if (refs(top) > refs(second)) return { keeper: top, reason: 'most references' };
+  return { keeper: top, reason: 'tie -> oldest' };
 }
 
 export function isEmptyValue(v: unknown): boolean {
@@ -306,7 +319,6 @@ interface GroupPlan {
   keepReason: string;
   members: MemberInfo[];
   duplicates: Product[]; // full rows, before
-  deletedModelNumbers: Record<string, string>; // dupId -> renamed modelNumber
   repoint: Record<string, Array<{ id: string; oldProductId: string }>>;
   modelArrays: Array<{ productId: string; modelNumber: string; field: string; old: string[]; new: string[] }>;
   keeperFields: Record<string, { old: unknown; new: unknown; fromProductId: string }>;
@@ -333,7 +345,8 @@ async function buildPlans(
   stamp: number,
 ): Promise<GroupPlan[]> {
   const live = await prisma.product.findMany({ where: { deletedAt: null } });
-  let groups = groupByModelKey(live);
+  // Dormant products were already merged away; only active ones are grouped.
+  let groups = groupByModelKey(live.filter((p) => !p.isDormant));
   if (opts.only.size) groups = new Map([...groups].filter(([k]) => opts.only.has(k)));
   const groupedIds = new Set([...groups.values()].flat().map((p) => p.id));
   for (const id of opts.keep) {
@@ -445,7 +458,6 @@ async function buildPlans(
       keepReason: reason,
       members: infos,
       duplicates: dups,
-      deletedModelNumbers: Object.fromEntries(dups.map((d) => [d.id, `${d.modelNumber}_DEL_${stamp}`])),
       repoint,
       modelArrays,
       keeperFields,
@@ -468,7 +480,7 @@ function printReferenceList() {
 function printPlan(p: GroupPlan) {
   console.log(`=== group "${p.key}" (${p.members.length} products) ===`);
   for (const m of p.members) {
-    const tag = m.id === p.keeperId ? `KEEP (${p.keepReason})` : 'merge -> keeper';
+    const tag = m.id === p.keeperId ? `KEEP ACTIVE (${p.keepReason})` : 'merge -> keeper, then dormant';
     console.log(`  [${tag}] ${m.modelNumber}  id=${m.id}`);
     console.log(`      name="${m.name ?? ''}" series="${m.seriesName ?? ''}" created=${m.createdAt} todaysStock=${m.todaysStock ?? '-'} txSum=${m.txSum}`);
     const nonZero = Object.entries(m.counts).filter(([, n]) => n > 0);
@@ -479,7 +491,7 @@ function printPlan(p: GroupPlan) {
       .map(([k, rows]) => [k, rows.filter((r) => r.oldProductId === d.id).length] as const)
       .filter(([, n]) => n > 0);
     console.log(`  re-point ${d.modelNumber} -> ${p.keeperModelNumber}: ${moves.length ? moves.map(([k, n]) => `${k}=${n}`).join('  ') : 'no rows'}`);
-    console.log(`      then soft-delete as "${p.deletedModelNumbers[d.id]}"`);
+    console.log(`      then mark ${d.modelNumber} dormant (kept, hidden from quotations, no stock IN/OUT)`);
   }
   if (p.modelArrays.length) {
     console.log(`  model-number arrays rewritten on ${p.modelArrays.length} field(s) of other products:`);
@@ -541,10 +553,10 @@ async function applyGroup(prisma: PrismaClient, p: GroupPlan): Promise<number> {
       }
       for (const d of p.duplicates) {
         const res = await tx.product.updateMany({
-          where: { id: d.id, deletedAt: null, modelNumber: d.modelNumber },
-          data: { deletedAt: new Date(), modelNumber: p.deletedModelNumbers[d.id], todaysStock: 0 },
+          where: { id: d.id, deletedAt: null, isDormant: false, modelNumber: d.modelNumber },
+          data: { isDormant: true, todaysStock: 0 },
         });
-        if (res.count !== 1) throw new Error(`duplicate ${d.modelNumber} was changed or deleted since planning`);
+        if (res.count !== 1) throw new Error(`duplicate ${d.modelNumber} was changed, deleted or made dormant since planning`);
       }
       return recomputeStock(tx, p.keeperId);
     },
@@ -555,6 +567,16 @@ async function applyGroup(prisma: PrismaClient, p: GroupPlan): Promise<number> {
 async function revertGroup(prisma: PrismaClient, p: GroupPlan, dryRun: boolean): Promise<string[]> {
   const notes: string[] = [];
   const run = async (tx: Db) => {
+    // Re-activate first: the database refuses stock rows on dormant products.
+    for (const d of p.duplicates) {
+      const cur = await tx.product.findUnique({ where: { id: d.id } });
+      if (!cur) {
+        notes.push(`SKIP duplicate ${d.id}: row no longer exists`);
+        continue;
+      }
+      if (!dryRun) await tx.product.update({ where: { id: d.id }, data: { isDormant: d.isDormant } });
+      notes.push(`${d.modelNumber}: dormant -> ${d.isDormant}`);
+    }
     for (const [label, rows] of Object.entries(p.repoint)) {
       const ref = PRODUCT_REFERENCES.find((r) => refLabel(r) === label);
       if (!ref || !rows.length) continue;
@@ -585,18 +607,6 @@ async function revertGroup(prisma: PrismaClient, p: GroupPlan, dryRun: boolean):
       }
       if (!dryRun) await tx.product.update({ where: { id: p.keeperId }, data: { [f]: u.old ?? nullFor(f) } });
       notes.push(`keeper.${f} -> ${short(u.old)}`);
-    }
-    for (const d of p.duplicates) {
-      const cur = await tx.product.findUnique({ where: { id: d.id } });
-      if (!cur) {
-        notes.push(`SKIP duplicate ${d.id}: row no longer exists`);
-        continue;
-      }
-      const taken = await tx.product.findFirst({ where: { modelNumber: d.modelNumber, id: { not: d.id } } });
-      const modelNumber = taken ? cur.modelNumber : d.modelNumber;
-      if (taken) notes.push(`duplicate ${d.id}: model number ${d.modelNumber} is now used by ${taken.id}; keeping "${cur.modelNumber}"`);
-      if (!dryRun) await tx.product.update({ where: { id: d.id }, data: { deletedAt: d.deletedAt, modelNumber } });
-      notes.push(`un-delete ${d.id} as ${modelNumber}`);
     }
     if (!dryRun) {
       for (const id of [p.keeperId, ...p.duplicates.map((d) => d.id)]) {
@@ -683,7 +693,7 @@ async function main() {
     }
     plans.forEach(printPlan);
     const dupCount = plans.reduce((s, p) => s + p.duplicates.length, 0);
-    console.log(`${plans.length} group(s), ${dupCount} duplicate product(s) to merge.`);
+    console.log(`${plans.length} group(s), ${dupCount} duplicate product(s) to merge and mark dormant.`);
     if (!opts.apply) {
       console.log('Dry run: nothing written. Re-run with --apply (optionally --only/--keep) to merge.');
       return;

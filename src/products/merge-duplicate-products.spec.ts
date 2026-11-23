@@ -32,17 +32,24 @@ describe('groupByModelKey', () => {
 
 describe('chooseKeeper', () => {
   const members = [p('old', 'BL05_TT', '2025-01-01'), p('new', 'BL_05_TT', '2025-06-01')];
-  it('picks the most referenced', () => {
-    const r = chooseKeeper(members, new Map([['old', 1], ['new', 9]]), new Set());
+  it('underscore naming wins even when the other is used more', () => {
+    const r = chooseKeeper(members, new Map([['old', 200], ['new', 3]]), new Set());
     expect(r.keeper.id).toBe('new');
+    expect(r.reason).toBe('underscore naming');
   });
-  it('tie -> oldest createdAt', () => {
-    const r = chooseKeeper(members, new Map([['old', 3], ['new', 3]]), new Set());
-    expect(r.keeper.id).toBe('old');
-    expect(chooseKeeper(members, new Map(), new Set()).keeper.id).toBe('old');
+  it('same underscores -> most referenced', () => {
+    const same = [p('a', 'OK_6093_B', '2025-01-01'), p('b', 'OK-6093_B_', '2025-01-02')]; // 2 vs 2 underscores
+    expect(chooseKeeper(same, new Map([['a', 1], ['b', 9]]), new Set()).keeper.id).toBe('b');
+    expect(chooseKeeper([p('x', 'OK6_093B', '2025-01-01'), p('y', 'OK_6093_B', '2025-01-02')], new Map([['x', 5]]), new Set()).keeper.id).toBe('y');
+  });
+  it('full tie -> oldest createdAt', () => {
+    const same = [p('a', 'AB_1', '2025-01-01'), p('b', 'A_B1', '2025-06-01')];
+    const r = chooseKeeper(same, new Map([['a', 3], ['b', 3]]), new Set());
+    expect(r.keeper.id).toBe('a');
+    expect(r.reason).toBe('tie -> oldest');
   });
   it('--keep overrides', () => {
-    expect(chooseKeeper(members, new Map([['old', 9]]), new Set(['new'])).keeper.id).toBe('new');
+    expect(chooseKeeper(members, new Map(), new Set(['old'])).keeper.id).toBe('old');
   });
   it('rejects two --keep in one group', () => {
     expect(() => chooseKeeper(members, new Map(), new Set(['old', 'new']))).toThrow();

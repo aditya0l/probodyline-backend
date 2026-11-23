@@ -47,14 +47,15 @@ export class ProductsService implements OnModuleInit {
         seriesName: string | null;
         image: string | null;
         thumbnail: string | null;
+        isDormant: boolean;
       }>
     >`
-      SELECT "id", "name", "modelNumber", "seriesName", "image", "thumbnail"
+      SELECT "id", "name", "modelNumber", "seriesName", "image", "thumbnail", "isDormant"
       FROM "products"
       WHERE "deletedAt" IS NULL
         AND regexp_replace(lower("modelNumber"), '[^a-z0-9]', '', 'g') = ${key}
         AND (${exclude}::text IS NULL OR "id" <> ${exclude}::text)
-      ORDER BY "modelNumber" ASC
+      ORDER BY "isDormant" ASC, "modelNumber" ASC
       LIMIT 5
     `;
   }
